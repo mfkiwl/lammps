@@ -85,6 +85,7 @@ if(DOWNLOAD_MBX)
                                             --prefix=<INSTALL_DIR>
                                             ${MBX_CONFIG_MPI}
                                             ${MBX_CONFIG_OMP}
+                                            --disable-optimization
                                             CXX=${MBX_CONFIG_CXX}
                                             CC=${MBX_CONFIG_CC}
                                             CPPFLAGS=${MBX_CONFIG_CPP}
