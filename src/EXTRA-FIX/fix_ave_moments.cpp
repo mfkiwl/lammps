@@ -196,7 +196,7 @@ FixAveMoments::FixAveMoments(LAMMPS *lmp, int narg, char **arg) :
   // this fix produces a global vector and array
 
   vector_flag = 1;
-  size_vector = nvalues*moments.size();
+  size_vector = nvalues * moments.size();
   array_flag = 1;
   size_array_rows = size_vector;
   size_array_cols = nhistory;
@@ -239,7 +239,7 @@ FixAveMoments::FixAveMoments(LAMMPS *lmp, int narg, char **arg) :
     else if (extvalue != extarray)
       error->all(FLERR, Error::NOLASTLINE, "Fix ave/moments cannot set output array "
                  "intensive/extensive from these inputs");
-    for (int j=0; j<moments.size(); j++)
+    for (int j=0; j < (int)moments.size(); j++)
       extlist[i + j] = extvalue;
     i += moments.size();
   }
@@ -375,10 +375,11 @@ double FixAveMoments::compute_vector(int i)
 
 double FixAveMoments::compute_array(int i, int j)
 {
-  if (i >= moments.size()) return 0.0;
+  if (i >= size_vector) return 0.0;
   if (j >= nhistory) return 0.0;
+  // locate the j'th previous result in the ring buffer, relative to the
+  // row before iresult (the current insert cursor)
   int row = (iresult - 1 - j + nhistory) % nhistory;
-  if (row >= nhistory) return 0.0;
   return result_list[row][i];
 }
 
@@ -607,8 +608,8 @@ void FixAveMoments::update_results()
     const double G2 = k4 / square(k2);
 
     // map to result array, starting at value interleave offset
-    double* rfirst = &result[i*moments.size()];
-    for (int j = 0; j < moments.size(); j++) {
+    double* rfirst = &result[i * moments.size()];
+    for (int j = 0; j < (int)moments.size(); j++) {
       switch(moments[j]) {
         case MEAN:
           rfirst[j] = mean;
