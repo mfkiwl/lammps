@@ -483,6 +483,11 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
     if (p_flag[3]) box_change |= BOX_CHANGE_YZ;
     if (p_flag[4]) box_change |= BOX_CHANGE_XZ;
     if (p_flag[5]) box_change |= BOX_CHANGE_XY;
+    if (isochoric) {
+      box_change |= BOX_CHANGE_X;
+      box_change |= BOX_CHANGE_Y;
+      box_change |= BOX_CHANGE_Z;
+    }
     no_change_box = 1;
     if (allremap == 0) restart_pbc = 1;
 
@@ -1071,6 +1076,10 @@ void FixNH::remap()
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double *h = domain->h;
+  double volume;
+
+  if (dimension == 3) volume = domain->xprd * domain->yprd * domain->zprd;
+  else volume = domain->xprd * domain->yprd;
 
   // omega is not used, except for book-keeping
 
