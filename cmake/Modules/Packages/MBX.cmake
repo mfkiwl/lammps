@@ -14,27 +14,25 @@ if(BUILD_MPI)
   set(MBX_CONFIG_MPI "--enable-mpi")
   set(MBX_CONFIG_CC  ${CMAKE_C_COMPILER})
   set(MBX_CONFIG_CXX  ${CMAKE_CXX_COMPILER})
-  set(MBX_CONFIG_CPP "-I ${MPI_CXX_INCLUDE_PATH}")
+  set(MBX_CONFIG_CPPFLAGS "-I ${MPI_CXX_INCLUDE_PATH}")
   # set(MBX_CONFIG_LIB "${MPI_CXX_LIBRARIES}")
   # set(MBX_CONFIG_DEP "")
 else()
   set(MBX_CONFIG_MPI "--disable-mpi")
   set(MBX_CONFIG_CC  ${CMAKE_C_COMPILER})
   set(MBX_CONFIG_CXX  ${CMAKE_CXX_COMPILER})
-  set(MBX_CONFIG_CPP "")
+  set(MBX_CONFIG_CPPFLAGS "")
   # set(MBX_CONFIG_LIB "")
   # set(MBX_CONFIG_DEP "")
-endif()
-if(BUILD_OMP)
-  set(MBX_CONFIG_OMP "--enable-openmp")
-else()
-  set(MBX_CONFIG_OMP "--disable-openmp")
+
+  
+
 endif()
 
 
-set(MBX_URL "https://github.com/paesanilab/MBX/archive/refs/tags/v1.2.0.tar.gz"
+set(MBX_URL "https://github.com/paesanilab/MBX/archive/refs/tags/v1.3.0.tar.gz"
   CACHE STRING "URL for MBX tarball")
-set(MBX_MD5 "2b4eafaa4053d923bef13d0aff4586cb" CACHE STRING "MD5 checksum of MBX tarball")
+set(MBX_MD5 "7cfbf221f9c249c364c7f47769d0d768" CACHE STRING "MD5 checksum of MBX tarball")
 
 mark_as_advanced(MBX_URL)
 mark_as_advanced(MBX_MD5)
@@ -74,7 +72,7 @@ if(DOWNLOAD_MBX)
 
   message(STATUS "MBX_CONFIG_MPI: ${MBX_CONFIG_MPI}")
   message(MBX_CONFIG_CXX: ${MBX_CONFIG_CXX})
-  message(CPPFLAGS: ${MBX_CONFIG_CPP})
+  message(CPPFLAGS: ${MBX_CONFIG_CPPFLAGS})
 
   include(ExternalProject)
   ExternalProject_Add(mbx_build
@@ -84,11 +82,10 @@ if(DOWNLOAD_MBX)
     CONFIGURE_COMMAND autoreconf -fi && <SOURCE_DIR>/configure 
                                             --prefix=<INSTALL_DIR>
                                             ${MBX_CONFIG_MPI}
-                                            ${MBX_CONFIG_OMP}
-                                            --disable-optimization
+                                            --disable-optimization # TODO Remove before accepting PR
                                             CXX=${MBX_CONFIG_CXX}
                                             CC=${MBX_CONFIG_CC}
-                                            CPPFLAGS=${MBX_CONFIG_CPP}
+                                            CPPFLAGS=${MBX_CONFIG_CPPFLAGS}
     BUILD_BYPRODUCTS ${MBX_BUILD_BYPRODUCTS}
   )
   ExternalProject_get_property(mbx_build INSTALL_DIR)
