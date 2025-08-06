@@ -387,7 +387,15 @@ are coupled to barostats or if none if them is coupled to barostats. In the
 case of 2d simulations, only x and y dimensions can be used to maintain a
 constant surface. If you want to perform strain with constant volume, the
 :doc:`fix deform <fix_deform>` command using *volume* keyword is more likely to
-suit your needs.
+suit your needs. At the moment, it is not possible to use a single barostated
+dimension with a single non-barostated dimension to maintain constant volume.
+
+.. note::
+   If large strain are caused by the barostat because the initial configuration
+   is far from pressure equilibrium or equilibrated too fast, the system will
+   see large strain on the other dimensions as well. It is recommended to
+   perform preliminary NPT equilibration if necessary with standard NPT
+   simulations.
 
 The *fixedpoint* keyword specifies the fixed point for barostat volume
 changes. By default, it is the center of the box.  Whatever point is
