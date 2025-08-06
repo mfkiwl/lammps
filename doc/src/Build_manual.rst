@@ -57,6 +57,8 @@ Python interpreter version 3.8 or later, the ``doxygen`` tools and
 internet access to download additional files and tools are required.
 This download is usually only required once or after the documentation
 folder is returned to a pristine state with ``make clean-all``.
+You can also upgrade those packages to their latest available versions
+with ``make upgrade``.
 
 For the documentation build a python virtual environment is set up in
 the folder ``doc/docenv`` and various python packages are installed into
@@ -82,11 +84,12 @@ folder.  The following ``make`` commands are available:
 
    make clean         # remove intermediate RST files created by HTML build
    make clean-all     # remove entire build folder and any cached data
+   make upgrade       # upgrade the python packages in the virtual environment
 
    make anchor_check  # check for duplicate anchor labels
    make style_check   # check for complete and consistent style lists
    make package_check # check for complete and consistent package lists
-   make link_check    # check for broken or outdated URLs
+   make link_check    # check for broken external URLs
    make spelling      # spell-check the manual
 
 ----------
@@ -300,7 +303,7 @@ be multiple tests run automatically:
 
 In addition, there is the option to run a spellcheck on the entire
 manual with ``make spelling``.  This requires `a library called enchant
-<https://github.com/AbiWord/enchant>`_.  To avoid printing out *false
+<https://github.com/rrthomas/enchant>`_.  To avoid printing out *false
 positives* (e.g. keywords, names, abbreviations) those can be added to
 the file ``lammps/doc/utils/sphinx-config/false_positives.txt``.
 
