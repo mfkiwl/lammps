@@ -349,6 +349,18 @@ ComputePropertyAtom::ComputePropertyAtom(LAMMPS *lmp, int narg, char **arg) :
       if (!atom->apip_e_precise_flag)
         error->all(FLERR,"Compute property/atom {} is not available", arg[iarg]);
       pack_choice[i] = &ComputePropertyAtom::pack_apip_e_precise;
+    } else if (strcmp(arg[iarg],"apip_la_inp") == 0) {
+      if (!atom->apip_la_inp_flag)
+        error->all(FLERR,"Compute property/atom {} is not available", arg[iarg]);
+      pack_choice[i] = &ComputePropertyAtom::pack_apip_la_inp;
+    } else if (strcmp(arg[iarg],"apip_la_avg") == 0) {
+      if (!atom->apip_la_avg_flag)
+        error->all(FLERR,"Compute property/atom {} is not available", arg[iarg]);
+      pack_choice[i] = &ComputePropertyAtom::pack_apip_la_avg;
+    } else if (strcmp(arg[iarg],"apip_la_norm") == 0) {
+      if (!atom->apip_la_norm_flag)
+        error->all(FLERR,"Compute property/atom {} is not available", arg[iarg]);
+      pack_choice[i] = &ComputePropertyAtom::pack_apip_la_norm;
 
     // custom per-atom vector or array
 
@@ -1636,6 +1648,51 @@ void ComputePropertyAtom::pack_apip_e_precise(int n)
 
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) buf[n] = e_complex[i];
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_apip_la_inp(int n)
+{
+  double *apip_la_inp = atom->apip_la_inp;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) buf[n] = apip_la_inp[i];
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_apip_la_avg(int n)
+{
+  double *apip_la_avg = atom->apip_la_avg;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) buf[n] = apip_la_avg[i];
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_apip_la_norm(int n)
+{
+  double *apip_la_norm = atom->apip_la_norm;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) buf[n] = apip_la_norm[i];
     else buf[n] = 0.0;
     n += nvalues;
   }

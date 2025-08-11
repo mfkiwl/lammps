@@ -142,6 +142,9 @@ class ComputePropertyAtom : public Compute {
   void pack_apip_lambda_input(int);
   void pack_apip_e_fast(int);
   void pack_apip_e_precise(int);
+  void pack_apip_la_inp(int);
+  void pack_apip_la_avg(int);
+  void pack_apip_la_norm(int);
 };
 
 }    // namespace LAMMPS_NS

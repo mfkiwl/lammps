@@ -223,6 +223,7 @@ Atom::Atom(LAMMPS *_lmp) : Pointers(_lmp), atom_style(nullptr), avec(nullptr), a
   // APIP package
 
   apip_lambda_const = apip_lambda = apip_lambda_input = apip_lambda_input_ta = apip_e_fast = apip_e_precise = nullptr;
+  apip_la_inp = apip_la_norm = apip_la_avg = nullptr;
   apip_lambda_required = nullptr;
   apip_f_const_lambda = apip_f_dyn_lambda = nullptr;
 
@@ -592,6 +593,9 @@ void Atom::peratom_create()
   add_peratom("apip_lambda_const",&apip_lambda_const,DOUBLE,0);
   add_peratom("apip_f_const_lambda",&apip_f_const_lambda,DOUBLE,3,1);
   add_peratom("apip_f_dyn_lambda",&apip_f_dyn_lambda,DOUBLE,3,1);
+  add_peratom("apip_la_inp",&apip_la_inp,DOUBLE,0);
+  add_peratom("apip_la_avg",&apip_la_avg,DOUBLE,0);
+  add_peratom("apip_la_norm",&apip_la_norm,DOUBLE,0);
 
   // end of customization section
   // --------------------------------------------------------------------
@@ -677,6 +681,7 @@ void Atom::set_atomflag_defaults()
   eff_plastic_strain_flag = eff_plastic_strain_rate_flag = 0;
   nspecial15_flag = 0;
   apip_lambda_flag = apip_e_fast_flag = apip_e_precise_flag = apip_lambda_input_flag = apip_lambda_input_ta_flag = apip_lambda_required_flag = apip_f_const_lambda_flag = apip_f_dyn_lambda_flag = apip_lambda_const_flag = 0;
+  apip_la_inp_flag = apip_la_norm_flag = apip_la_avg_flag = 0;
 
   pdscale = 1.0;
 }
@@ -3210,6 +3215,9 @@ void *Atom::extract(const char *name)
   if (strcmp(name,"apip_f_const_lambda") == 0) return (void *) apip_f_const_lambda;
   if (strcmp(name,"apip_f_dyn_lambda") == 0) return (void *) apip_f_dyn_lambda;
   if (strcmp(name,"apip_lambda_const") == 0) return (void *) apip_lambda_const;
+  if (strcmp(name,"apip_la_inp") == 0) return (void *) apip_la_inp;
+  if (strcmp(name,"apip_la_norm") == 0) return (void *) apip_la_norm;
+  if (strcmp(name,"apip_la_avg") == 0) return (void *) apip_la_avg;
 
   // end of customization section
   // --------------------------------------------------------------------
@@ -3380,6 +3388,9 @@ int Atom::extract_datatype(const char *name)
   if (strcmp(name,"apip_lambda_const") == 0) return LAMMPS_DOUBLE;
   if (strcmp(name,"apip_f_const_lambda") == 0) return LAMMPS_DOUBLE_2D;
   if (strcmp(name,"apip_f_dyn_lambda") == 0) return LAMMPS_DOUBLE_2D;
+  if (strcmp(name,"apip_la_inp") == 0) return LAMMPS_DOUBLE;
+  if (strcmp(name,"apip_la_norm") == 0) return LAMMPS_DOUBLE;
+  if (strcmp(name,"apip_la_avg") == 0) return LAMMPS_DOUBLE;
   // end of customization section
   // --------------------------------------------------------------------
 
@@ -3528,6 +3539,9 @@ int Atom::extract_size(const char *name, int type)
       if (strcmp(name, "apip_lambda_const") == 0) return nlocal;
       if (strcmp(name, "apip_f_const_lambda") == 0) return nall;
       if (strcmp(name, "apip_f_dyn_lambda") == 0) return nall;
+      if (strcmp(name, "apip_la_inp") == 0) return nlocal;
+      if (strcmp(name, "apip_la_norm") == 0) return nlocal;
+      if (strcmp(name, "apip_la_avg") == 0) return nlocal;
     }
 
     // custom arrays
