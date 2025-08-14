@@ -25,7 +25,7 @@ else()
   # set(MBX_CONFIG_LIB "")
   # set(MBX_CONFIG_DEP "")
 
-  
+
 
 endif()
 
@@ -79,7 +79,7 @@ if(DOWNLOAD_MBX)
     URL     ${MBX_URL} ${MBX_FALLBACK}
     URL_MD5 ${MBX_MD5}
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoreconf -fi && <SOURCE_DIR>/configure 
+    CONFIGURE_COMMAND autoreconf -fi && <SOURCE_DIR>/configure
                                             --prefix=<INSTALL_DIR>
                                             ${MBX_CONFIG_MPI}
                                             CXX=${MBX_CONFIG_CXX}
@@ -91,7 +91,7 @@ if(DOWNLOAD_MBX)
   add_library(LAMMPS::MBX UNKNOWN IMPORTED)
   add_dependencies(LAMMPS::MBX mbx_build)
   set_target_properties(LAMMPS::MBX PROPERTIES IMPORTED_LOCATION ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}mbx${CMAKE_STATIC_LIBRARY_SUFFIX} INTERFACE_LINK_LIBRARIES "${MBX_LINK_LIBS};${CMAKE_DL_LIBS}")
- 
+
   set_target_properties(LAMMPS::MBX PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_DIR}/include)
   file(MAKE_DIRECTORY ${INSTALL_DIR}/include)
   if(CMAKE_PROJECT_NAME STREQUAL "lammps")

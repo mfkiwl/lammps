@@ -35,12 +35,7 @@
 
 #include "domain.h"
 
-//#define _DEBUG
-//#define _DEBUG_VIRIAL
-
 #define TTMNRG
-
-//#define _DEBUG_EFIELD
 
 // subject for removal
 // Systems::DispersionPME()
@@ -85,10 +80,6 @@ PairMBX::~PairMBX()
 
 void PairMBX::compute(int eflag, int vflag)
 {
-#ifdef _DEBUG
-  MPI_Barrier(world);
-  printf("[MBX] (%i) Inside pair compute()\n", me);
-#endif
 
   ev_init(eflag, vflag);
 
@@ -130,18 +121,11 @@ void PairMBX::compute(int eflag, int vflag)
   for (int i = 0; i < 6; ++i) mbx_virial[i] = 0.0;
 
   if (fix_mbx->mbx_num_atoms > 0) {
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing E1B\n", me);
-#endif
 
     fix_mbx->mbxt_start(MBXT_E1B);
     mbx_e1b = ptr_mbx->OneBodyEnergy(true);
     fix_mbx->mbxt_stop(MBXT_E1B);
     accumulate_f(false);
-
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing E2B\n", me);
-#endif
 
     // fix_mbx->mbxt_start(MBXT_E2B_LOCAL);
     // mbx_e2b_local = ptr_mbx->TwoBodyEnergy(true);
@@ -156,10 +140,6 @@ void PairMBX::compute(int eflag, int vflag)
 
     mbx_e2b = mbx_e2b_local + mbx_e2b_ghost;
 
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing E3B\n", me);
-#endif
-
     // fix_mbx->mbxt_start(MBXT_E3B_LOCAL);
     // mbx_e3b_local = ptr_mbx->ThreeBodyEnergy(true);
     // fix_mbx->mbxt_stop(MBXT_E3B_LOCAL);
@@ -172,10 +152,6 @@ void PairMBX::compute(int eflag, int vflag)
     accumulate_f_all(false);
 
     mbx_e3b = mbx_e3b_local + mbx_e3b_ghost;
-
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing E4B\n", me);
-#endif
 
     // fix_mbx->mbxt_start(MBXT_E4B_LOCAL);
     // mbx_e4b_local = ptr_mbx->FourBodyEnergy(true);
@@ -192,9 +168,6 @@ void PairMBX::compute(int eflag, int vflag)
   }
 
   if (mbx_parallel) {
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing electrostatics parallel\n", me);
-#endif
 
     fix_mbx->mbxt_start(MBXT_ELE);
     mbx_ele = ptr_mbx_local->ElectrostaticsMPIlocal(true, true);
@@ -202,9 +175,6 @@ void PairMBX::compute(int eflag, int vflag)
     accumulate_f_local(true);
 
   } else {
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing electrostatics serial\n", me);
-#endif
 
     // compute energy+gradients in serial on rank 0 for full system
 
@@ -215,9 +185,6 @@ void PairMBX::compute(int eflag, int vflag)
   }
 
   if (mbx_parallel) {
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing disp parallel\n", me);
-#endif
 
     fix_mbx->mbxt_start(MBXT_DISP);
     mbx_disp_real = ptr_mbx_local->Dispersion(
@@ -232,9 +199,6 @@ void PairMBX::compute(int eflag, int vflag)
     accumulate_f_local(false);
 
   } else {
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing disp serial\n", me);
-#endif
 
     fix_mbx->mbxt_start(MBXT_DISP);
     if (comm->me == 0)
@@ -245,9 +209,6 @@ void PairMBX::compute(int eflag, int vflag)
 
   if (fix_mbx->mbx_num_atoms > 0) {
 
-#ifdef _DEBUG
-    printf("[MBX] (%i) -- Computing buck\n", me);
-#endif
 #ifdef TTMNRG
     fix_mbx->mbxt_start(MBXT_BUCK);
     mbx_buck = ptr_mbx->Buckingham(true, true);
@@ -307,60 +268,6 @@ void PairMBX::compute(int eflag, int vflag)
     pvector[20] = mbx_virial[4];
     pvector[21] = mbx_virial[5];
   }
-
-#ifdef _DEBUG_VIRIAL
-  // debug output
-
-  double e1 = 0.0;
-  double e2l = 0.0;
-  double e2g = 0.0;
-  double e3l = 0.0;
-  double e3g = 0.0;
-  double e4l = 0.0;
-  double e4g = 0.0;
-  double edr = 0.0;
-  double edp = 0.0;
-  double eb = 0.0;
-  double ee = 0.0;
-
-  double v[6];
-
-  MPI_Reduce(&mbx_e1b, &e1, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_e2b_local, &e2l, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_e2b_ghost, &e2g, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_e3b_local, &e3l, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_e3b_ghost, &e3g, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_e4b_local, &e4l, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_e4b_ghost, &e4g, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_disp_real, &edr, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_disp_pme, &edp, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_buck, &eb, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&mbx_ele, &ee, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-
-  MPI_Reduce(&virial[0], &v[0], 6, MPI_DOUBLE, MPI_SUM, 0, world);
-
-  double etot = e1 + e2l + e2g + e3l + e3g + e4l + e4g + edr + edp + eb + ee;
-
-  printf("(%i)  virial= %f %f %f  %f %f %f\n", me, virial[0], virial[1], virial[2], virial[3],
-         virial[4], virial[5]);
-
-  if (comm->me == 0) {
-    printf("mbx_e1b=   %f  Parallel\n", e1);
-    printf("mbx_e2b=   %f (%f, %f)  Parallel\n", e2l + e2g, e2l, e2g);
-    printf("mbx_e3b=   %f (%f, %f)  Parallel\n", e3l + e3g, e3l, e3g);
-    printf("mbx_e4b=   %f (%f, %f)  Parallel\n", e4l + e4g, e4l, e4g);
-    printf("mbx_disp=  %f (%f, %f)  Parallel\n", edr + edp, edr, edp);
-    printf("mbx_buck=  %f  Parallel\n", mbx_buck);
-    printf("mbx_ele=   %f  Parallel\n", mbx_ele);
-    printf("mbx_total= %f\n", etot);
-
-    printf("virial= %f %f %f  %f %f %f\n", v[0], v[1], v[2], v[3], v[4], v[5]);
-  }
-#endif
-
-#ifdef _DEBUG
-  printf("[MBX] (%i) Leaving pair compute()\n", me);
-#endif
 }
 
 /* ----------------------------------------------------------------------
@@ -507,9 +414,6 @@ void *PairMBX::extract(const char *str, int &dim)
 
 void PairMBX::accumulate_f(bool include_ext)
 {
-#ifdef _DEBUG
-  printf("[MBX] (%i) Inside pair accumulate_f()\n", me);
-#endif
 
   fix_mbx->mbxt_start(MBXT_ACCUMULATE_F);
 
@@ -580,20 +484,9 @@ void PairMBX::accumulate_f(bool include_ext)
     mbx_virial[3] += mbx_vir[1];
     mbx_virial[4] += mbx_vir[2];
     mbx_virial[5] += mbx_vir[5];
-
-#ifdef _DEBUG_VIRIAL
-    printf("virial(MBX)= %f %f %f  %f %f %f  %f %f %f\n", mbx_vir[0], mbx_vir[1], mbx_vir[2],
-           mbx_vir[3], mbx_vir[4], mbx_vir[5], mbx_vir[6], mbx_vir[7], mbx_vir[8]);
-    printf("virial(LMP)= %f %f %f  %f %f %f\n", virial[0], virial[1], virial[2], virial[3],
-           virial[4], virial[5]);
-#endif
   }
 
   fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F);
-
-#ifdef _DEBUG
-  printf("[MBX] (%i) Leaving pair accumulate_f()\n", me);
-#endif
 }
 
 /* ----------------------------------------------------------------------
@@ -602,9 +495,6 @@ void PairMBX::accumulate_f(bool include_ext)
 
 void PairMBX::accumulate_f_all(bool include_ext)
 {
-#ifdef _DEBUG
-  printf("[MBX] (%i) Inside pair accumulate_f_all()\n", me);
-#endif
 
   fix_mbx->mbxt_start(MBXT_ACCUMULATE_F);
 
@@ -675,20 +565,9 @@ void PairMBX::accumulate_f_all(bool include_ext)
     mbx_virial[3] += mbx_vir[1];
     mbx_virial[4] += mbx_vir[2];
     mbx_virial[5] += mbx_vir[5];
-
-#ifdef _DEBUG_VIRIAL
-    printf("virial(MBX)= %f %f %f  %f %f %f  %f %f %f\n", mbx_vir[0], mbx_vir[1], mbx_vir[2],
-           mbx_vir[3], mbx_vir[4], mbx_vir[5], mbx_vir[6], mbx_vir[7], mbx_vir[8]);
-    printf("virial(LMP)= %f %f %f  %f %f %f\n", virial[0], virial[1], virial[2], virial[3],
-           virial[4], virial[5]);
-#endif
   }
 
   fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F);
-
-#ifdef _DEBUG
-  printf("[MBX] (%i) Leaving pair accumulate_f_all()\n", me);
-#endif
 }
 
 /* ----------------------------------------------------------------------
@@ -697,9 +576,6 @@ void PairMBX::accumulate_f_all(bool include_ext)
 
 void PairMBX::accumulate_f_local(bool include_ext)
 {
-#ifdef _DEBUG
-  printf("[MBX] (%i) Inside pair accumulate_f_local()\n", me);
-#endif
 
   fix_mbx->mbxt_start(MBXT_ACCUMULATE_F_LOCAL);
 
@@ -772,20 +648,9 @@ void PairMBX::accumulate_f_local(bool include_ext)
     mbx_virial[3] += mbx_vir[1];
     mbx_virial[4] += mbx_vir[2];
     mbx_virial[5] += mbx_vir[5];
-
-#ifdef _DEBUG_VIRIAL
-    printf("virial(MBX)= %f %f %f  %f %f %f  %f %f %f\n", mbx_vir[0], mbx_vir[1], mbx_vir[2],
-           mbx_vir[3], mbx_vir[4], mbx_vir[5], mbx_vir[6], mbx_vir[7], mbx_vir[8]);
-    printf("virial(LMP)= %f %f %f  %f %f %f\n", virial[0], virial[1], virial[2], virial[3],
-           virial[4], virial[5]);
-#endif
   }
 
   fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F_LOCAL);
-
-#ifdef _DEBUG
-  printf("[MBX] (%i) Leaving pair accumulate_f_local()\n", me);
-#endif
 }
 
 /* ----------------------------------------------------------------------
@@ -795,10 +660,6 @@ void PairMBX::accumulate_f_local(bool include_ext)
 void PairMBX::accumulate_f_full(bool include_ext)
 {
   fix_mbx->mbxt_start(MBXT_ACCUMULATE_F_FULL);
-
-#ifdef _DEBUG
-  printf("[MBX] (%i) Inside pair accumulate_f_full()\n", me);
-#endif
 
   // master rank retrieves forces
 
@@ -875,13 +736,6 @@ void PairMBX::accumulate_f_full(bool include_ext)
       mbx_virial[3] += mbx_vir[1];
       mbx_virial[4] += mbx_vir[2];
       mbx_virial[5] += mbx_vir[5];
-
-#ifdef _DEBUG_VIRIAL
-      printf("virial(MBX)= %f %f %f  %f %f %f  %f %f %f\n", mbx_vir[0], mbx_vir[1], mbx_vir[2],
-             mbx_vir[3], mbx_vir[4], mbx_vir[5], mbx_vir[6], mbx_vir[7], mbx_vir[8]);
-      printf("virial(LMP)= %f %f %f  %f %f %f\n", virial[0], virial[1], virial[2], virial[3],
-             virial[4], virial[5]);
-#endif
     }
 
   }    // if(me == 0)
@@ -904,125 +758,4 @@ void PairMBX::accumulate_f_full(bool include_ext)
   }
 
   fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F_FULL);
-
-#ifdef _DEBUG
-  printf("[MBX] (%i) Leaving pair accumulate_f_full()\n", me);
-#endif
 }
-
-/* ----------------------------------------------------------------------
-   Helper functions for monomers
-
-   This helper function could be merged with FixMBX::get_num_atoms_per_monomer()
-   -- argument inc_e is only needed by PairMBX instance
-------------------------------------------------------------------------- */
-/*
-int PairMBX::get_num_atoms_per_monomer(char *name, bool &inc_e) {
-    int na;
-    inc_e = false;
-
-    if (strcmp("h2o", name) == 0)
-        na = 3;
-    else if (strcmp("li+", name) == 0)
-        na = 1;
-    else if (strcmp("na+", name) == 0)
-        na = 1;
-    else if (strcmp("k+", name) == 0)
-        na = 1;
-    else if (strcmp("rb+", name) == 0)
-        na = 1;
-    else if (strcmp("cs+", name) == 0)
-        na = 1;
-    else if (strcmp("dp1", name) == 0) {
-        na = 1;
-        inc_e = true;
-    } else if (strcmp("f-", name) == 0)
-        na = 1;
-    else if (strcmp("cl-", name) == 0)
-        na = 1;
-    else if (strcmp("br-", name) == 0)
-        na = 1;
-    else if (strcmp("i-", name) == 0)
-        na = 1;
-    else if (strcmp("co2", name) == 0)
-        na = 3;
-    else if (strcmp("ch4", name) == 0)
-        na = 5;
-    else if (strcmp("he", name) == 0)
-        na = 1;
-    else
-        error->one(FLERR, "Unsupported molecule type in MBX");
-
-#ifdef _DEBUG
-    int _na = fix_mbx->get_num_atoms_per_monomer(name);
-    if (na != _na) error->one(FLERR, "Atom count mismatch in get_include_monomer()");
-#endif
-
-    return na;
-}
-*/
-/* ----------------------------------------------------------------------
- This helper function could be merged with FixMBX::get_include_monomer()
-   -- arguments inc_m and inc_e are only needed by PairMBX instance
-------------------------------------------------------------------------- */
-/*
-int PairMBX::get_include_monomer(char *name, int anchor, bool &inc_m, bool &inc_e) {
-    int na;
-    inc_m = true;
-    inc_e = false;
-
-    if (strcmp("h2o", name) == 0) {
-        na = 3;
-        const int ii1 = atom->map(anchor + 1);
-        const int ii2 = atom->map(anchor + 2);
-        if ((ii1 < 0) || (ii2 < 0)) inc_m = false;
-    } else if (strcmp("li+", name) == 0)
-        na = 1;
-    else if (strcmp("na+", name) == 0)
-        na = 1;
-    else if (strcmp("k+", name) == 0)
-        na = 1;
-    else if (strcmp("rb+", name) == 0)
-        na = 1;
-    else if (strcmp("cs+", name) == 0)
-        na = 1;
-    else if (strcmp("dp1", name) == 0) {
-        na = 1;
-#ifndef _DEBUG_EFIELD
-        inc_m = false;
-        inc_e = true;
-#endif
-    } else if (strcmp("f-", name) == 0)
-        na = 1;
-    else if (strcmp("cl-", name) == 0)
-        na = 1;
-    else if (strcmp("br-", name) == 0)
-        na = 1;
-    else if (strcmp("i-", name) == 0)
-        na = 1;
-    else if (strcmp("he", name) == 0)
-        na = 1;
-    else if (strcmp("co2", name) == 0) {
-        na = 3;
-        const int ii1 = atom->map(anchor + 1);
-        const int ii2 = atom->map(anchor + 2);
-        if ((ii1 < 0) || (ii2 < 0)) inc_m = false;
-    } else if (strcmp("ch4", name) == 0) {
-        na = 5;
-        const int ii1 = atom->map(anchor + 1);
-        const int ii2 = atom->map(anchor + 2);
-        const int ii3 = atom->map(anchor + 3);
-        const int ii4 = atom->map(anchor + 4);
-        if ((ii1 < 0) || (ii2 < 0) || (ii3 < 0) || (ii4 < 0)) inc_m = false;
-    }
-
-    // check if na matches output from get_num_atoms_per_monomer()
-#ifdef _DEBUG
-    bool _dummy = false;
-    int _na = get_num_atoms_per_monomer(name, _dummy);
-    if (na != _na) error->one(FLERR, "Atom count mismatch in get_include_monomer()");
-#endif
-
-    return na;
-}
-*/

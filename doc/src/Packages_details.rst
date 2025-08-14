@@ -1573,7 +1573,7 @@ A variety of many-body and bond-order potentials.  These include
 .. _PKG-MBX:
 
 MBX Package
-----------
+-----------
 
 **Contents**
 
@@ -1588,7 +1588,7 @@ by the Paesani group at the University of California, San Diego. Major contribut
 include: Marc Riera and Ethan Bull-Vulpe.
 
 **Supporting info:**
-     
+
 * ``src/MBX``: filenames -> commands
 * :doc:`pair_style mbx <pair_mbx>`
 * :doc:`fix mbx <fix_mbx>`

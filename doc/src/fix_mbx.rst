@@ -7,17 +7,33 @@ Syntax
 """"""
 
 .. code-block:: LAMMPS
-    fix ID group-ID mbx num_mon_types ...
+
+    fix ID group-ID mbx num_mon_types monomer_specification keyword value ...
 
 * ID, group-ID are documented in :doc:`fix <fix>` command
 * mbx = style name of this fix command
 * num_mon_types = number of monomer types
+* monomer_specification = for each monomer type, the following
+  arguments must be specified:
 
   .. parsed-literal::
 
-    *json* arg = name of MBX JSON configuration file
-    *print/dipoles* = print dipole moments as part of pair style output
-    *print/settings* = print MBX settings to logfile
+    * monomer_name = name of the monomer type
+    * monomer_lower_atom_index = lower atom index of the monomer
+      (e.g. 1 for O in water)
+    * monomer_upper_atom_index = upper atom index of the monomer
+      (e.g. 2 for H in water)
+    * monomer_num_atoms = number of atoms in the monomer
+    * atom_ids = list of atom IDs in the monomer, in the
+      order they appear in the MBX configuration file
+
+* one or more keyword/value pairs may be appended
+
+  .. parsed-literal::
+    keyword = *json* or *print/dipoles* or *print/settings*
+        *json* arg = name of MBX JSON configuration file
+        *print/dipoles* = print dipole moments as part of fix variable output
+        *print/settings* = print MBX settings to logfile
 
 
 Examples
@@ -26,7 +42,8 @@ Examples
 .. code-block:: LAMMPS
 
     # For a system involving water (atom types O=1, H=2)
-    pair_style mbx 9.0
+    processors      * * * map xyz
+    pair_style      mbx 9.0
     pair_coeff      * * 0.0 0.0
     compute         mbx all pair mbx
     fix             mbx_fix all mbx 1 h2o 1 2 3 1 2 2 json mbx.json
@@ -34,12 +51,14 @@ Examples
 
     # For a system involving ch4 (atom types C=1, H=2) and
     # water (atom types O=3, H=4)
-    pair_style mbx 9.0
+    processors      * * * map xyz
+    pair_style      mbx 9.0
     pair_coeff      * * 0.0 0.0
     compute         mbx all pair mbx
     fix             mbx_fix all mbx 2 ch4 1 2 5 1 2 2 2 2 h2o 3 4 3 3 4 4 json mbx.json
 
     # For a system involving water (atom types 0=12, H=13) in a hybrid simulation
+    processors * * * map xyz
     pair_style      hybrid/overlay mbx 9.0 lj/cut 9.0 coul/exclude 9.0
     pair_coeff      * * mbx  0.0 0.0
     pair_coeff      1*11 1*11 coul/exclude
@@ -72,7 +91,7 @@ same simulation, one can use :doc:`pair_style hybrid/overlay <pair_hybrid>`
 to combine the MB-nrg molecules with other pair styles, such as
 :doc:`lj/cut <pair_lj>`. Do note that all electrostatics must be computed within MBX, so the
 :doc:`coul/exclude <pair_coul>` pair_style must be applied on the non-MB-nrg molecules.
-See  ``examples/PACKAGES/mbx`` for a complete hybrid example. 
+See  ``examples/PACKAGES/mbx`` for a complete hybrid example.
 
 Restrictions
 """"""""""""
