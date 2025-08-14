@@ -13,7 +13,7 @@
 
 #ifdef ATOM_CLASS
 // clang-format off
-AtomStyle(apip/csp,AtomVecApipLa);
+AtomStyle(apip/la,AtomVecApipLa);
 // clang-format on
 #else
 

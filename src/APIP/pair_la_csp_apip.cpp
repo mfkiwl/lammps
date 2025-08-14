@@ -294,7 +294,7 @@ void PairLACSPAPIP::coeff(int narg, char **arg)
     }
     if (count != 1) error->all(FLERR, "Exact one fix lambda/la/csp/apip required");
     int dim = 0;
-    cutsq_combined = *((double *) fix_la_csp->extract("fix_la_csp_apip:cutsq_combined", dim));
+    cutsq_combined = *((double *) fix_la_csp->extract("fix_lambda_la_csp_apip:cutsq_combined", dim));
   }
 
   const int n = atom->ntypes;
@@ -327,7 +327,7 @@ void PairLACSPAPIP::init_style()
     }
     if (count != 1) error->all(FLERR, "Exact one fix lambda/la/csp/apip required");
     int dim = 0;
-    cutsq_combined = *((double *) fix_la_csp->extract("fix_la_csp_apip:cutsq_combined", dim));
+    cutsq_combined = *((double *) fix_la_csp->extract("fix_lambda_la_csp_apip:cutsq_combined", dim));
   }
 
   if (strcmp(force->pair_style, "hybrid/overlay")) error->all(FLERR, "pair la/csp/apip needs to be used with pair hybrid/overlay");
@@ -336,8 +336,8 @@ void PairLACSPAPIP::init_style()
   if (strcmp(hybrid->keywords[hybrid->nstyles -1], "la/csp/apip")) error->all(FLERR, "pair la/csp/apip needs to be the last hybrid substyle so that e_precise and e_fast are computed before la/csp/apip is used");
 
   int dim2 = 0;
-  fix_la_csp_w_cutsq = *((double *) fix_la_csp->extract("fix_la_csp_apip:cut_hi_sq", dim2));
-  nnn_half = (*((int *) fix_la_csp->extract("fix_la_csp_apip:nnn", dim2))) / 2;
+  fix_la_csp_w_cutsq = *((double *) fix_la_csp->extract("fix_lambda_la_csp_apip:cut_hi_sq", dim2));
+  nnn_half = (*((int *) fix_la_csp->extract("fix_lambda_la_csp_apip:nnn", dim2))) / 2;
 
   // request a full neighbor list
   auto req = neighbor->add_request(this, NeighConst::REQ_FULL);
