@@ -53,14 +53,14 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
   cut_lo = cut_hi = -1;
   threshold_lo = threshold_hi = -1;
   lambda_non_group = 1; // fast
-  const_ngh_flag = false;
+  const_ngh_flag = true;
 
   tags_stored = false;
   counter_changed_csp_nghs = 0;
   scalar_flag = 1;
   extscalar = 1;
 
-  if (narg < 10) error->all(FLERR, "fix lambda/la/csp/apip requires six arguments");
+  if (narg < 9) error->all(FLERR, "fix lambda/la/csp/apip requires six arguments");
 
   threshold_lo = utils::numeric(FLERR, arg[3], false, lmp);
   threshold_hi = utils::numeric(FLERR, arg[4], false, lmp);
@@ -80,16 +80,21 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
   csp_cutsq = pow(utils::numeric(FLERR, arg[8], false, lmp), 2);
   cutsq_combined = csp_cutsq > cut_hi_sq ? csp_cutsq : cut_hi_sq;
 
-  // TODO change arg parsing to make const default
-
-  if (strcmp(arg[9], "dyn_csp_ngh") == 0)
-    const_ngh_flag = false;
-  else if (strcmp(arg[9], "const_csp_ngh") == 0)
-    const_ngh_flag = true;
-  else
-    error->all(FLERR, "expected dyn_csp_ngh or const_csp_ngh instead of {}", arg[9]);
-
-  if (narg == 11) lambda_non_group = utils::numeric(FLERR, arg[10], false, lmp);
+  for (int i = 9; i < narg; i++) {
+    if (strcmp(arg[i], "csp_mode") == 0) {
+      if (strcmp(arg[i+1], "dynamic") == 0)
+        const_ngh_flag = false;
+      else if (strcmp(arg[i+1], "static") == 0)
+        const_ngh_flag = true;
+      else
+        error->all(FLERR, "expected dynamic or static instead of {}", arg[i+1]);
+      i++;
+    } else if (strcmp(arg[i], "lambda_non_group") == 0) {
+      lambda_non_group = utils::numeric(FLERR, arg[10], false, lmp);
+    } else {
+      error->all(FLERR, "unknown argument {}", arg[i]);
+    }
+  }
 
   // verify arguments
   if (cut_lo > cut_hi || cut_lo < 0) error->all(FLERR, "0 <= cut_lo <= cut_hi required");
@@ -210,8 +215,6 @@ void FixLambdaLACSPAPIP::setup_pre_force(int vflag)
     atom->map_init();
     atom->map_set();
   }
-
-  // TODO allow other mechanisms to define pairs
 
   if (!const_ngh_flag || (const_ngh_flag && !tags_stored)) pre_force_dyn_pairs();
   else pre_force_const_pairs();
