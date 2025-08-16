@@ -250,7 +250,7 @@ void PairMBX::compute(int eflag, int vflag)
     pvector[8] = mbx_ele;
     pvector[9] = mbx_total_energy;
 
-    
+
     // // for debugging
 
     // pvector[8] = mbx_e2b_local;
