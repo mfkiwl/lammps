@@ -568,7 +568,7 @@ double PairEAMAPIP::init_one(int i, int j)
 
 void PairEAMAPIP::setup()
 {
-  if (modify->get_fix_by_style("^lambda/la/apip$").size() == 0) { // TODO update name
+  if (modify->get_fix_by_style("^lambda/la/csp/apip$").size() == 0) {
     lambda_la = false;
   } else {
     lambda_la = true;
