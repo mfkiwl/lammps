@@ -535,6 +535,8 @@ void PairPACEAPIP::setup()
     lambda_la = false;
   } else {
     lambda_la = true;
+    if (comm->me == 0)
+      utils::logmesg(lmp, "  pace/apip     : compute potential energies for local-averaging forces\n");
   }
 
   if (modify->get_fix_by_style("^lambda_thermostat/apip$").size() == 0) {
@@ -561,6 +563,8 @@ void PairPACEAPIP::setup()
       error->all(FLERR,
                  "Pair style pace/apip requires an atom style with f_const_lambda for a local "
                  "thermostat.");
+    if (comm->me == 0)
+      utils::logmesg(lmp, "  pace/apip     : compute quantities for fix lambda_thermostat/apip\n");
   }
 }
 

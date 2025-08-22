@@ -572,6 +572,8 @@ void PairEAMAPIP::setup()
     lambda_la = false;
   } else {
     lambda_la = true;
+    if (comm->me == 0)
+      utils::logmesg(lmp, "  eam/apip      : compute potential energies for local-averaging forces\n");
   }
 
   if (modify->get_fix_by_style("^lambda_thermostat/apip$").size() == 0) {
@@ -581,19 +583,21 @@ void PairEAMAPIP::setup()
     if (!atom->apip_lambda_const_flag)
       error->all(
           FLERR,
-          "Pair style pace/apip requires an atom style with lambda_const for a local thermostat.");
+          "Pair style eam/apip requires an atom style with lambda_const for a local thermostat.");
     if (!atom->apip_e_fast_flag)
       error->all(
           FLERR,
-          "Pair style pace/apip requires an atom style with e_simple for a local thermostat.");
+          "Pair style eam/apip requires an atom style with e_simple for a local thermostat.");
     if (!atom->apip_f_const_lambda_flag)
       error->all(FLERR,
-                 "Pair style pace/apip requires an atom style with f_const_lambda for a local "
+                 "Pair style eam/apip requires an atom style with f_const_lambda for a local "
                  "thermostat.");
     if (!atom->apip_f_dyn_lambda_flag)
       error->all(FLERR,
-                 "Pair style pace/apip requires an atom style with f_const_lambda for a local "
+                 "Pair style eam/apip requires an atom style with f_const_lambda for a local "
                  "thermostat.");
+    if (comm->me == 0)
+      utils::logmesg(lmp, "  eam/apip      : compute quantities for fix lambda_thermostat/apip\n");
   }
 }
 
