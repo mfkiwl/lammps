@@ -52,7 +52,6 @@ PairMBX::PairMBX(LAMMPS *lmp) : Pair(lmp)
   restartinfo = 0;
   no_virial_fdotr_compute = 1;
   one_coeff = 1;
-  // manybody_flag = 1; // TODO: check if manybody_flag is compatible with MBX
 
 
   mbx_total_energy = 0;

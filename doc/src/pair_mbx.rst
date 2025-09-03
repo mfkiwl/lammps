@@ -21,7 +21,7 @@ Examples
     # For a system involving water (atom types O=1, H=2)
     processors      * * * map xyz
     pair_style      mbx 9.0
-    pair_coeff      * * 0.0 0.0
+    pair_coeff      * *
     compute         mbx all pair mbx
     fix             mbx_fix all mbx 1 h2o 1 2 3 1 2 2 json mbx.json
 
@@ -30,14 +30,14 @@ Examples
     # water (atom types O=3, H=4)
     processors      * * * map xyz
     pair_style      mbx 9.0
-    pair_coeff      * * 0.0 0.0
+    pair_coeff      * *
     compute         mbx all pair mbx
     fix             mbx_fix all mbx 2 ch4 1 2 5 1 2 2 2 2 h2o 3 4 3 3 4 4 json mbx.json
 
     # For a system involving water (atom types 0=12, H=13) in a hybrid simulation
     processors      * * * map xyz
     pair_style      hybrid/overlay mbx 9.0 lj/cut 9.0 coul/exclude 9.0
-    pair_coeff      * * mbx  0.0 0.0
+    pair_coeff      * * mbx
     pair_coeff      1*11 1*11 coul/exclude
     compute         mbx all pair mbx
     fix             mbx_fix all mbx 2 dp1 1 11 1 1 h2o 12 13 3 12 13 13 json mbx.json
@@ -73,7 +73,8 @@ See  ``examples/PACKAGES/mbx`` for a complete hybrid example.
 
 
 Since MBX is a many-body method, it is internally parameterized and does not require explicit
-specification of all pairwise interactions. 
+specification of all pairwise interactions. Therefore, `pair_coeff` should always just be set
+to `pair_coeff * *` when using MBX. This behavior may be modified in future versions of MBX.
 
 Restrictions
 """"""""""""
