@@ -34,7 +34,7 @@ Examples
     compute         mbx all pair mbx
     fix             mbx_fix all mbx 2 ch4 1 2 5 1 2 2 2 2 h2o 3 4 3 3 4 4 json mbx.json
 
-    # For a system involving water (atom types 0=12, H=13) in a hybrid simulation
+    # For a system involving water (atom types O=12, H=13) in a hybrid simulation
     processors      * * * map xyz
     pair_style      hybrid/overlay mbx 9.0 lj/cut 9.0 coul/exclude 9.0
     pair_coeff      * * mbx
@@ -48,6 +48,13 @@ See ``examples/PACKAGES/mbx`` for additional examples of how to use MBX in LAMMP
 Description
 """""""""""
 
+The MBX (Many-Body eXpansion) software is a C++ library that provides access
+to many-body energy (MB-nrg) potential energy functions, such as the MB-pol
+water model. Developed over the past decade, these potential energy functions
+integrate physics-based and machine-learned many-body terms
+trained on electronic structure data calculated at the “gold
+standard” coupled-cluster level of theory. :ref:`(Gupta) <Gupta>`
+
 This pair_style instructs LAMMPS to call the `MBX library <_mbxwebsite>`_
 in order to simulate MB-nrg models such as MB-pol. This pair_style must be
 used in conjunction with the :doc:`fix mbx <fix_mbx>` command.
@@ -57,9 +64,6 @@ The MBX library code development is available at
 `https://github.com/paesanilab/MBX <https://github.com/paesanilab/MBX>`_.
 A detailed discussion of the code can be found in the manuscript :ref:`(Riera) <Riera>`.
 
-If you have questions not answered by this documentation, please reach
-out to us at `https://groups.google.com/g/mbx-users <https://groups.google.com/g/mbx-users>`_
-
 
 See ``examples/PACKAGES/mbx`` for complete examples of how to use
 this fix command.
@@ -68,13 +72,17 @@ For hybrid simulations involving MB-nrg and non-MB-nrg molecules in the
 same simulation, one can use :doc:`pair_style hybrid/overlay <pair_hybrid>`
 to combine the MB-nrg molecules with other pair styles, such as
 :doc:`lj/cut <pair_lj>`. Do note that all electrostatics must be computed within MBX, so the
-:doc:`coul/exclude <pair_coul>` pair_style must be applied on the non-MB-nrg molecules.
-See  ``examples/PACKAGES/mbx`` for a complete hybrid example.
+:doc:`coul/exclude <pair_coul>` pair_style should usually be applied on the non-MB-nrg molecules.
+See ``examples/PACKAGES/mbx`` for a complete hybrid example.
 
 
 Since MBX is a many-body method, it is internally parameterized and does not require explicit
 specification of all pairwise interactions. Therefore, `pair_coeff` should always just be set
-to `pair_coeff * *` when using MBX. This behavior may be modified in future versions of MBX.
+to ``pair_coeff * *`` when using MBX. Failure to properly set the pair_coeff results in the
+common error ``Incorrect args for pair coefficients``.
+
+If you have questions not answered by this documentation, please reach
+out to us at `https://groups.google.com/g/mbx-users <https://groups.google.com/g/mbx-users>`_
 
 Restrictions
 """"""""""""
@@ -87,7 +95,7 @@ presence of :doc:`fix mbx <fix_mbx>` command.
 Due to the usage of Partridge and Schwenke charges for MB-pol,
 all electrostatic interactions are calculated internally in MBX.
 Therefore one should never calculate coulombic interactions in
-LAMMPS such as using `coul/cut` or `coul/long`.
+LAMMPS such as using `coul/cut` or `coul/long` when also using MBX.
 
 
 
@@ -104,4 +112,9 @@ Related commands
 
 **(Riera)** M. Riera, C. Knight, E. Bull-Vulpe, X. Zhu, H. Agnew, D. Smith, A. Simmonett, F. Paesani, J. Chem. Phys. 159, 054802 (2023)
 
+.. _Gupta:
+
+**(Gupta)** S. Gupta, E. Bull-Vulpe, H. Agnew, S. Iyer, X. Zhu, R. Zhou, C. Knight, F. Paesani, J. Chem. Theory Comput. 21, 1938 (2025)
+
 .. _mbxwebsite: https://mbxsimulations.com
+

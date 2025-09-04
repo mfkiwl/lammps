@@ -75,8 +75,8 @@ The MBX (Many-Body eXpansion) software is a C++ library that provides access
 to many-body energy (MB-nrg) potential energy functions, such as the MB-pol
 water model. Developed over the past decade, these potential energy functions
 integrate physics-based and machine-learned many-body terms
-trained on electronic structure data calculated at the “gold
-standard” coupled-cluster level of theory.:ref:`(Gupta) <Gupta>`
+trained on electronic structure data calculated at the "gold
+standard" coupled-cluster level of theory. :ref:`(Gupta) <Gupta>`
 
 
 This fix instructs LAMMPS to call the `MBX library <_mbxwebsite>`_
@@ -87,9 +87,6 @@ The MBX library code development is available at
 `https://github.com/paesanilab/MBX <https://github.com/paesanilab/MBX>`_.
 A detailed discussion of the code can be found in the manuscript :ref:`(Riera) <Riera>`.
 
-If you have questions not answered by this documentation, please reach
-out to us at `https://groups.google.com/g/mbx-users <https://groups.google.com/g/mbx-users>`_
-
 
 See ``examples/PACKAGES/mbx`` for complete examples of how to use
 this fix command.
@@ -98,11 +95,27 @@ For hybrid simulations involving MB-nrg and non-MB-nrg molecules in the
 same simulation, one can use :doc:`pair_style hybrid/overlay <pair_hybrid>`
 to combine the MB-nrg molecules with other pair styles, such as
 :doc:`lj/cut <pair_lj>`. Do note that all electrostatics must be computed within MBX, so the
-:doc:`coul/exclude <pair_coul>` pair_style must be applied on the non-MB-nrg molecules.
-See  ``examples/PACKAGES/mbx`` for a complete hybrid example.
+:doc:`coul/exclude <pair_coul>` pair_style should usually be applied on the non-MB-nrg molecules.
+See ``examples/PACKAGES/mbx`` for a complete hybrid example.
 
 
+The *num_mon_types* argument specifies the number of different MB-nrg monomer types in the system.
 
+The *monomer_specification* argument provides the details for each monomer type.
+This information is used by MBX to map the LAMMPS atom IDs to the corresponding MBX monomer types.
+For each monomer type, the following information must be provided:
+
+* monomer_name = name of the monomer type
+  (e.g. h2o for water, ch4 for methane)
+* monomer_lower_atom_index = lower atom index of the monomer
+  (e.g. 1 for O in water)
+* monomer_upper_atom_index = upper atom index of the monomer
+  (e.g. 2 for H in water)
+* monomer_num_atoms = number of atoms in the monomer
+  (e.g. 3 for water, 5 for methane)
+* atom_ids = list of LAMMPS atom IDs in the monomer, in the
+  order they appear in the MB-nrg potential.
+  (e.g. 1 2 2 for water, as it corresponds to O H H)
 
 
 The *json* argument specifies the name of the MBX JSON configuration file to use, such as `mbx.json`.
@@ -113,6 +126,9 @@ This is useful for performing vibrational spectroscopy calculations such as IR, 
 
 The *print/settings* argument will print the MBX settings to the LAMMPS logfile at the start of the simulation.
 This is used for debugging and ensuring that the correct settings are being applied.
+
+If you have questions not answered by this documentation, please reach
+out to us at `https://groups.google.com/g/mbx-users <https://groups.google.com/g/mbx-users>`_
 
 Restrictions
 """"""""""""
@@ -127,7 +143,7 @@ There can only be one fix mbx command active at a time.
 Due to the usage of Partridge and Schwenke charges for MB-pol,
 all electrostatic interactions are calculated internally in MBX.
 Therefore one should never calculate coulombic interactions in
-LAMMPS such as using `coul/cut` or `coul/long`.
+LAMMPS such as using `coul/cut` or `coul/long` when also using MBX.
 
 
 
