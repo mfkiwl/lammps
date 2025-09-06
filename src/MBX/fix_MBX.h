@@ -13,7 +13,7 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(mbx, FixMBX)
+FixStyle(MBX, FixMBX)
 
 #else
 

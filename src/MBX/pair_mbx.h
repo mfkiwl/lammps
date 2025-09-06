@@ -20,7 +20,7 @@ PairStyle(mbx, PairMBX)
 #ifndef LMP_PAIR_MBX_H
 #define LMP_PAIR_MBX_H
 
-#include "fix_mbx.h"
+#include "fix_MBX.h"
 #include "pair.h"
 
 // MBX
@@ -50,7 +50,7 @@ class PairMBX : public Pair {
 
   int me;
 
-  FixMBX *fix_mbx;    // owner of MBX objects
+  FixMBX *fix_MBX;    // owner of MBX objects
 
   int nmolecule;    // # of molecules in system (would break if number of molecules can change)
 

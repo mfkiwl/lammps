@@ -87,12 +87,12 @@ void PairMBX::compute(int eflag, int vflag)
 
   // compute energy+gradients in parallel
 
-  bblock::System *ptr_mbx = fix_mbx->ptr_mbx;              // compute terms in parallel
-  bblock::System *ptr_mbx_full = fix_mbx->ptr_mbx_full;    // compute term on rank 0
+  bblock::System *ptr_mbx = fix_MBX->ptr_mbx;              // compute terms in parallel
+  bblock::System *ptr_mbx_full = fix_MBX->ptr_mbx_full;    // compute term on rank 0
   bblock::System *ptr_mbx_local =
-      fix_mbx->ptr_mbx_local;    // compute PME terms in parallel w/ sub-domains
+      fix_MBX->ptr_mbx_local;    // compute PME terms in parallel w/ sub-domains
 
-  bool mbx_parallel = fix_mbx->mbx_mpi_enabled;
+  bool mbx_parallel = fix_MBX->mbx_mpi_enabled;
 
   double mbx_e2b_local, mbx_e2b_ghost;
   double mbx_e3b_local, mbx_e3b_ghost;
@@ -122,48 +122,48 @@ void PairMBX::compute(int eflag, int vflag)
 
   for (int i = 0; i < 6; ++i) mbx_virial[i] = 0.0;
 
-  if (fix_mbx->mbx_num_atoms > 0) {
+  if (fix_MBX->mbx_num_atoms > 0) {
 
-    fix_mbx->mbxt_start(MBXT_E1B);
+    fix_MBX->mbxt_start(MBXT_E1B);
     mbx_e1b = ptr_mbx->OneBodyEnergy(true);
-    fix_mbx->mbxt_stop(MBXT_E1B);
+    fix_MBX->mbxt_stop(MBXT_E1B);
     accumulate_f(false);
 
-    // fix_mbx->mbxt_start(MBXT_E2B_LOCAL);
+    // fix_MBX->mbxt_start(MBXT_E2B_LOCAL);
     // mbx_e2b_local = ptr_mbx->TwoBodyEnergy(true);
-    // fix_mbx->mbxt_stop(MBXT_E2B_LOCAL);
+    // fix_MBX->mbxt_stop(MBXT_E2B_LOCAL);
     // accumulate_f(false);
     mbx_e2b_local = 0.0;
 
-    fix_mbx->mbxt_start(MBXT_E2B_GHOST);
+    fix_MBX->mbxt_start(MBXT_E2B_GHOST);
     mbx_e2b_ghost = ptr_mbx->TwoBodyEnergy(true, true);
-    fix_mbx->mbxt_stop(MBXT_E2B_GHOST);
+    fix_MBX->mbxt_stop(MBXT_E2B_GHOST);
     accumulate_f_all(false);
 
     mbx_e2b = mbx_e2b_local + mbx_e2b_ghost;
 
-    // fix_mbx->mbxt_start(MBXT_E3B_LOCAL);
+    // fix_MBX->mbxt_start(MBXT_E3B_LOCAL);
     // mbx_e3b_local = ptr_mbx->ThreeBodyEnergy(true);
-    // fix_mbx->mbxt_stop(MBXT_E3B_LOCAL);
+    // fix_MBX->mbxt_stop(MBXT_E3B_LOCAL);
     // accumulate_f(false);
     mbx_e3b_local = 0.0;
 
-    fix_mbx->mbxt_start(MBXT_E3B_GHOST);
+    fix_MBX->mbxt_start(MBXT_E3B_GHOST);
     mbx_e3b_ghost = ptr_mbx->ThreeBodyEnergy(true, true);
-    fix_mbx->mbxt_stop(MBXT_E3B_GHOST);
+    fix_MBX->mbxt_stop(MBXT_E3B_GHOST);
     accumulate_f_all(false);
 
     mbx_e3b = mbx_e3b_local + mbx_e3b_ghost;
 
-    // fix_mbx->mbxt_start(MBXT_E4B_LOCAL);
+    // fix_MBX->mbxt_start(MBXT_E4B_LOCAL);
     // mbx_e4b_local = ptr_mbx->FourBodyEnergy(true);
-    // fix_mbx->mbxt_stop(MBXT_E4B_LOCAL);
+    // fix_MBX->mbxt_stop(MBXT_E4B_LOCAL);
     // accumulate_f(false);
     mbx_e4b_local = 0.0;
 
-    fix_mbx->mbxt_start(MBXT_E4B_GHOST);
+    fix_MBX->mbxt_start(MBXT_E4B_GHOST);
     mbx_e4b_ghost = ptr_mbx->FourBodyEnergy(true, true);
-    fix_mbx->mbxt_stop(MBXT_E4B_GHOST);
+    fix_MBX->mbxt_stop(MBXT_E4B_GHOST);
     accumulate_f_all(false);
 
     mbx_e4b = mbx_e4b_local + mbx_e4b_ghost;
@@ -171,60 +171,60 @@ void PairMBX::compute(int eflag, int vflag)
 
   if (mbx_parallel) {
 
-    fix_mbx->mbxt_start(MBXT_ELE);
+    fix_MBX->mbxt_start(MBXT_ELE);
     mbx_ele = ptr_mbx_local->ElectrostaticsMPIlocal(true, true);
-    fix_mbx->mbxt_stop(MBXT_ELE);
+    fix_MBX->mbxt_stop(MBXT_ELE);
     accumulate_f_local(true);
 
   } else {
 
     // compute energy+gradients in serial on rank 0 for full system
 
-    fix_mbx->mbxt_start(MBXT_ELE);
+    fix_MBX->mbxt_start(MBXT_ELE);
     if (comm->me == 0) mbx_ele = ptr_mbx_full->Electrostatics(true);
-    fix_mbx->mbxt_stop(MBXT_ELE);
+    fix_MBX->mbxt_stop(MBXT_ELE);
     accumulate_f_full(true);
   }
 
   if (mbx_parallel) {
 
-    fix_mbx->mbxt_start(MBXT_DISP);
+    fix_MBX->mbxt_start(MBXT_DISP);
     mbx_disp_real = ptr_mbx_local->Dispersion(
         true, true);    // computes real-space with local-local & local-ghost pairs
-    fix_mbx->mbxt_stop(MBXT_DISP);
+    fix_MBX->mbxt_stop(MBXT_DISP);
     accumulate_f_local(false);
 
-    fix_mbx->mbxt_start(MBXT_DISP_PME);
+    fix_MBX->mbxt_start(MBXT_DISP_PME);
     mbx_disp_pme = ptr_mbx_local->DispersionPMElocal(
         true, true);    // computes PME-space with local-local & local-ghost pairs
-    fix_mbx->mbxt_stop(MBXT_DISP_PME);
+    fix_MBX->mbxt_stop(MBXT_DISP_PME);
     accumulate_f_local(false);
 
   } else {
 
-    fix_mbx->mbxt_start(MBXT_DISP);
+    fix_MBX->mbxt_start(MBXT_DISP);
     if (comm->me == 0)
       mbx_disp_real = ptr_mbx_full->Dispersion(true);    // compute full dispersion on rank 0
-    fix_mbx->mbxt_stop(MBXT_DISP);
+    fix_MBX->mbxt_stop(MBXT_DISP);
     accumulate_f_full(false);
   }
 
-  if (fix_mbx->mbx_num_atoms > 0) {
+  if (fix_MBX->mbx_num_atoms > 0) {
 
 #ifdef TTMNRG
-    fix_mbx->mbxt_start(MBXT_BUCK);
+    fix_MBX->mbxt_start(MBXT_BUCK);
     mbx_buck = ptr_mbx->Buckingham(true, true);
-    fix_mbx->mbxt_stop(MBXT_BUCK);
+    fix_MBX->mbxt_stop(MBXT_BUCK);
     accumulate_f(false);
 
-    fix_mbx->mbxt_start(MBXT_BUCK);
+    fix_MBX->mbxt_start(MBXT_BUCK);
     mbx_buck += ptr_mbx_local->LennardJones(true, true);
-    fix_mbx->mbxt_stop(MBXT_BUCK);
+    fix_MBX->mbxt_stop(MBXT_BUCK);
     accumulate_f_local(false);
 #else
-    fix_mbx->mbxt_start(MBXT_BUCK);
+    fix_MBX->mbxt_start(MBXT_BUCK);
     mbx_buck = 0.0;
-    fix_mbx->mbxt_stop(MBXT_BUCK);
+    fix_MBX->mbxt_stop(MBXT_BUCK);
 #endif
   }
 
@@ -319,19 +319,16 @@ void PairMBX::settings(int narg, char **arg)
 
 void PairMBX::coeff(int narg, char **arg)
 {
-  if (narg < 2 || narg > 5) error->all(FLERR, "Incorrect args for pair coefficients");
+  if (narg < 2) error->all(FLERR, "Incorrect num args for pair coefficients");
   if (!allocated) allocate();
 
   int ilo, ihi, jlo, jhi;
   utils::bounds(FLERR, arg[0], 1, atom->ntypes, ilo, ihi, error);
   utils::bounds(FLERR, arg[1], 1, atom->ntypes, jlo, jhi, error);
 
-  // unused coeff values
-  // double epsilon_one = utils::numeric(FLERR, arg[2], false, lmp);
-  // double sigma_one = utils::numeric(FLERR, arg[3], false, lmp);
 
   double cut_one = cut_global;
-  if (narg == 5) cut_one = utils::numeric(FLERR, arg[4], false, lmp);
+  // if (narg == 5) cut_one = utils::numeric(FLERR, arg[4], false, lmp);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -343,6 +340,18 @@ void PairMBX::coeff(int narg, char **arg)
   }
 
   if (count == 0) error->all(FLERR, "Incorrect args for pair coefficients");
+
+
+  std::string fix_args = "";
+  for (int i = 2; i < narg; ++i) {
+    fix_args += std::string(arg[i]) + " ";
+  }
+
+  fix_args = fmt::format("_FIX_MBX_INTERNAL all MBX {}", fix_args);
+
+  fix_MBX = dynamic_cast<FixMBX *>(
+      modify->add_fix(fix_args));
+
 }
 
 /* ----------------------------------------------------------------------
@@ -367,18 +376,18 @@ void PairMBX::init_style()
 
   // find id of MBX fix; ensure only one is found
 
-  fix_mbx = NULL;
-  int ifix = -1;
-  for (int i = 0; i < modify->nfix; ++i)
-    if (strcmp(modify->fix[i]->style, "mbx") == 0) {
-      if (ifix == -1)
-        ifix = i;
-      else
-        error->all(FLERR, "Only one MBX fix instance allowed to be active");
-    }
-  if (ifix < 0) error->all(FLERR, "Fix MBX not found");
+  // fix_MBX = NULL;
+  // int ifix = -1;
+  // for (int i = 0; i < modify->nfix; ++i)
+  //   if (strcmp(modify->fix[i]->style, "mbx") == 0) {
+  //     if (ifix == -1)
+  //       ifix = i;
+  //     else
+  //       error->all(FLERR, "Only one MBX fix instance allowed to be active");
+  //   }
+  // if (ifix < 0) error->all(FLERR, "Fix MBX not found");
 
-  fix_mbx = (FixMBX *) modify->fix[ifix];
+  // fix_MBX = (FixMBX *) modify->fix[ifix];
 }
 
 /* ----------------------------------------------------------------------
@@ -421,16 +430,16 @@ void *PairMBX::extract(const char *str, int &dim)
 void PairMBX::accumulate_f(bool include_ext)
 {
 
-  fix_mbx->mbxt_start(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F);
 
-  bblock::System *ptr_mbx = fix_mbx->ptr_mbx;
+  bblock::System *ptr_mbx = fix_MBX->ptr_mbx;
 
   const int nlocal = atom->nlocal;
   double **f = atom->f;
 
-  const int *const mol_anchor = fix_mbx->mol_anchor;
-  const int *const mol_type = fix_mbx->mol_type;
-  char **mol_names = fix_mbx->mol_names;
+  const int *const mol_anchor = fix_MBX->mol_anchor;
+  const int *const mol_type = fix_MBX->mol_type;
+  char **mol_names = fix_MBX->mol_names;
 
   std::vector<double> grads = ptr_mbx->GetRealGrads();
 
@@ -438,7 +447,7 @@ void PairMBX::accumulate_f(bool include_ext)
   if (include_ext)
     grads_ext = ptr_mbx->GetExternalChargesGradients();
   else
-    grads_ext = std::vector<double>(fix_mbx->mbx_num_ext * 3, 0.0);
+    grads_ext = std::vector<double>(fix_MBX->mbx_num_ext * 3, 0.0);
 
   // accumulate forces on local particles
   // -- forces on ghost particles ignored/not needed
@@ -457,7 +466,7 @@ void PairMBX::accumulate_f(bool include_ext)
       bool is_ext = false;
       tagint anchor = atom->tag[i];
 
-      int na = fix_mbx->get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
+      int na = fix_MBX->get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
 
       if (include_monomer) {
         for (int j = 0; j < na; ++j) {
@@ -492,7 +501,7 @@ void PairMBX::accumulate_f(bool include_ext)
     mbx_virial[5] += mbx_vir[5];
   }
 
-  fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F);
 }
 
 /* ----------------------------------------------------------------------
@@ -502,17 +511,17 @@ void PairMBX::accumulate_f(bool include_ext)
 void PairMBX::accumulate_f_all(bool include_ext)
 {
 
-  fix_mbx->mbxt_start(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F);
 
-  bblock::System *ptr_mbx = fix_mbx->ptr_mbx;
+  bblock::System *ptr_mbx = fix_MBX->ptr_mbx;
 
   const int nlocal = atom->nlocal;
   const int nall = nlocal + atom->nghost;
   double **f = atom->f;
 
-  const int *const mol_anchor = fix_mbx->mol_anchor;
-  const int *const mol_type = fix_mbx->mol_type;
-  char **mol_names = fix_mbx->mol_names;
+  const int *const mol_anchor = fix_MBX->mol_anchor;
+  const int *const mol_type = fix_MBX->mol_type;
+  char **mol_names = fix_MBX->mol_names;
 
   std::vector<double> grads = ptr_mbx->GetRealGrads();
 
@@ -520,7 +529,7 @@ void PairMBX::accumulate_f_all(bool include_ext)
   if (include_ext)
     grads_ext = ptr_mbx->GetExternalChargesGradients();
   else
-    grads_ext = std::vector<double>(fix_mbx->mbx_num_ext * 3, 0.0);
+    grads_ext = std::vector<double>(fix_MBX->mbx_num_ext * 3, 0.0);
 
   // accumulate forces on local + ghost particles
   // -- should use a map created from earlier loop loading particles into mbx
@@ -538,7 +547,7 @@ void PairMBX::accumulate_f_all(bool include_ext)
       bool is_ext = false;
       tagint anchor = atom->tag[i];
 
-      int na = fix_mbx->get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
+      int na = fix_MBX->get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
 
       if (include_monomer) {
         for (int j = 0; j < na; ++j) {
@@ -573,7 +582,7 @@ void PairMBX::accumulate_f_all(bool include_ext)
     mbx_virial[5] += mbx_vir[5];
   }
 
-  fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F);
 }
 
 /* ----------------------------------------------------------------------
@@ -583,18 +592,18 @@ void PairMBX::accumulate_f_all(bool include_ext)
 void PairMBX::accumulate_f_local(bool include_ext)
 {
 
-  fix_mbx->mbxt_start(MBXT_ACCUMULATE_F_LOCAL);
+  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F_LOCAL);
 
-  bblock::System *ptr_mbx = fix_mbx->ptr_mbx_local;
+  bblock::System *ptr_mbx = fix_MBX->ptr_mbx_local;
 
   const int nlocal = atom->nlocal;
   const int nall = nlocal + atom->nghost;
   double **f = atom->f;
 
-  const int *const mol_anchor = fix_mbx->mol_anchor;
-  const int *const mol_local = fix_mbx->mol_local;
-  const int *const mol_type = fix_mbx->mol_type;
-  char **mol_names = fix_mbx->mol_names;
+  const int *const mol_anchor = fix_MBX->mol_anchor;
+  const int *const mol_local = fix_MBX->mol_local;
+  const int *const mol_type = fix_MBX->mol_type;
+  char **mol_names = fix_MBX->mol_names;
 
   std::vector<double> grads = ptr_mbx->GetRealGrads();
 
@@ -602,7 +611,7 @@ void PairMBX::accumulate_f_local(bool include_ext)
   if (include_ext)
     grads_ext = ptr_mbx->GetExternalChargesGradients();
   else
-    grads_ext = std::vector<double>(fix_mbx->mbx_num_ext_local * 3, 0.0);
+    grads_ext = std::vector<double>(fix_MBX->mbx_num_ext_local * 3, 0.0);
 
   // accumulate forces on monomers with at least one local particle
   // -- forces on ghost particles ignored/not needed ??
@@ -621,7 +630,7 @@ void PairMBX::accumulate_f_local(bool include_ext)
       bool is_ext = false;
       tagint anchor = atom->tag[i];
 
-      int na = fix_mbx->get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
+      int na = fix_MBX->get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
 
       if (include_monomer) {
         for (int j = 0; j < na; ++j) {
@@ -656,7 +665,7 @@ void PairMBX::accumulate_f_local(bool include_ext)
     mbx_virial[5] += mbx_vir[5];
   }
 
-  fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F_LOCAL);
+  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F_LOCAL);
 }
 
 /* ----------------------------------------------------------------------
@@ -665,22 +674,22 @@ void PairMBX::accumulate_f_local(bool include_ext)
 
 void PairMBX::accumulate_f_full(bool include_ext)
 {
-  fix_mbx->mbxt_start(MBXT_ACCUMULATE_F_FULL);
+  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F_FULL);
 
   // master rank retrieves forces
 
-  double **f_full = fix_mbx->f_full;
+  double **f_full = fix_MBX->f_full;
 
   if (comm->me == 0) {
-    bblock::System *ptr_mbx = fix_mbx->ptr_mbx_full;
+    bblock::System *ptr_mbx = fix_MBX->ptr_mbx_full;
 
     const int natoms = atom->natoms;
 
-    const int *const mol_anchor_full = fix_mbx->mol_anchor_full;
-    const int *const mol_type_full = fix_mbx->mol_type_full;
-    const tagint *const tag_full = fix_mbx->tag_full;
-    const int *const atom_map_full = fix_mbx->atom_map_full;
-    char **mol_names = fix_mbx->mol_names;
+    const int *const mol_anchor_full = fix_MBX->mol_anchor_full;
+    const int *const mol_type_full = fix_MBX->mol_type_full;
+    const tagint *const tag_full = fix_MBX->tag_full;
+    const int *const atom_map_full = fix_MBX->atom_map_full;
+    char **mol_names = fix_MBX->mol_names;
 
     std::vector<double> grads = ptr_mbx->GetRealGrads();
 
@@ -688,7 +697,7 @@ void PairMBX::accumulate_f_full(bool include_ext)
     if (include_ext)
       grads_ext = ptr_mbx->GetExternalChargesGradients();
     else
-      grads_ext = std::vector<double>(fix_mbx->mbx_num_ext_full * 3, 0.0);
+      grads_ext = std::vector<double>(fix_MBX->mbx_num_ext_full * 3, 0.0);
 
     // accumulate forces on local particles
     // -- forces on ghost particles ignored/not needed
@@ -705,7 +714,7 @@ void PairMBX::accumulate_f_full(bool include_ext)
 
         // to be replaced with integer comparison
 
-        int na = fix_mbx->get_num_atoms_per_monomer(mol_names[mtype], is_ext);
+        int na = fix_MBX->get_num_atoms_per_monomer(mol_names[mtype], is_ext);
 
 #ifndef _DEBUG_EFIELD
         if (is_ext) {
@@ -749,9 +758,9 @@ void PairMBX::accumulate_f_full(bool include_ext)
   // scatter forces to other ranks
 
   const int nlocal = atom->nlocal;
-  double **f_local = fix_mbx->f_local;
+  double **f_local = fix_MBX->f_local;
 
-  MPI_Scatterv(&(f_full[0][0]), fix_mbx->nlocal_rank3, fix_mbx->nlocal_disp3, MPI_DOUBLE,
+  MPI_Scatterv(&(f_full[0][0]), fix_MBX->nlocal_rank3, fix_MBX->nlocal_disp3, MPI_DOUBLE,
                &(f_local[0][0]), nlocal * 3, MPI_DOUBLE, 0, world);
 
   // all ranks accumulate forces into their local arrays
@@ -763,5 +772,5 @@ void PairMBX::accumulate_f_full(bool include_ext)
     f[i][2] += f_local[i][2];
   }
 
-  fix_mbx->mbxt_stop(MBXT_ACCUMULATE_F_FULL);
+  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F_FULL);
 }

@@ -15,7 +15,7 @@ angle_style     none
 dihedral_style  none
 improper_style  none
 
-pair_coeff      * *
+pair_coeff      * * 1 h2o 1 2 3 1 2 2 json mbx.json
 
 neighbor	2.0 bin
 neigh_modify	every 1 delay 10
@@ -36,7 +36,6 @@ variable        etot      equal c_mbx[10]
 
 
 fix             1 all npt temp 298 298 200 iso 1.0 1.0 2000
-fix             2 all mbx 1 h2o 1 2 3 1 2 2 json mbx.json
 
 velocity        all create 298 428459 rot yes dist gaussian
 velocity        all zero linear

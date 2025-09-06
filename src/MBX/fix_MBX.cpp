@@ -11,7 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "fix_mbx.h"
+#include "fix_MBX.h"
 #include "atom.h"
 #include "citeme.h"
 #include "comm.h"
@@ -45,6 +45,7 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
+// TODO: change citation for fix style
 static const char cite_fix_mbx[] =
     "fix mbx command:\n\n"
     "@article{10.1063/5.0156036,\n"
