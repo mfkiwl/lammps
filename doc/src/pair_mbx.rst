@@ -88,13 +88,12 @@ to specify the mapping of LAMMPS atom IDs to MBX monomers. The syntax is as foll
 
 .. code-block:: LAMMPS
 
-    pair_coeff * * num_mon_types mon_name atom_mapping <mon_name2> <atom_mapping2> ... json mbx.json print/dipoles print/settings
+    pair_coeff * * num_mon_types mon_name atom_mapping <mon_name2> <atom_mapping2> ... json mbx.json print/settings
 
 * num_mon_types = number of monomer types in the system
 * mon_name = name of the monomer type (e.g. h2o, ch4, etc)
 * atom mapping = list of LAMMPS atom types that correspond to the atoms in the monomer
 * *json* arg = specifies the name of the MBX json configuration file, such as mbx.json
-* print/dipoles = optionally print dipole moments as part of compute variable output
 * print/settings = optionally print MBX settings to logfile
 
 
@@ -113,11 +112,6 @@ LAMMPS atom types, such as `1*11` to represent atom types 1 through 11.
 The *json* argument specifies the name of the MBX JSON configuration
 file to use, such as `mbx.json`.  If this file is not provided, the fix
 will attempt to use a default configuration.
-
-The *print/dipoles* argument enables the printing of dipole moments as
-part of the fix variable output.  This is useful for performing
-vibrational spectroscopy calculations such as IR, Raman, and
-Sum-Frequency Generation (SFG).
 
 The *print/settings* argument will print the MBX settings to the LAMMPS
 logfile at the start of the simulation.  This is used for debugging and

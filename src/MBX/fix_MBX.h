@@ -75,6 +75,13 @@ enum {
   MBXT_NUM_TIMERS
 };
 
+
+struct MBXParseResult {
+    bool success;
+    std::string message;
+};
+
+
 namespace LAMMPS_NS {
 
 class FixMBX : public Fix {
@@ -152,6 +159,9 @@ class FixMBX : public Fix {
   void mbxt_stop(int);
   void mbxt_write_summary();
   void mbxt_print_time(const char *, int, double *);
+
+  MBXParseResult reportFailure(const std::string& msg);
+  MBXParseResult test_MBX_fix_parsing(int narg, char **arg);
 
   int aspc_order;
   int aspc_num_hist;
