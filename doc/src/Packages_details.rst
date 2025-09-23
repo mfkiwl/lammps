@@ -1525,7 +1525,7 @@ For more information on MBX, see the `MBX library <https://mbxsimulations.com>`_
 
 **Authors:** The `MBX library <https://mbxsimulations.com>`_ is developed
 by the Paesani group at the University of California, San Diego. Major contributors
-include: Marc Riera and Ethan Bull-Vulpe.
+include: Marc Riera, Christopher Knight, and Ethan Bull-Vulpe.
 
 .. versionadded:: 01October2025
 

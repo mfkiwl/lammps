@@ -53,7 +53,6 @@ PairMBX::PairMBX(LAMMPS *lmp) : Pair(lmp)
   no_virial_fdotr_compute = 1;
   one_coeff = 1;
 
-
   mbx_total_energy = 0;
 
   me = comm->me;
@@ -252,7 +251,6 @@ void PairMBX::compute(int eflag, int vflag)
     pvector[8] = mbx_ele;
     pvector[9] = mbx_total_energy;
 
-
     // // for debugging
 
     // pvector[8] = mbx_e2b_local;
@@ -326,7 +324,6 @@ void PairMBX::coeff(int narg, char **arg)
   utils::bounds(FLERR, arg[0], 1, atom->ntypes, ilo, ihi, error);
   utils::bounds(FLERR, arg[1], 1, atom->ntypes, jlo, jhi, error);
 
-
   double cut_one = cut_global;
   // if (narg == 5) cut_one = utils::numeric(FLERR, arg[4], false, lmp);
 
@@ -341,17 +338,12 @@ void PairMBX::coeff(int narg, char **arg)
 
   if (count == 0) error->all(FLERR, "Incorrect args for pair coefficients");
 
-
   std::string fix_args = "";
-  for (int i = 2; i < narg; ++i) {
-    fix_args += std::string(arg[i]) + " ";
-  }
+  for (int i = 2; i < narg; ++i) { fix_args += std::string(arg[i]) + " "; }
 
   fix_args = fmt::format("_FIX_MBX_INTERNAL all MBX {}", fix_args);
 
-  fix_MBX = dynamic_cast<FixMBX *>(
-      modify->add_fix(fix_args));
-
+  fix_MBX = dynamic_cast<FixMBX *>(modify->add_fix(fix_args));
 }
 
 /* ----------------------------------------------------------------------

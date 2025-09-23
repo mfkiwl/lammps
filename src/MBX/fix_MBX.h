@@ -75,12 +75,10 @@ enum {
   MBXT_NUM_TIMERS
 };
 
-
 struct MBXParseResult {
-    bool success;
-    std::string message;
+  bool success;
+  std::string message;
 };
-
 
 namespace LAMMPS_NS {
 

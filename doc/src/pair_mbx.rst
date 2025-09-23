@@ -76,9 +76,11 @@ such as :doc:`lj/cut <pair_lj>`. This has been used to simulate
 MB-pol water within host frameworks such as metal-organic
 frameworks (MOFs) and carbon nanotubes (CNTs).
 Do note that all electrostatics must be
-computed within MBX, so the :doc:`coul/exclude <pair_coul>` pair_style
-should usually be applied on the non-MB-nrg molecules.  See
-``examples/PACKAGES/mbx`` for a complete hybrid example.
+computed within MBX, so when using `special_bonds` the
+:doc:`coul/exclude <pair_coul>` pair_style should usually be applied
+on the non-MB-nrg molecules. See the warning below for more details about
+using `special_bonds` with MBX `dp1`. See ``examples/PACKAGES/mbx`` for
+a complete hybrid example.
 
 
 If you have questions not answered by this documentation, please
@@ -142,9 +144,9 @@ The *json* argument specifies the name of the MBX JSON configuration
 file to use, such as `mbx.json`.  If this file is not provided, the fix
 will attempt to use a default configuration.
 
-The *print/settings* argument will print the MBX settings to the LAMMPS
-logfile at the start of the simulation.  This is used for debugging and
-ensuring that the correct settings are being applied.
+The *print/settings* argument optionally will print the MBX settings to the LAMMPS
+logfile at the start of the simulation. This is optionally used for debugging and
+ensuring that the settings are being correctly applied.
 
 
 Restrictions
