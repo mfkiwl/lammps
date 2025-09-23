@@ -34,7 +34,7 @@ variable        eind      equal c_mbx[8]
 variable        eele      equal c_mbx[9]
 variable        etot      equal c_mbx[10]
 
-fix             1 all npt temp 298 298 200 iso 1.0 1.0 2000
+fix             1 all npt temp 298 298 100 iso 1.0 1.0 1000
 
 velocity        all create 298 428459 rot yes dist gaussian
 velocity        all zero linear
