@@ -1761,6 +1761,21 @@ void FixMBX::mbx_init_local()
   if (domain->nonperiodic && (domain->xperiodic || domain->yperiodic || domain->zperiodic))
     error->all(FLERR, "[MBX] System must be fully periodic or non-periodic with MBX");
 
+
+  // get ewald values from MBX and verify they make sense relative to LAMMPS periodicity
+  double elec_alpha, elec_grid, disp_alpha, disp_grid;
+  size_t elec_spline, disp_spline;
+
+  ptr_mbx_local->GetEwaldParamsElectrostatics(elec_alpha, elec_grid, elec_spline);
+  ptr_mbx_local->GetEwaldParamsDispersion(disp_alpha, disp_grid, disp_spline);
+
+  if ((elec_alpha > 0.0) && (!domain->xperiodic && !domain->yperiodic && !domain->zperiodic))
+    error->all(FLERR, "[MBX] Electrostatic Ewald parameters set (alpha_ewald_elec = " + std::to_string(elec_alpha) + "), but system is not periodic");
+  if ((disp_alpha > 0.0) && (!domain->xperiodic && !domain->yperiodic && !domain->zperiodic))
+    error->all(FLERR, "[MBX] Dispersion Ewald parameters set (alpha_ewald_disp = " + std::to_string(disp_alpha) + "), but system is not periodic");
+  if ((elec_alpha == 0.0 || disp_alpha == 0.0) && (domain->xperiodic || domain->yperiodic || domain->zperiodic))
+    error->warning(FLERR, "[MBX] System is periodic, but Ewald alpha parameters not set");
+
   box = std::vector<double>(9, 0.0);
 
   box[0] = domain->xprd;
@@ -2031,6 +2046,21 @@ void FixMBX::mbx_init_full()
   } else if (domain->xperiodic || domain->yperiodic || domain->zperiodic)
     error->one(FLERR, "System must be fully periodic or non-periodic with MBX");
 
+
+  // get ewald values from MBX and verify they make sense relative to LAMMPS periodicity
+  double elec_alpha, elec_grid, disp_alpha, disp_grid;
+  size_t elec_spline, disp_spline;
+
+  ptr_mbx_full->GetEwaldParamsElectrostatics(elec_alpha, elec_grid, elec_spline);
+  ptr_mbx_full->GetEwaldParamsDispersion(disp_alpha, disp_grid, disp_spline);
+
+  if ((elec_alpha > 0.0) && (!domain->xperiodic && !domain->yperiodic && !domain->zperiodic))
+    error->all(FLERR, "[MBX] Electrostatic Ewald parameters set (alpha_ewald_elec = " + std::to_string(elec_alpha) + "), but system is not periodic");
+  if ((disp_alpha > 0.0) && (!domain->xperiodic && !domain->yperiodic && !domain->zperiodic))
+    error->all(FLERR, "[MBX] Dispersion Ewald parameters set (alpha_ewald_disp = " + std::to_string(disp_alpha) + "), but system is not periodic");
+  if ((elec_alpha == 0.0 || disp_alpha == 0.0) && (domain->xperiodic || domain->yperiodic || domain->zperiodic))
+    error->warning(FLERR, "[MBX] System is periodic, but Ewald alpha parameters not set");
+
   ptr_mbx_full->SetPBC(box);
 
   std::vector<int> egrid = ptr_mbx_full->GetFFTDimensionElectrostatics(0);
@@ -2202,6 +2232,20 @@ void FixMBX::mbx_update_xyz_local()
 
     } else if (domain->xperiodic || domain->yperiodic || domain->zperiodic)
       error->all(FLERR, "[MBX] System must be fully periodic or non-periodic with MBX");
+      
+  // get ewald values from MBX and verify they make sense relative to LAMMPS periodicity
+  double elec_alpha, elec_grid, disp_alpha, disp_grid;
+  size_t elec_spline, disp_spline;
+
+  ptr_mbx_local->GetEwaldParamsElectrostatics(elec_alpha, elec_grid, elec_spline);
+  ptr_mbx_local->GetEwaldParamsDispersion(disp_alpha, disp_grid, disp_spline);
+
+  if ((elec_alpha > 0.0) && (!domain->xperiodic || !domain->yperiodic || !domain->zperiodic))
+    error->all(FLERR, "[MBX] Electrostatic Ewald parameters set (alpha_ewald_elec = " + std::to_string(elec_alpha) + "), but system is not periodic");
+  if ((disp_alpha > 0.0) && (!domain->xperiodic || !domain->yperiodic || !domain->zperiodic))
+    error->all(FLERR, "[MBX] Dispersion Ewald parameters set (alpha_ewald_disp = " + std::to_string(disp_alpha) + "), but system is not periodic");
+  if ((elec_alpha == 0.0 || disp_alpha == 0.0) && (!domain->xperiodic || !domain->yperiodic || !domain->zperiodic))
+    error->warning(FLERR, "[MBX] System is periodic, but Ewald alpha parameters not set");
 
     ptr_mbx_local->SetPBC(box);
     ptr_mbx_local->SetBoxPMElocal(box);
@@ -2345,6 +2389,20 @@ void FixMBX::mbx_update_xyz_full()
 
     } else if (domain->xperiodic || domain->yperiodic || domain->zperiodic)
       error->one(FLERR, "System must be fully periodic or non-periodic with MBX");
+
+    // get ewald values from MBX and verify they make sense relative to LAMMPS periodicity
+    double elec_alpha, elec_grid, disp_alpha, disp_grid;
+    size_t elec_spline, disp_spline;
+
+    ptr_mbx_full->GetEwaldParamsElectrostatics(elec_alpha, elec_grid, elec_spline);
+    ptr_mbx_full->GetEwaldParamsDispersion(disp_alpha, disp_grid, disp_spline);
+
+    if ((elec_alpha > 0.0) && (!domain->xperiodic && !domain->yperiodic && !domain->zperiodic))
+      error->all(FLERR, "[MBX] Electrostatic Ewald parameters set (alpha_ewald_elec = " + std::to_string(elec_alpha) + "), but system is not periodic");
+    if ((disp_alpha > 0.0) && (!domain->xperiodic && !domain->yperiodic && !domain->zperiodic))
+      error->all(FLERR, "[MBX] Dispersion Ewald parameters set (alpha_ewald_disp = " + std::to_string(disp_alpha) + "), but system is not periodic");
+    if ((elec_alpha == 0.0 || disp_alpha == 0.0) && (domain->xperiodic || domain->yperiodic || domain->zperiodic))
+      error->warning(FLERR, "[MBX] System is periodic, but Ewald alpha parameters not set");
 
     ptr_mbx_full->SetPBC(box);
   }
