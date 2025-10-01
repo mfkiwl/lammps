@@ -25,8 +25,8 @@ PairStyle(mbx, PairMBX)
 
 // MBX
 
-#include "config_mbx.h"
 #include "bblock/system.h"
+#include "config_mbx.h"
 
 namespace LAMMPS_NS {
 
