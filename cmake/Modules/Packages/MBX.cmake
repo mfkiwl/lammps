@@ -90,7 +90,10 @@ if(DOWNLOAD_MBX)
   ExternalProject_get_property(mbx_build INSTALL_DIR)
   add_library(LAMMPS::MBX UNKNOWN IMPORTED)
   add_dependencies(LAMMPS::MBX mbx_build)
-  set_target_properties(LAMMPS::MBX PROPERTIES IMPORTED_LOCATION ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}mbx${CMAKE_STATIC_LIBRARY_SUFFIX} INTERFACE_LINK_LIBRARIES "${MBX_LINK_LIBS};${CMAKE_DL_LIBS}")
+  set_target_properties(LAMMPS::MBX PROPERTIES
+    IMPORTED_LOCATION ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}mbx${CMAKE_STATIC_LIBRARY_SUFFIX}
+    INTERFACE_LINK_LIBRARIES "${MBX_LINK_LIBS};${CMAKE_DL_LIBS}"
+  )
 
   set_target_properties(LAMMPS::MBX PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_DIR}/include)
   file(MAKE_DIRECTORY ${INSTALL_DIR}/include)
@@ -101,10 +104,13 @@ else()
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(MBX REQUIRED mbx${MBX_SUFFIX})
   add_library(LAMMPS::MBX INTERFACE IMPORTED)
-  include(${MBX_LIBDIR}/mbx${MBX_SUFFIX}/src/lib/MBX.cmake.static)
 
-  set_target_properties(LAMMPS::MBX PROPERTIES INTERFACE_LINK_LIBRARIES "${MBX_LOAD}")
-  set_target_properties(LAMMPS::MBX PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${MBX_INCLUDE_DIRS}")
+  file(MAKE_DIRECTORY ${MBX_INCLUDE_DIRS})
+
+  target_include_directories(LAMMPS::MBX INTERFACE ${MBX_INCLUDE_DIRS})
+  target_link_directories(LAMMPS::MBX INTERFACE ${MBX_LIBRARY_DIRS})
+  target_link_libraries(LAMMPS::MBX INTERFACE "${MBX_LINK_LIBS};${MBX_LIBRARIES};${CMAKE_DL_LIBS}")
+
   if(CMAKE_PROJECT_NAME STREQUAL "lammps")
     target_link_libraries(lammps PUBLIC LAMMPS::MBX)
   endif()
