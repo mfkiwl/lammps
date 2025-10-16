@@ -818,34 +818,6 @@ void FixMBX::post_neighbor()
 
   mbx_fill_system_information_from_atom();
 
-  // do we need to pre-compute and track molecule types?
-
-  // MRR not needed anymore
-  // for (int i = 0; i < nall; ++i) {
-  //    const int id = tag[i];
-
-  //    for (int j = 0; j < num_mol_types; ++j)
-  //        if (id <= mol_offset[j + 1]) {
-  //            mol_type[i] = j;
-  //            break;
-  //        }
-  //}
-
-  // do we need to pre-compute and track anchor-atoms?
-
-  // MRR not needed anymore
-  // for (int i = 0; i < nall; ++i) {
-  //    const int mol_id = molecule[i];
-  //    const int mtype = mol_type[i];
-
-  //    if ((tag[i] - 1 - mol_offset[mtype]) % num_atoms_per_mol[mtype] == 0)
-  //        mol_anchor[i] = 1;
-  //    else
-  //        mol_anchor[i] = 0;
-  //}
-
-  //    printf("\n[MBX] Deleting and Recreating MBX objects\n\n");
-
   // tear down existing MBX objects
 
   if (ptr_mbx) delete ptr_mbx;
@@ -1083,7 +1055,7 @@ void FixMBX::mbx_get_dipoles_local()
   for (int i = 0; i < atom->nmax; ++i)
     for (int j = 0; j < 9; ++j) mbx_dip[i][j] = 0.0;
 
-#if 1
+
   {
     std::vector<double> mu_perm;
     std::vector<double> mu_ind;
@@ -1140,70 +1112,6 @@ void FixMBX::mbx_get_dipoles_local()
 
     }    // for(nall)
   }
-#endif
-
-#if 0
-  {
-    std::vector<double> mu_perm;
-    std::vector<double> mu_ind;
-    std::vector<double> mu_tot;
-
-    ptr_mbx_local->GetDipoles(mu_perm, mu_ind); // problem with this one is how to handle
-
-    printf("GetDipoles: sizes:: mu_perm= %lu  mu_ind= %lu\n",mu_perm.size(), mu_ind.size());
-
-    // for(int i=0; i<mu_perm.size()/3; ++i) {
-    //   printf("  -- i= %i  mu_perm= %f %f %f   mu_ind= %f %f %f\n",i,mu_perm[i*3],mu_perm[i*3+1],mu_perm[i*3+2],mu_ind[i*3],mu_ind[i*3+1],mu_ind[i*3+2]);
-    // }
-
-    int indx = 0;
-    for (int i = 0; i < nall; ++i) {
-      if (mol_anchor[i] && mol_local[i]) {
-        const int mtype = mol_type[i];
-
-        // to be replaced with integer comparison
-
-        bool include_monomer = true;
-        tagint anchor = atom->tag[i];
-
-        // this will save history for both local and ghost particles
-        // comm->exchange() will sync ghost histories w/ local particles in new decomposition
-
-        int na = get_include_monomer(mol_names[mtype], anchor, include_monomer);
-
-        // add info
-
-        if (include_monomer) {
-          for (int j = 0; j < na; ++j) {
-            const int ii = atom->map(anchor + j);
-            // aspc_dip_hist[ii][h * 3] = mbx_dip_history[indx++];
-            // aspc_dip_hist[ii][h * 3 + 1] = mbx_dip_history[indx++];
-            // aspc_dip_hist[ii][h * 3 + 2] = mbx_dip_history[indx++];
-            printf("  -- ii= %i  tag= %i  mu_perm= %f %f %f   mu_ind= %f %f %f\n",ii,anchor+j,mu_perm[indx*3],mu_perm[indx*3+1],mu_perm[indx*3+2],mu_ind[indx*3],mu_ind[indx*3+1],mu_ind[indx*3+2]);
-            indx++;
-          }
-        }
-      }  // if(anchor)
-
-    }  // for(nall)
-  }
-#endif
-
-#if 0
-  {
-    std::vector<double> mu_perm;
-    std::vector<double> mu_ind;
-    std::vector<double> mu_tot;
-
-    ptr_mbx_local->GetTotalDipole(mu_perm, mu_ind, mu_tot);
-
-    printf("GetTotalDipole: sizes:: mu_perm= %lu  mu_ind= %lu  mu_tot= %lu\n",mu_perm.size(), mu_ind.size(), mu_tot.size());
-
-    for(int i=0; i<mu_perm.size()/3; ++i) {
-      printf("  -- i= %i  mu_perm= %f %f %f   mu_ind= %f %f %f  mu_tot= %f %f %f\n",i,mu_perm[i*3],mu_perm[i*3+1],mu_perm[i*3+2],mu_ind[i*3],mu_ind[i*3+1],mu_ind[i*3+2],mu_tot[i*3],mu_tot[i*3+1],mu_tot[i*3+2]);
-    }
-  }
-#endif
 
   array_atom = mbx_dip;
 }
@@ -1230,55 +1138,6 @@ void FixMBX::unpack_forward_comm(int n, int first, double *buf)
     for (int j = 0; j < aspc_per_atom_size; ++j) aspc_dip_hist[i][j] = buf[m++];
     //  for (int j = 0; j < 9; ++j) mbx_dip[i][j] = buf[m++];
   }
-}
-
-/* ---------------------------------------------------------------------- */
-
-int FixMBX::pack_reverse_comm(int n, int first, double *buf)
-{
-  int i, m;
-  //  if (pack_flag == 5) {
-  // m = 0;
-  // int last = first + n;
-  // for(i = first; i < last; i++) {
-  //   int indxI = 2 * i;
-  //   buf[m++] = q[indxI  ];
-  //   buf[m++] = q[indxI+1];
-  // }
-  // return m;
-  //  } else {
-  //    for (m = 0, i = first; m < n; m++, i++) buf[m] = q[i];
-  return n;
-  //  }
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixMBX::unpack_reverse_comm(int n, int *list, double *buf)
-{
-  // if (pack_flag == 5) {
-  //   int m = 0;
-  //   for(int i = 0; i < n; i++) {
-  //     int indxI = 2 * list[i];
-  //     q[indxI  ] += buf[m++];
-  //     q[indxI+1] += buf[m++];
-  //   }
-  // } else {
-  //   for (int m = 0; m < n; m++) q[list[m]] += buf[m];
-  // }
-}
-
-/* ----------------------------------------------------------------------
-   memory usage of local atom-based arrays
-------------------------------------------------------------------------- */
-
-double FixMBX::memory_usage()
-{
-  double bytes;
-
-  bytes = 0;
-
-  return bytes;
 }
 
 /* ----------------------------------------------------------------------

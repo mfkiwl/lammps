@@ -208,9 +208,6 @@ class FixMBX : public Fix {
 
   virtual int pack_forward_comm(int, int *, double *, int, int *);
   virtual void unpack_forward_comm(int, int, double *);
-  virtual int pack_reverse_comm(int, int, double *);
-  virtual void unpack_reverse_comm(int, int *, double *);
-  virtual double memory_usage();
   virtual void grow_arrays(int);
   virtual void copy_arrays(int, int, int);
   virtual int pack_exchange(int, double *);
