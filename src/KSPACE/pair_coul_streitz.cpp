@@ -25,7 +25,7 @@
 #include "info.h"
 #include "kspace.h"
 #include "math_const.h"
-#include "mdftaper.h"
+#include "math_special.h"
 #include "memory.h"
 #include "neigh_list.h"
 #include "neighbor.h"
@@ -36,6 +36,7 @@
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
+using MathSpecial::mdftaper;
 
 static constexpr int DELTA = 4;
 static constexpr int MAXNEIGH = 24;
