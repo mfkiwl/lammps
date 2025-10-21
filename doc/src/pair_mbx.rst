@@ -137,8 +137,8 @@ For a complete list of available monomers in MBX, please see the
     models that may also use geometrically dependent charges, such as
     the Partridge and Schwenke charges used in MB-pol water.
 
-    Therefore, one should never use a coulombic pair style in LAMMPS
-    such as `coul/cut` or `coul/long` when also using MBX. This mistake
+    Therefore, one should **never** use a coulombic pair style in LAMMPS
+    such as `coul/cut` or `coul/long` when also using MBX. This
     would result in double counting of electrostatic interactions.
 
     When performing a hybrid simulation using dp1,
