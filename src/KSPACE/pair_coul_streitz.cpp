@@ -106,16 +106,16 @@ void PairCoulStreitz::settings(int narg, char **arg)
 
   if (strcmp(arg[1],"wolf") == 0) {
     if (narg < 3) utils::missing_cmd_args(FLERR, "pair_style coul/streitz wolf", error);
-    kspacetype = 1;    
+    kspacetype = 1;
     g_wolf = utils::numeric(FLERR,arg[2],false,lmp);
     if (narg > 3)
       drtap = utils::numeric(FLERR,arg[3],false,lmp);
   } else if (strcmp(arg[1],"dsf") == 0){
     if (narg < 3) utils::missing_cmd_args(FLERR, "pair_style coul/streitz dsf", error);
     kspacetype = 1;
-    dsfflag = 1;    
+    dsfflag = 1;
     g_wolf = utils::numeric(FLERR,arg[2],false,lmp);
-    if (narg > 3)    
+    if (narg > 3)
       drtap = utils::numeric(FLERR,arg[3],false,lmp);
   } else if (strcmp(arg[1],"ewald") == 0) {
     ewaldflag = pppmflag = 1;
@@ -373,11 +373,11 @@ void PairCoulStreitz::compute(int eflag, int vflag)
       // Wolf-Fennell Sum
 
       if (dsfflag == 1)
-	fennell_sum(qi, qj, zj, r, ci_jfi, dci_jfi, ci_fifj, dci_fifj,
-		    ecoul, forcecoul);
-      else      
-	wolf_sum(qi, qj, zj, r, ci_jfi, dci_jfi, ci_fifj, dci_fifj,
-		 ecoul, forcecoul);
+        fennell_sum(qi, qj, zj, r, ci_jfi, dci_jfi, ci_fifj, dci_fifj,
+                    ecoul, forcecoul);
+      else
+        wolf_sum(qi, qj, zj, r, ci_jfi, dci_jfi, ci_fifj, dci_fifj,
+                 ecoul, forcecoul);
 
       // Forces
 
@@ -580,7 +580,7 @@ void PairCoulStreitz::wolf_sum(double qi, double qj, double zj, double r,
   ftmp = ftmp1 = ftmp2 = ftmp3 = 0.0;
 
   mdftaper(r, rc-drtap, rc, ftap, dftap);
-  
+
   etmp1 = erfcr/r - erfcrc/rc;
   etmp2 = qi * zj * (ci_jfi - ci_fifj) * ftap;
   etmp3 = qi * qj * 0.50 * (etmp1 + ci_fifj*ftap);
@@ -622,14 +622,14 @@ void PairCoulStreitz::fennell_sum(double qi, double qj, double zj, double r,
     ftmp = 0.0;
     return;
   }
-  
+
   mdftaper(r, rc-drtap, rc, ftap, dftap);
 
   etmp0 = erfcr/r - erfcrc/rc + (erfcrc/rc2 + con*derfcrc/rc)*(r-rc);
 //  etmp1 = zi * zj * 0.5 * (ci_fifj*ftap - ci_ifj*ftap - ci_jfi*ftap);
   etmp2 = qi * zj * (ci_jfi - ci_fifj) * ftap;
   etmp3 = qi * qj * 0.5 * (etmp0 + ci_fifj*ftap);
-        
+
   ftmp0 = -erfcr/r2 - con*derfcr/r + (erfcrc/rc2 + con*derfcrc/rc);
   ftmp0 = ftmp0 - dwoself;
 //  ftmp1 = zi * zj * 0.5 * (dci_fifj*ftap + ci_fifj*dftap - dci_ifj*ftap - ci_ifj*dftap -
