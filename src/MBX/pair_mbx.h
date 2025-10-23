@@ -20,7 +20,7 @@ PairStyle(mbx, PairMBX)
 #ifndef LMP_PAIR_MBX_H
 #define LMP_PAIR_MBX_H
 
-#include "fix_MBX.h"
+#include "fix_mbx.h"
 #include "pair.h"
 
 // MBX
@@ -29,7 +29,6 @@ PairStyle(mbx, PairMBX)
 
 
 //TODO Re-enable this once MBX is properly versioned at >1.3.2
-// #include "config_mbx.h"
 
 namespace LAMMPS_NS {
 

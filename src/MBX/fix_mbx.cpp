@@ -11,7 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "fix_MBX.h"
+#include "fix_mbx.h"
 
 #include "atom.h"
 #include "citeme.h"
