@@ -12,6 +12,7 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_MBX.h"
+
 #include "atom.h"
 #include "citeme.h"
 #include "comm.h"
@@ -29,6 +30,7 @@
 #include "respa.h"
 #include "universe.h"
 #include "update.h"
+
 #include <cmath>
 #include <cstring>
 #include <mpi.h>
@@ -288,7 +290,7 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   // // validate input arguments
   bool validation_result = validateMBXFixParameters(narg - 3, &arg[3]);
-  if (validation_result) { fprintf(stderr, "MBX fix input validation successful.\n"); }
+  // if (validation_result) { fprintf(stderr, "MBX fix input validation successful.\n"); }
 
   if (narg < 6) error->all(FLERR, "[MBX] Illegal fix mbx command");
 
@@ -520,8 +522,8 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     MPI_Bcast(&json_settings[0], size + 1, MPI_CHAR, 0, world);
   }
 
-  if (screen && universe->iworld == 0 && comm->me == 0)
-    std::cout << "[" << me << "] json_settings= " << json_settings << std::endl;
+  // if (screen && universe->iworld == 0 && comm->me == 0)
+  //   std::cout << "[" << me << "] json_settings= " << json_settings << std::endl;
 
   memory->create(mbxt_count, MBXT_NUM_TIMERS, "fixmbx:mbxt_count");
   memory->create(mbxt_time, MBXT_NUM_TIMERS, "fixmbx:mbxt_time");

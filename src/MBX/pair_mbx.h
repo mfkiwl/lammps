@@ -42,12 +42,10 @@ class PairMBX : public Pair {
   virtual void compute(int, int);
   void settings(int, char **);
   void coeff(int, char **);
-  void init_style();
   double init_one(int, int);
 
  protected:
   double cut_global;
-  double **cut;
 
   int me;
 
