@@ -452,6 +452,51 @@ int LabelMap::infer_angletype(std::vector<std::string> mytypes)
   return -1;
 }
 
+
+/* ----------------------------------------------------------------------
+   infer dihedral type from four atom types
+   input/output is numeric types, uses type labels internally
+   assumes dihedral types of the form '[a][b][c][d]'
+------------------------------------------------------------------------- */
+
+int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
+{
+  // convert numeric atom types to type label
+
+  std::vector<std::string> mytypes(4);
+  mytypes[0] = typelabel[type1-1];
+  mytypes[1] = typelabel[type2-1];
+  mytypes[2] = typelabel[type3-1];
+  mytypes[3] = typelabel[type4-1];
+  for (size_t i = 0; i < 4; i++)
+    if (mytypes[i].empty()) return -1;
+
+  return infer_dihedraltype(mytypes);
+}
+
+/* ----------------------------------------------------------------------
+   infer dihedral type from four atom types
+   input/output is numeric types, uses type labels internally
+   assumes dihedral types of the form '[a][b][c][d]'
+------------------------------------------------------------------------- */
+
+int LabelMap::infer_dihedraltype(std::vector<std::string> mytypes)
+{
+  // search for matching dihedral type label
+
+  int status;
+  std::vector<std::string> dtypes(4);
+  for (int i = 0; i < ndihedraltypes; i++) {
+    status = parse_brackets(4, dtypelabel[i], dtypes);
+    if (status != -1)
+      if ((mytypes[0] == dtypes[0] && mytypes[1] == dtypes[1] &&
+          mytypes[2] == dtypes[2] && mytypes[3] == dtypes[3]) ||
+          (mytypes[3] == dtypes[0] && mytypes[2] == dtypes[1] &&
+           mytypes[1] == dtypes[2] && mytypes[0] == dtypes[3])) return i+1;
+  }
+  return -1;
+}
+
 /* ----------------------------------------------------------------------
    return 'ntypes' number of strings between brackets
 ------------------------------------------------------------------------- */
