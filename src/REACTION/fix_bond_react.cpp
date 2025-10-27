@@ -1590,7 +1590,9 @@ void FixBondReact::check_a_neighbor(Superimpose &super, Reaction &rxn)
 
       for (int i = 0; i < nfirst_neighs; i++) {
 
-        if (type[(int)atom->map(xspecial[(int)atom->map(sp.glove[sp.pion])][i])] == rxn.reactant->type[(int)rxn.reactant->special[sp.pion][sp.neigh]-1] &&
+        int checktype = type[(int)atom->map(xspecial[(int)atom->map(sp.glove[sp.pion])][i])];
+        int reactant_atom = (int) rxn.reactant->special[sp.pion][sp.neigh];
+        if (compare_atomtype(checktype, rxn, reactant_atom) &&
             nxspecial[(int)atom->map(xspecial[(int)atom->map(sp.glove[sp.pion])][i])][0] == 1) {
 
           int already_assigned = 0;
@@ -1641,7 +1643,9 @@ void FixBondReact::check_a_neighbor(Superimpose &super, Reaction &rxn)
 
   for (int i = 0; i < nfirst_neighs; i++) {
 
-    if (type[atom->map((int)xspecial[(int)atom->map(sp.glove[sp.pion])][i])] == rxn.reactant->type[(int)rxn.reactant->special[sp.pion][sp.neigh]-1]) {
+    int checktype = type[atom->map((int)xspecial[(int)atom->map(sp.glove[sp.pion])][i])];
+    int reactant_atom = (int) rxn.reactant->special[sp.pion][sp.neigh];
+    if (compare_atomtype(checktype, rxn, reactant_atom)) {
       int already_assigned = 0;
 
       //check if a first neighbor of the pioneer is already assigned to pre-reacted template
@@ -1699,7 +1703,11 @@ void FixBondReact::crosscheck_the_neighbor(Superimpose &super, Reaction &rxn)
   }
 
   for (sp.trace = 0; sp.trace < nfirst_neighs; sp.trace++) {
-    if (sp.neigh != sp.trace && rxn.reactant->type[(int)rxn.reactant->special[sp.pion][sp.neigh]-1] == rxn.reactant->type[(int)rxn.reactant->special[sp.pion][sp.trace]-1] &&
+    int reactant_atom1 = (int) rxn.reactant->special[sp.pion][sp.trace];
+    int atom1type = rxn.reactant->type[reactant_atom1-1];
+    int reactant_atom2 = (int) rxn.reactant->special[sp.pion][sp.neigh];
+    int atom2type = rxn.reactant->type[reactant_atom2-1];
+    if (sp.neigh != sp.trace && (compare_atomtype(atom2type, rxn, reactant_atom1) || compare_atomtype(atom1type, rxn, reactant_atom2)) &&
         sp.glove[rxn.reactant->special[sp.pion][sp.trace]-1] == 0) {
 
       if (avail_guesses == MAXGUESS) {
@@ -1743,7 +1751,9 @@ void FixBondReact::inner_crosscheck_loop(Superimpose &super, Reaction &rxn)
 
   int num_choices = 0;
   for (int i = 0; i < nfirst_neighs; i++) {
-    if (type[(int)atom->map(xspecial[atom->map(sp.glove[sp.pion])][i])] == rxn.reactant->type[(int)rxn.reactant->special[sp.pion][sp.neigh]-1]) {
+    int checktype = type[(int)atom->map(xspecial[atom->map(sp.glove[sp.pion])][i])];
+    int reactant_atom = (int) rxn.reactant->special[sp.pion][sp.neigh];
+    if (compare_atomtype(checktype, rxn, reactant_atom)) {
       if (num_choices == 5) { // here failed because too many identical first neighbors. but really no limit if situation arises
         status = Status::GUESSFAIL;
         return;
@@ -1805,6 +1815,17 @@ void FixBondReact::inner_crosscheck_loop(Superimpose &super, Reaction &rxn)
     return;
   }
   status = Status::CONTINUE;
+}
+
+/* ----------------------------------------------------------------------
+check if an atom type matches that of a reactant atom
+------------------------------------------------------------------------- */
+
+bool FixBondReact::compare_atomtype(int checktype, Reaction &rxn, int reactant_atom)
+{
+  int iatom = reactant_atom - 1; // index of reactant atom
+  if (checktype == rxn.reactant->type[iatom] || rxn.atoms[iatom].wildcard == 1) return true;
+  else return false;
 }
 
 /* ----------------------------------------------------------------------
@@ -2491,11 +2512,13 @@ void FixBondReact::find_landlocked_atoms(Reaction &rxn)
   // bad molecule templates check
   // if atoms change types, but aren't landlocked, that's bad
   for (int i = 0; i < rxn.product->natoms; i++) {
-    if ((rxn.atoms[i].created == 0) &&
-        (rxn.product->type[i] != rxn.reactant->type[rxn.atoms[i].amap[1]-1]) &&
-        (rxn.atoms[i].landlocked == 0))
-      error->all(FLERR, "Fix bond/react: Atom type affected by reaction {} is too close "
+    if (rxn.atoms[i].created == 0) {
+      int checktype = rxn.product->type[i];
+      int reactant_atom = rxn.atoms[i].amap[1];
+      if (!compare_atomtype(checktype, rxn, reactant_atom) && rxn.atoms[i].landlocked == 0)
+        error->all(FLERR, "Fix bond/react: Atom type affected by reaction {} is too close "
                  "to template edge", rxn.name);
+    }
   }
 
   // additionally, if a bond changes type, but neither involved atom is landlocked, bad
