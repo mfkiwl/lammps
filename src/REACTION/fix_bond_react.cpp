@@ -3621,28 +3621,29 @@ void FixBondReact::update_everything()
         auto &rxn = rxns[(int) update_mega_glove[0][i]];
         for (int j = 0; j < rxn.product->natoms; j++) {
           int jj = rxn.atoms[j].amap[1]-1;
-          if (atom->map(update_mega_glove[jj+1][i]) < nlocal && atom->map(update_mega_glove[jj+1][i]) >= 0) {
+          int jjlocal = atom->map(update_mega_glove[jj+1][i]);
+          if (jjlocal < nlocal && jjlocal >= 0) {
             if (rxn.atoms[j].landlocked == 1) {
-              delta_imprp -= num_improper[atom->map(update_mega_glove[jj+1][i])];
-              num_improper[atom->map(update_mega_glove[jj+1][i])] = 0;
+              delta_imprp -= num_improper[jjlocal];
+              num_improper[jjlocal] = 0;
             }
             if (rxn.atoms[j].landlocked == 0) {
-              for (int p = num_improper[atom->map(update_mega_glove[jj+1][i])]-1; p > -1; p--) {
+              for (int p = num_improper[jjlocal]-1; p > -1; p--) {
                 for (int n = 0; n < rxn.product->natoms; n++) {
                   int nn = rxn.atoms[n].amap[1]-1;
                   if (n!=j && rxn.atoms[n].landlocked == 1 &&
-                      (improper_atom1[atom->map(update_mega_glove[jj+1][i])][p] == update_mega_glove[nn+1][i] ||
-                       improper_atom2[atom->map(update_mega_glove[jj+1][i])][p] == update_mega_glove[nn+1][i] ||
-                       improper_atom3[atom->map(update_mega_glove[jj+1][i])][p] == update_mega_glove[nn+1][i] ||
-                       improper_atom4[atom->map(update_mega_glove[jj+1][i])][p] == update_mega_glove[nn+1][i])) {
-                    for (int m = p; m < num_improper[atom->map(update_mega_glove[jj+1][i])]-1; m++) {
-                      improper_type[atom->map(update_mega_glove[jj+1][i])][m] = improper_type[atom->map(update_mega_glove[jj+1][i])][m+1];
-                      improper_atom1[atom->map(update_mega_glove[jj+1][i])][m] = improper_atom1[atom->map(update_mega_glove[jj+1][i])][m+1];
-                      improper_atom2[atom->map(update_mega_glove[jj+1][i])][m] = improper_atom2[atom->map(update_mega_glove[jj+1][i])][m+1];
-                      improper_atom3[atom->map(update_mega_glove[jj+1][i])][m] = improper_atom3[atom->map(update_mega_glove[jj+1][i])][m+1];
-                      improper_atom4[atom->map(update_mega_glove[jj+1][i])][m] = improper_atom4[atom->map(update_mega_glove[jj+1][i])][m+1];
+                      (improper_atom1[jjlocal][p] == update_mega_glove[nn+1][i] ||
+                       improper_atom2[jjlocal][p] == update_mega_glove[nn+1][i] ||
+                       improper_atom3[jjlocal][p] == update_mega_glove[nn+1][i] ||
+                       improper_atom4[jjlocal][p] == update_mega_glove[nn+1][i])) {
+                    for (int m = p; m < num_improper[jjlocal]-1; m++) {
+                      improper_type[jjlocal][m] = improper_type[jjlocal][m+1];
+                      improper_atom1[jjlocal][m] = improper_atom1[jjlocal][m+1];
+                      improper_atom2[jjlocal][m] = improper_atom2[jjlocal][m+1];
+                      improper_atom3[jjlocal][m] = improper_atom3[jjlocal][m+1];
+                      improper_atom4[jjlocal][m] = improper_atom4[jjlocal][m+1];
                     }
-                    num_improper[atom->map(update_mega_glove[jj+1][i])]--;
+                    num_improper[jjlocal]--;
                     delta_imprp--;
                     break;
                   }
@@ -3655,32 +3656,87 @@ void FixBondReact::update_everything()
         if (rxn.product->improperflag) {
           for (int j = 0; j < rxn.product->natoms; j++) {
             int jj = rxn.atoms[j].amap[1]-1;
-            if (atom->map(update_mega_glove[jj+1][i]) < nlocal && atom->map(update_mega_glove[jj+1][i]) >= 0) {
+            int jjlocal = atom->map(update_mega_glove[jj+1][i]);
+            if (jjlocal < nlocal && jjlocal >= 0) {
               if (rxn.atoms[j].landlocked == 1) {
-                num_improper[atom->map(update_mega_glove[jj+1][i])] = rxn.product->num_improper[j];
+                num_improper[jjlocal] = rxn.product->num_improper[j];
                 delta_imprp += rxn.product->num_improper[j];
                 for (int p = 0; p < rxn.product->num_improper[j]; p++) {
-                  improper_type[atom->map(update_mega_glove[jj+1][i])][p] = rxn.product->improper_type[j][p];
-                  improper_atom1[atom->map(update_mega_glove[jj+1][i])][p] = update_mega_glove[rxn.atoms[rxn.product->improper_atom1[j][p]-1].amap[1]][i];
-                  improper_atom2[atom->map(update_mega_glove[jj+1][i])][p] = update_mega_glove[rxn.atoms[rxn.product->improper_atom2[j][p]-1].amap[1]][i];
-                  improper_atom3[atom->map(update_mega_glove[jj+1][i])][p] = update_mega_glove[rxn.atoms[rxn.product->improper_atom3[j][p]-1].amap[1]][i];
-                  improper_atom4[atom->map(update_mega_glove[jj+1][i])][p] = update_mega_glove[rxn.atoms[rxn.product->improper_atom4[j][p]-1].amap[1]][i];
+                  int atom1 = rxn.product->improper_atom1[j][p];
+                  int atom2 = rxn.product->improper_atom2[j][p];
+                  int atom3 = rxn.product->improper_atom3[j][p];
+                  int atom4 = rxn.product->improper_atom4[j][p];
+                  int iatom1 = rxn.atoms[atom1-1].amap[1]-1;
+                  int iatom2 = rxn.atoms[atom2-1].amap[1]-1;
+                  int iatom3 = rxn.atoms[atom3-1].amap[1]-1;
+                  int iatom4 = rxn.atoms[atom4-1].amap[1]-1;
+                  int tag1 = update_mega_glove[iatom1+1][i];
+                  int tag2 = update_mega_glove[iatom2+1][i];
+                  int tag3 = update_mega_glove[iatom3+1][i];
+                  int tag4 = update_mega_glove[iatom4+1][i];
+                  if (rxn.atoms[iatom1].wildcard == 1 ||
+                      rxn.atoms[iatom2].wildcard == 1 ||
+                      rxn.atoms[iatom3].wildcard == 1 ||
+                      rxn.atoms[iatom4].wildcard == 1) {
+                    int local1 = atom->map(tag1);
+                    int local2 = atom->map(tag2);
+                    int local3 = atom->map(tag3);
+                    int local4 = atom->map(tag4);
+                    if (local1 < 0 || local2 < 0 || local3 < 0 || local4 < 0)
+                      error->all(FLERR,"Bond/react: Fix bond/react needs ghost atoms from further away");
+                    int itype = atom->lmap->infer_impropertype(type[local1],type[local2],type[local3],type[local4]);
+                    if (itype == -1) error->all(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
+                    improper_type[jjlocal][p] = itype;
+                  } else {
+                    improper_type[jjlocal][p] = rxn.product->improper_type[j][p];
+                  }
+                  improper_atom1[jjlocal][p] = tag1;
+                  improper_atom2[jjlocal][p] = tag2;
+                  improper_atom3[jjlocal][p] = tag3;
+                  improper_atom4[jjlocal][p] = tag4;
                 }
               }
               if (rxn.atoms[j].landlocked == 0) {
                 for (int p = 0; p < rxn.product->num_improper[j]; p++) {
-                  if (rxn.atoms[rxn.product->improper_atom1[j][p]-1].landlocked == 1 ||
-                      rxn.atoms[rxn.product->improper_atom2[j][p]-1].landlocked == 1 ||
-                      rxn.atoms[rxn.product->improper_atom3[j][p]-1].landlocked == 1 ||
-                      rxn.atoms[rxn.product->improper_atom4[j][p]-1].landlocked == 1) {
-                    insert_num = num_improper[atom->map(update_mega_glove[jj+1][i])];
-                    improper_type[atom->map(update_mega_glove[jj+1][i])][insert_num] = rxn.product->improper_type[j][p];
-                    improper_atom1[atom->map(update_mega_glove[jj+1][i])][insert_num] = update_mega_glove[rxn.atoms[rxn.product->improper_atom1[j][p]-1].amap[1]][i];
-                    improper_atom2[atom->map(update_mega_glove[jj+1][i])][insert_num] = update_mega_glove[rxn.atoms[rxn.product->improper_atom2[j][p]-1].amap[1]][i];
-                    improper_atom3[atom->map(update_mega_glove[jj+1][i])][insert_num] = update_mega_glove[rxn.atoms[rxn.product->improper_atom3[j][p]-1].amap[1]][i];
-                    improper_atom4[atom->map(update_mega_glove[jj+1][i])][insert_num] = update_mega_glove[rxn.atoms[rxn.product->improper_atom4[j][p]-1].amap[1]][i];
-                    num_improper[atom->map(update_mega_glove[jj+1][i])]++;
-                    if (num_improper[atom->map(update_mega_glove[jj+1][i])] > atom->improper_per_atom)
+                  int atom1 = rxn.product->improper_atom1[j][p];
+                  int atom2 = rxn.product->improper_atom2[j][p];
+                  int atom3 = rxn.product->improper_atom3[j][p];
+                  int atom4 = rxn.product->improper_atom4[j][p];
+                  if (rxn.atoms[atom1-1].landlocked == 1 ||
+                      rxn.atoms[atom2-1].landlocked == 1 ||
+                      rxn.atoms[atom3-1].landlocked == 1 ||
+                      rxn.atoms[atom4-1].landlocked == 1) {
+                    int iatom1 = rxn.atoms[atom1-1].amap[1]-1;
+                    int iatom2 = rxn.atoms[atom2-1].amap[1]-1;
+                    int iatom3 = rxn.atoms[atom3-1].amap[1]-1;
+                    int iatom4 = rxn.atoms[atom4-1].amap[1]-1;
+                    int tag1 = update_mega_glove[iatom1+1][i];
+                    int tag2 = update_mega_glove[iatom2+1][i];
+                    int tag3 = update_mega_glove[iatom3+1][i];
+                    int tag4 = update_mega_glove[iatom4+1][i];
+                    insert_num = num_improper[jjlocal];
+                    if (rxn.atoms[iatom1].wildcard == 1 ||
+                        rxn.atoms[iatom2].wildcard == 1 ||
+                        rxn.atoms[iatom3].wildcard == 1 ||
+                        rxn.atoms[iatom4].wildcard == 1) {
+                      int local1 = atom->map(tag1);
+                      int local2 = atom->map(tag2);
+                      int local3 = atom->map(tag3);
+                      int local4 = atom->map(tag4);
+                      if (local1 < 0 || local2 < 0 || local3 < 0 || local4 < 0)
+                        error->all(FLERR,"Bond/react: Fix bond/react needs ghost atoms from further away");
+                      int itype = atom->lmap->infer_impropertype(type[local1],type[local2],type[local3],type[local4]);
+                      if (itype == -1) error->all(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
+                      improper_type[jjlocal][insert_num] = itype;
+                    } else {
+                      improper_type[jjlocal][insert_num] = rxn.product->improper_type[j][p];
+                    }
+                    improper_atom1[jjlocal][insert_num] = tag1;
+                    improper_atom2[jjlocal][insert_num] = tag2;
+                    improper_atom3[jjlocal][insert_num] = tag3;
+                    improper_atom4[jjlocal][insert_num] = tag4;
+                    num_improper[jjlocal]++;
+                    if (num_improper[jjlocal] > atom->improper_per_atom)
                       error->one(FLERR,"Fix bond/react topology/atom exceed system topology/atom");
                     delta_imprp++;
                   }
