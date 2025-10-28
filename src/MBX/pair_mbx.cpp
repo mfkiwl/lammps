@@ -35,6 +35,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "fix_mbx.h"
 #include "bblock/system.h"
 
 #define TTMNRG

@@ -20,11 +20,11 @@ PairStyle(mbx, PairMBX)
 #ifndef LMP_PAIR_MBX_H
 #define LMP_PAIR_MBX_H
 
-#include "fix_mbx.h"
 #include "pair.h"
 
 
 namespace LAMMPS_NS {
+  class FixMBX;
 
 class PairMBX : public Pair {
   friend FixMBX;    // accesses cut_global
