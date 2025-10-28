@@ -22,8 +22,6 @@ FixStyle(MBX, FixMBX)
 
 #include "fix.h"
 
-// MBX
-
 
 enum {
   MBXT_INIT = 0,
@@ -115,7 +113,6 @@ class FixMBX : public Fix {
   bool has_gcmc;
 
   int use_json;
-  char *json_file;
   std::string json_settings;
 
   int print_verbose;

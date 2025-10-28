@@ -46,7 +46,7 @@
 
 //#define _DEBUG_EFIELD
 
-namespace LAMMPS_NS{
+namespace LAMMPS_NS {
 //PImpl idiom to hide MBX implementation details
 struct MBXImpl {
   MBXImpl() : ptr_mbx(nullptr), ptr_mbx_local(nullptr) {}
@@ -390,17 +390,15 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   // process remaining optional keywords
 
   use_json = 0;
-  json_file = NULL;
+  std::string json_file;
   print_verbose = 0;
   print_dipoles = 1;    // dipoles are now always printed by default
   aspc_step_reset = 1000;
 
   while (iarg < narg) {
     if (strcmp(arg[iarg], "json") == 0) {
-      int len = strlen(arg[++iarg]);
+      json_file = std::string(arg[++iarg]);
       use_json = 1;
-      json_file = new char[len];
-      strcpy(json_file, arg[iarg]);
     } else if (strcmp(arg[iarg], "print/verbose") == 0) {
       print_verbose = 1;
     } else if (strcmp(arg[iarg], "print/dipoles") == 0) {
@@ -516,11 +514,9 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     int size = 0;
     if (me == 0) {
       // Test if file present
-      FILE *fp = fopen(json_file, "r");
+      FILE *fp = fopen(json_file.c_str(), "r");
       if (fp == NULL) {
-        char str[128];
-        snprintf(str, 128, "Cannot open file %s", json_file);
-        error->one(FLERR, str);
+        error->one(FLERR, "Cannot open file " + json_file);
       } else
         fclose(fp);
 
@@ -581,6 +577,7 @@ FixMBX::~FixMBX()
   if (print_dipoles) memory->destroy(mbx_dip);
 
   // memory->destroy(mol_offset);
+  memory->destroy(num_atoms_per_mol);
   memory->destroy(mol_names);
   // memory->destroy(num_mols);
 
