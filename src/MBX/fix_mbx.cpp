@@ -537,11 +537,11 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   // if (screen && universe->iworld == 0 && comm->me == 0)
   //   std::cout << "[" << me << "] json_settings= " << json_settings << std::endl;
 
-  memory->create(mbxt_count, MBXT_NUM_TIMERS, "fixmbx:mbxt_count");
-  memory->create(mbxt_time, MBXT_NUM_TIMERS, "fixmbx:mbxt_time");
-  memory->create(mbxt_time_start, MBXT_NUM_TIMERS, "fixmbx:mbxt_time_start");
+  memory->create(mbxt_count, FixMBX::MBXT_LABELS::NUM_TIMERS, "fixmbx:mbxt_count");
+  memory->create(mbxt_time, FixMBX::MBXT_LABELS::NUM_TIMERS, "fixmbx:mbxt_time");
+  memory->create(mbxt_time_start, FixMBX::MBXT_LABELS::NUM_TIMERS, "fixmbx:mbxt_time_start");
 
-  for (int i = 0; i < MBXT_NUM_TIMERS; ++i) {
+  for (int i = 0; i < FixMBX::MBXT_LABELS::NUM_TIMERS; ++i) {
     mbxt_time[i] = 0.0;
     mbxt_count[i] = 0;
   }
@@ -600,8 +600,8 @@ FixMBX::~FixMBX()
     std::vector<double> tmpd = mbx_impl->ptr_mbx_local->GetInfoElectrostaticsTimings();
 
     for (int i = 0; i < tmpi.size(); ++i) {
-      mbxt_count[MBXT_ELE_PERMDIP_REAL + i] += tmpi[i];
-      mbxt_time[MBXT_ELE_PERMDIP_REAL + i] += tmpd[i];
+      mbxt_count[FixMBX::MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpi[i];
+      mbxt_time[FixMBX::MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpd[i];
     }
 
     // accumulate timing info from dispersion pme
@@ -610,8 +610,8 @@ FixMBX::~FixMBX()
     std::vector<double> tmpd_d = mbx_impl->ptr_mbx_local->GetInfoDispersionTimings();
 
     for (int i = 0; i < tmpi_d.size(); ++i) {
-      mbxt_count[MBXT_DISP_PME_SETUP + i] += tmpi_d[i];
-      mbxt_time[MBXT_DISP_PME_SETUP + i] += tmpd_d[i];
+      mbxt_count[FixMBX::MBXT_LABELS::DISP_PME_SETUP + i] += tmpi_d[i];
+      mbxt_time[FixMBX::MBXT_LABELS::DISP_PME_SETUP + i] += tmpd_d[i];
     }
 
   }
@@ -656,16 +656,6 @@ void FixMBX::init()
   ngroup = group->count(igroup);
   if (ngroup == 0) error->all(FLERR, "[MBX] Fix mbx group has no atoms");
 
-  // I don't think we need neighbor lists yet...
-
-  // need a half neighbor list w/ Newton off
-  // built whenever re-neighboring occurs
-
-  // int irequest = neighbor->request(this,instance_me);
-  // neighbor->requests[irequest]->pair = 0;
-  // neighbor->requests[irequest]->fix = 1;
-  // neighbor->requests[irequest]->newton = 2;
-  // neighbor->requests[irequest]->ghost = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -808,8 +798,8 @@ void FixMBX::post_neighbor()
     std::vector<double> tmpd = mbx_impl->ptr_mbx_local->GetInfoElectrostaticsTimings();
 
     for (int i = 0; i < tmpi.size(); ++i) {
-      mbxt_count[MBXT_ELE_PERMDIP_REAL + i] += tmpi[i];
-      mbxt_time[MBXT_ELE_PERMDIP_REAL + i] += tmpd[i];
+      mbxt_count[MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpi[i];
+      mbxt_time[MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpd[i];
     }
 
     // accumulate timing info from dispersion pme
@@ -818,8 +808,8 @@ void FixMBX::post_neighbor()
     std::vector<double> tmpd_d = mbx_impl->ptr_mbx_local->GetInfoDispersionTimings();
 
     for (int i = 0; i < tmpi_d.size(); ++i) {
-      mbxt_count[MBXT_DISP_PME_SETUP + i] += tmpi_d[i];
-      mbxt_time[MBXT_DISP_PME_SETUP + i] += tmpd_d[i];
+      mbxt_count[MBXT_LABELS::DISP_PME_SETUP + i] += tmpi_d[i];
+      mbxt_time[MBXT_LABELS::DISP_PME_SETUP + i] += tmpd_d[i];
     }
 
     delete mbx_impl->ptr_mbx_local;
@@ -1179,7 +1169,7 @@ int FixMBX::unpack_exchange(int nlocal, double *buf)
 
 void FixMBX::mbx_init()
 {
-  mbxt_start(MBXT_INIT);
+  mbxt_start(MBXT_LABELS::INIT);
 
   const int nlocal = atom->nlocal;
   const int nall = nlocal + atom->nghost;
@@ -1284,7 +1274,7 @@ void FixMBX::mbx_init()
   }    // for(i<nall)
 
   if (mbx_num_atoms + mbx_num_ext == 0) {
-    mbxt_stop(MBXT_INIT);
+    mbxt_stop(MBXT_LABELS::INIT);
 
     return;
   }
@@ -1354,7 +1344,7 @@ void FixMBX::mbx_init()
                    "handled internally by MBX: ");
   }
 
-  mbxt_stop(MBXT_INIT);
+  mbxt_stop(MBXT_LABELS::INIT);
 }
 
 /* ----------------------------------------------------------------------
@@ -1363,7 +1353,7 @@ void FixMBX::mbx_init()
 
 void FixMBX::mbx_init_local()
 {
-  mbxt_start(MBXT_INIT_LOCAL);
+  mbxt_start(MBXT_LABELS::INIT_LOCAL);
 
   const int nlocal = atom->nlocal;
   const int nall = nlocal + atom->nghost;
@@ -1622,7 +1612,7 @@ void FixMBX::mbx_init_local()
 
   if (mbx_aspc_enabled) mbx_init_dipole_history_local();
 
-  mbxt_stop(MBXT_INIT_LOCAL);
+  mbxt_stop(MBXT_LABELS::INIT_LOCAL);
 }
 
 
@@ -1632,7 +1622,7 @@ void FixMBX::mbx_init_local()
 
 void FixMBX::mbx_update_xyz()
 {
-  mbxt_start(MBXT_UPDATE_XYZ);
+  mbxt_start(MBXT_LABELS::UPDATE_XYZ);
 
   // update coordinates
 
@@ -1643,7 +1633,7 @@ void FixMBX::mbx_update_xyz()
   double *q = atom->q;
 
   if (mbx_num_atoms + mbx_num_ext == 0) {
-    mbxt_stop(MBXT_UPDATE_XYZ);
+    mbxt_stop(MBXT_LABELS::UPDATE_XYZ);
     return;
   }
 
@@ -1722,7 +1712,7 @@ void FixMBX::mbx_update_xyz()
   if (xyz_ext.size() != indx_ext * 3) error->one(FLERR, "Inconsistent # of external charges");
   if (mbx_num_ext > 0) { mbx_impl->ptr_mbx->SetExternalChargesAndPositions(chg_ext, xyz_ext); }
 
-  mbxt_stop(MBXT_UPDATE_XYZ);
+  mbxt_stop(MBXT_LABELS::UPDATE_XYZ);
 }
 
 /* ----------------------------------------------------------------------
@@ -1731,7 +1721,7 @@ void FixMBX::mbx_update_xyz()
 
 void FixMBX::mbx_update_xyz_local()
 {
-  mbxt_start(MBXT_UPDATE_XYZ_LOCAL);
+  mbxt_start(MBXT_LABELS::UPDATE_XYZ_LOCAL);
 
   // update if box changes
   // need to update box passed to PME solver
@@ -1786,7 +1776,7 @@ void FixMBX::mbx_update_xyz_local()
   double *q = atom->q;
 
   if (mbx_num_atoms_local + mbx_num_ext_local == 0) {
-    mbxt_stop(MBXT_UPDATE_XYZ);
+    mbxt_stop(MBXT_LABELS::UPDATE_XYZ);
     return;
   }
 
@@ -1865,7 +1855,7 @@ void FixMBX::mbx_update_xyz_local()
   if (xyz_ext.size() != indx_ext * 3) error->one(FLERR, "Inconsistent # of external charges");
   if (mbx_num_ext_local > 0) { mbx_impl->ptr_mbx_local->SetExternalChargesAndPositions(chg_ext, xyz_ext); }
 
-  mbxt_stop(MBXT_UPDATE_XYZ_LOCAL);
+  mbxt_stop(MBXT_LABELS::UPDATE_XYZ_LOCAL);
 }
 
 
@@ -1875,7 +1865,7 @@ void FixMBX::mbx_update_xyz_local()
 
 void FixMBX::mbx_init_dipole_history_local()
 {
-  //    mbxt_start(MBXT_INIT_DIPOLE_LOCAL);
+  //    mbxt_start(MBXT_LABELS::INIT_DIPOLE_LOCAL);
 
   if (aspc_num_hist == 0) return;
 
@@ -1891,7 +1881,7 @@ void FixMBX::mbx_init_dipole_history_local()
   double **x = atom->x;
 
   if (mbx_num_atoms_local == 0) {
-    //        mbxt_stop(MBXT_INIT_DIPOLE_LOCAL);
+    //        mbxt_stop(MBXT_LABELS::INIT_DIPOLE_LOCAL);
     return;
   }
 
@@ -1960,7 +1950,7 @@ void FixMBX::mbx_init_dipole_history_local()
 
   }    // for(hist)
 
-  //    mbxt_stop(MBXT_UPDATE_INIT_DIPOLE_LOCAL);
+  //    mbxt_stop(MBXT_LABELS::UPDATE_INIT_DIPOLE_LOCAL);
 }
 
 /* ----------------------------------------------------------------------
@@ -1981,10 +1971,10 @@ void FixMBX::mbxt_stop(int T)
 void FixMBX::mbxt_print_time(const char *name, int T, double *d)
 {
   double tavg = d[T];
-  double tmin = d[MBXT_NUM_TIMERS + T];
-  double tmax = d[MBXT_NUM_TIMERS * 2 + T];
+  double tmin = d[MBXT_LABELS::NUM_TIMERS + T];
+  double tmax = d[MBXT_LABELS::NUM_TIMERS * 2 + T];
 
-  double p = tmax / d[MBXT_NUM_TIMERS * 3] * 100.0;
+  double p = tmax / d[MBXT_LABELS::NUM_TIMERS * 3] * 100.0;
 
   if (screen)
     fprintf(screen, "[MBX] %-20s:  %12.5g  %12.5g  %12.5g  %8i %8.2f%%\n", name, tmin, tavg, tmax,
@@ -1997,25 +1987,25 @@ void FixMBX::mbxt_print_time(const char *name, int T, double *d)
 
 void FixMBX::mbxt_write_summary()
 {
-  double t[MBXT_NUM_TIMERS * 3 + 1];
+  double t[MBXT_LABELS::NUM_TIMERS * 3 + 1];
   double *tavg = &t[0];
-  double *tmin = &t[MBXT_NUM_TIMERS];
-  double *tmax = &t[MBXT_NUM_TIMERS * 2];
+  double *tmin = &t[MBXT_LABELS::NUM_TIMERS];
+  double *tmax = &t[MBXT_LABELS::NUM_TIMERS * 2];
 
   // total runtime since fix created
 
-  t[MBXT_NUM_TIMERS * 3] = MPI_Wtime() - mbxt_initial_time;
+  t[MBXT_LABELS::NUM_TIMERS * 3] = MPI_Wtime() - mbxt_initial_time;
 
-  MPI_Reduce(mbxt_time, tavg, MBXT_NUM_TIMERS, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(mbxt_time, tmin, MBXT_NUM_TIMERS, MPI_DOUBLE, MPI_MIN, 0, world);
-  MPI_Reduce(mbxt_time, tmax, MBXT_NUM_TIMERS, MPI_DOUBLE, MPI_MAX, 0, world);
+  MPI_Reduce(mbxt_time, tavg, MBXT_LABELS::NUM_TIMERS, MPI_DOUBLE, MPI_SUM, 0, world);
+  MPI_Reduce(mbxt_time, tmin, MBXT_LABELS::NUM_TIMERS, MPI_DOUBLE, MPI_MIN, 0, world);
+  MPI_Reduce(mbxt_time, tmax, MBXT_LABELS::NUM_TIMERS, MPI_DOUBLE, MPI_MAX, 0, world);
 
   if (me) return;
 
-  for (int i = 0; i < MBXT_NUM_TIMERS; ++i) tavg[i] /= (double) nprocs;
+  for (int i = 0; i < MBXT_LABELS::NUM_TIMERS; ++i) tavg[i] /= (double) nprocs;
 
   if (screen) {
-    fprintf(screen, "\n[MBX] Total MBX fix/pair time= %f seconds\n", t[MBXT_NUM_TIMERS * 3]);
+    fprintf(screen, "\n[MBX] Total MBX fix/pair time= %f seconds\n", t[MBXT_LABELS::NUM_TIMERS * 3]);
     fprintf(screen, "[MBX] Timing Summary\n");
     fprintf(screen,
             "[MBX] kernel                      tmin          tavg          tmax         count   "
@@ -2026,7 +2016,7 @@ void FixMBX::mbxt_write_summary()
         "-----------------------------------------------------------------------------------\n");
   }
   if (logfile) {
-    fprintf(logfile, "\n[MBX] Total MBX fix/pair time= %f seconds\n", t[MBXT_NUM_TIMERS * 3]);
+    fprintf(logfile, "\n[MBX] Total MBX fix/pair time= %f seconds\n", t[MBXT_LABELS::NUM_TIMERS * 3]);
     fprintf(logfile, "[MBX] Timing Summary\n");
     fprintf(logfile,
             "[MBX] kernel                      tmin          tavg          tmax         count   "
@@ -2037,24 +2027,21 @@ void FixMBX::mbxt_write_summary()
         "-----------------------------------------------------------------------------------\n");
   }
 
-  mbxt_print_time("INIT", MBXT_INIT, t);
-  mbxt_print_time("UPDATE_XYZ", MBXT_UPDATE_XYZ, t);
-  mbxt_print_time("ACCUMULATE_F", MBXT_ACCUMULATE_F, t);
+  mbxt_print_time("INIT", MBXT_LABELS::INIT, t);
+  mbxt_print_time("UPDATE_XYZ", MBXT_LABELS::UPDATE_XYZ, t);
+  mbxt_print_time("ACCUMULATE_F", MBXT_LABELS::ACCUMULATE_F, t);
 
-  mbxt_print_time("E1B", MBXT_E1B, t);
-  mbxt_print_time("E2B_LOCAL", MBXT_E2B_LOCAL, t);
-  mbxt_print_time("E2B_GHOST", MBXT_E2B_GHOST, t);
-  mbxt_print_time("E3B_LOCAL", MBXT_E3B_LOCAL, t);
-  mbxt_print_time("E3B_GHOST", MBXT_E3B_GHOST, t);
-  mbxt_print_time("E4B_LOCAL", MBXT_E4B_LOCAL, t);
-  mbxt_print_time("E4B_GHOST", MBXT_E4B_GHOST, t);
-  mbxt_print_time("DISP", MBXT_DISP, t);
-  mbxt_print_time("DISP_PME", MBXT_DISP_PME, t);
-  mbxt_print_time("BUCK", MBXT_BUCK, t);
-  mbxt_print_time("ELE", MBXT_ELE, t);
-  mbxt_print_time("INIT_LOCAL", MBXT_INIT_LOCAL, t);
-  mbxt_print_time("UPDATE_XYZ_LOCAL", MBXT_UPDATE_XYZ_LOCAL, t);
-  mbxt_print_time("ACCUMULATE_F_LOCAL", MBXT_ACCUMULATE_F_LOCAL, t);
+  mbxt_print_time("E1B", MBXT_LABELS::E1B, t);
+  mbxt_print_time("E2B", MBXT_LABELS::E2B_GHOST, t);
+  mbxt_print_time("E3B", MBXT_LABELS::E3B_GHOST, t);
+  mbxt_print_time("E4B", MBXT_LABELS::E4B_GHOST, t);
+  mbxt_print_time("DISP", MBXT_LABELS::DISP, t);
+  mbxt_print_time("DISP_PME", MBXT_LABELS::DISP_PME, t);
+  mbxt_print_time("BUCK", MBXT_LABELS::BUCK, t);
+  mbxt_print_time("ELE", MBXT_LABELS::ELE, t);
+  mbxt_print_time("INIT_LOCAL", MBXT_LABELS::INIT_LOCAL, t);
+  mbxt_print_time("UPDATE_XYZ_LOCAL", MBXT_LABELS::UPDATE_XYZ_LOCAL, t);
+  mbxt_print_time("ACCUMULATE_F_LOCAL", MBXT_LABELS::ACCUMULATE_F_LOCAL, t);
 
   if (screen) {
     fprintf(screen, "\n\n[MBX] Electrostatics Summary\n");
@@ -2077,29 +2064,29 @@ void FixMBX::mbxt_write_summary()
         "-----------------------------------------------------------------------------------\n");
   }
 
-  mbxt_print_time("ELE_PERMDIP_REAL", MBXT_ELE_PERMDIP_REAL, t);
-  mbxt_print_time("ELE_PERMDIP_PME", MBXT_ELE_PERMDIP_PME, t);
+  mbxt_print_time("ELE_PERMDIP_REAL", MBXT_LABELS::ELE_PERMDIP_REAL, t);
+  mbxt_print_time("ELE_PERMDIP_PME", MBXT_LABELS::ELE_PERMDIP_PME, t);
 
-  mbxt_print_time("ELE_DIPFIELD_REAL", MBXT_ELE_DIPFIELD_REAL, t);
-  mbxt_print_time("ELE_DIPFIELD_PME", MBXT_ELE_DIPFIELD_PME, t);
+  mbxt_print_time("ELE_DIPFIELD_REAL", MBXT_LABELS::ELE_DIPFIELD_REAL, t);
+  mbxt_print_time("ELE_DIPFIELD_PME", MBXT_LABELS::ELE_DIPFIELD_PME, t);
 
-  mbxt_print_time("ELE_GRAD_REAL", MBXT_ELE_GRAD_REAL, t);
-  mbxt_print_time("ELE_GRAD_PME", MBXT_ELE_GRAD_PME, t);
-  mbxt_print_time("ELE_GRAD_FIN", MBXT_ELE_GRAD_FIN, t);
+  mbxt_print_time("ELE_GRAD_REAL", MBXT_LABELS::ELE_GRAD_REAL, t);
+  mbxt_print_time("ELE_GRAD_PME", MBXT_LABELS::ELE_GRAD_PME, t);
+  mbxt_print_time("ELE_GRAD_FIN", MBXT_LABELS::ELE_GRAD_FIN, t);
 
-  mbxt_print_time("ELE_PME_SETUP", MBXT_ELE_PME_SETUP, t);
-  mbxt_print_time("ELE_PME_C", MBXT_ELE_PME_C, t);
-  mbxt_print_time("ELE_PME_D", MBXT_ELE_PME_D, t);
-  mbxt_print_time("ELE_PME_E", MBXT_ELE_PME_E, t);
+  mbxt_print_time("ELE_PME_SETUP", MBXT_LABELS::ELE_PME_SETUP, t);
+  mbxt_print_time("ELE_PME_C", MBXT_LABELS::ELE_PME_C, t);
+  mbxt_print_time("ELE_PME_D", MBXT_LABELS::ELE_PME_D, t);
+  mbxt_print_time("ELE_PME_E", MBXT_LABELS::ELE_PME_E, t);
 
-  mbxt_print_time("DISP_PME_SETUP", MBXT_DISP_PME_SETUP, t);
-  mbxt_print_time("DISP_PME_E", MBXT_DISP_PME_E, t);
+  mbxt_print_time("DISP_PME_SETUP", MBXT_LABELS::DISP_PME_SETUP, t);
+  mbxt_print_time("DISP_PME_E", MBXT_LABELS::DISP_PME_E, t);
 
-  mbxt_print_time("ELE_COMM_REVFOR", MBXT_ELE_COMM_REVFOR, t);
-  mbxt_print_time("ELE_COMM_REVSET", MBXT_ELE_COMM_REVSET, t);
-  mbxt_print_time("ELE_COMM_REV", MBXT_ELE_COMM_REV, t);
-  mbxt_print_time("ELE_COMM_FORSET", MBXT_ELE_COMM_FORSET, t);
-  mbxt_print_time("ELE_COMM_FOR", MBXT_ELE_COMM_FOR, t);
+  mbxt_print_time("ELE_COMM_REVFOR", MBXT_LABELS::ELE_COMM_REVFOR, t);
+  mbxt_print_time("ELE_COMM_REVSET", MBXT_LABELS::ELE_COMM_REVSET, t);
+  mbxt_print_time("ELE_COMM_REV", MBXT_LABELS::ELE_COMM_REV, t);
+  mbxt_print_time("ELE_COMM_FORSET", MBXT_LABELS::ELE_COMM_FORSET, t);
+  mbxt_print_time("ELE_COMM_FOR", MBXT_LABELS::ELE_COMM_FOR, t);
 }
 
 /* ----------------------------------------------------------------------

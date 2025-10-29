@@ -135,87 +135,67 @@ void PairMBX::compute(int eflag, int vflag)
 
   if (fix_MBX->mbx_num_atoms > 0) {
 
-    fix_MBX->mbxt_start(MBXT_E1B);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::E1B);
     mbx_e1b = ptr_mbx->OneBodyEnergy(true);
-    fix_MBX->mbxt_stop(MBXT_E1B);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::E1B);
     accumulate_f(false);
 
-    // fix_MBX->mbxt_start(MBXT_E2B_LOCAL);
-    // mbx_e2b_local = ptr_mbx->TwoBodyEnergy(true);
-    // fix_MBX->mbxt_stop(MBXT_E2B_LOCAL);
-    // accumulate_f(false);
-    mbx_e2b_local = 0.0;
-
-    fix_MBX->mbxt_start(MBXT_E2B_GHOST);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::E2B_GHOST);
     mbx_e2b_ghost = ptr_mbx->TwoBodyEnergy(true, true);
-    fix_MBX->mbxt_stop(MBXT_E2B_GHOST);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::E2B_GHOST);
     accumulate_f_all(false);
+    mbx_e2b = mbx_e2b_ghost;
 
-    mbx_e2b = mbx_e2b_local + mbx_e2b_ghost;
-
-    // fix_MBX->mbxt_start(MBXT_E3B_LOCAL);
-    // mbx_e3b_local = ptr_mbx->ThreeBodyEnergy(true);
-    // fix_MBX->mbxt_stop(MBXT_E3B_LOCAL);
-    // accumulate_f(false);
-    mbx_e3b_local = 0.0;
-
-    fix_MBX->mbxt_start(MBXT_E3B_GHOST);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::E3B_GHOST);
     mbx_e3b_ghost = ptr_mbx->ThreeBodyEnergy(true, true);
-    fix_MBX->mbxt_stop(MBXT_E3B_GHOST);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::E3B_GHOST);
     accumulate_f_all(false);
+    mbx_e3b = mbx_e3b_ghost;
 
-    mbx_e3b = mbx_e3b_local + mbx_e3b_ghost;
-
-    // fix_MBX->mbxt_start(MBXT_E4B_LOCAL);
-    // mbx_e4b_local = ptr_mbx->FourBodyEnergy(true);
-    // fix_MBX->mbxt_stop(MBXT_E4B_LOCAL);
-    // accumulate_f(false);
-    mbx_e4b_local = 0.0;
-
-    fix_MBX->mbxt_start(MBXT_E4B_GHOST);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::E4B_GHOST);
     mbx_e4b_ghost = ptr_mbx->FourBodyEnergy(true, true);
-    fix_MBX->mbxt_stop(MBXT_E4B_GHOST);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::E4B_GHOST);
     accumulate_f_all(false);
 
-    mbx_e4b = mbx_e4b_local + mbx_e4b_ghost;
+    mbx_e4b = mbx_e4b_ghost;
   }
 
 
-  fix_MBX->mbxt_start(MBXT_ELE);
+  fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::ELE);
   mbx_ele = ptr_mbx_local->ElectrostaticsMPIlocal(true, true);
-  fix_MBX->mbxt_stop(MBXT_ELE);
+  fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::ELE);
   accumulate_f_local(true);
 
 
-  fix_MBX->mbxt_start(MBXT_DISP);
+  fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::DISP);
   mbx_disp_real = ptr_mbx_local->Dispersion(
       true, true);    // computes real-space with local-local & local-ghost pairs
-  fix_MBX->mbxt_stop(MBXT_DISP);
+  fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::DISP);
   accumulate_f_local(false);
 
-  fix_MBX->mbxt_start(MBXT_DISP_PME);
+  fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::DISP_PME);
   mbx_disp_pme = ptr_mbx_local->DispersionPMElocal(
       true, true);    // computes PME-space with local-local & local-ghost pairs
-  fix_MBX->mbxt_stop(MBXT_DISP_PME);
+  fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::DISP_PME);
   accumulate_f_local(false);
 
 
   if (fix_MBX->mbx_num_atoms > 0) {
 
 #ifdef TTMNRG
-    fix_MBX->mbxt_start(MBXT_BUCK);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::BUCK);
     mbx_buck = ptr_mbx->Buckingham(true, true);
-    fix_MBX->mbxt_stop(MBXT_BUCK);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::BUCK);
     accumulate_f(false);
 
-    fix_MBX->mbxt_start(MBXT_BUCK);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::BUCK);
     mbx_buck += ptr_mbx_local->LennardJones(true, true);
-    fix_MBX->mbxt_stop(MBXT_BUCK);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::BUCK);
     accumulate_f_local(false);
 #else
-    fix_MBX->mbxt_start(MBXT_BUCK);
+    fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::BUCK);
     mbx_buck = 0.0;
-    fix_MBX->mbxt_stop(MBXT_BUCK);
+    fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::BUCK);
 #endif
   }
 
@@ -245,12 +225,6 @@ void PairMBX::compute(int eflag, int vflag)
 
     // // for debugging
 
-    // pvector[8] = mbx_e2b_local;
-    // pvector[9] = mbx_e2b_ghost;
-    // pvector[10] = mbx_e3b_local;
-    // pvector[11] = mbx_e3b_ghost;
-    // pvector[12] = mbx_e4b_local;
-    // pvector[13] = mbx_e4b_ghost;
     // pvector[14] = mbx_disp_real;
     // pvector[15] = mbx_disp_pme;
 
@@ -333,7 +307,7 @@ double PairMBX::init_one(int i, int j)
 void PairMBX::accumulate_f(bool include_ext)
 {
 
-  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::ACCUMULATE_F);
 
   bblock::System *ptr_mbx = fix_MBX->mbx_impl->ptr_mbx;
 
@@ -404,7 +378,7 @@ void PairMBX::accumulate_f(bool include_ext)
     mbx_virial[5] += mbx_vir[5];
   }
 
-  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::ACCUMULATE_F);
 }
 
 /* ----------------------------------------------------------------------
@@ -414,7 +388,7 @@ void PairMBX::accumulate_f(bool include_ext)
 void PairMBX::accumulate_f_all(bool include_ext)
 {
 
-  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::ACCUMULATE_F);
 
   bblock::System *ptr_mbx = fix_MBX->mbx_impl->ptr_mbx;
 
@@ -485,7 +459,7 @@ void PairMBX::accumulate_f_all(bool include_ext)
     mbx_virial[5] += mbx_vir[5];
   }
 
-  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F);
+  fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::ACCUMULATE_F);
 }
 
 /* ----------------------------------------------------------------------
@@ -495,7 +469,7 @@ void PairMBX::accumulate_f_all(bool include_ext)
 void PairMBX::accumulate_f_local(bool include_ext)
 {
 
-  fix_MBX->mbxt_start(MBXT_ACCUMULATE_F_LOCAL);
+  fix_MBX->mbxt_start(FixMBX::MBXT_LABELS::ACCUMULATE_F_LOCAL);
 
   bblock::System *ptr_mbx = fix_MBX->mbx_impl->ptr_mbx_local;
 
@@ -568,6 +542,6 @@ void PairMBX::accumulate_f_local(bool include_ext)
     mbx_virial[5] += mbx_vir[5];
   }
 
-  fix_MBX->mbxt_stop(MBXT_ACCUMULATE_F_LOCAL);
+  fix_MBX->mbxt_stop(FixMBX::MBXT_LABELS::ACCUMULATE_F_LOCAL);
 }
 

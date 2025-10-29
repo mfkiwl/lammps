@@ -23,51 +23,6 @@ FixStyle(MBX, FixMBX)
 #include "fix.h"
 
 
-enum {
-  MBXT_INIT = 0,
-  MBXT_UPDATE_XYZ,
-  MBXT_INIT_LOCAL,
-  MBXT_UPDATE_XYZ_LOCAL,
-  MBXT_E1B,
-  MBXT_E2B_LOCAL,
-  MBXT_E2B_GHOST,
-  MBXT_E3B_LOCAL,
-  MBXT_E3B_GHOST,
-  MBXT_E4B_LOCAL,
-  MBXT_E4B_GHOST,
-  MBXT_DISP,
-  MBXT_DISP_PME,
-  MBXT_BUCK,
-  MBXT_ELE,
-  MBXT_ACCUMULATE_F,
-  MBXT_ACCUMULATE_F_LOCAL,
-
-  MBXT_ELE_PERMDIP_REAL,
-  MBXT_ELE_PERMDIP_PME,
-
-  MBXT_ELE_DIPFIELD_REAL,
-  MBXT_ELE_DIPFIELD_PME,
-
-  MBXT_ELE_GRAD_REAL,
-  MBXT_ELE_GRAD_PME,
-  MBXT_ELE_GRAD_FIN,
-
-  MBXT_ELE_COMM_REVFOR,
-  MBXT_ELE_COMM_REVSET,
-  MBXT_ELE_COMM_REV,
-  MBXT_ELE_COMM_FORSET,
-  MBXT_ELE_COMM_FOR,
-
-  MBXT_ELE_PME_SETUP,
-  MBXT_ELE_PME_C,
-  MBXT_ELE_PME_D,
-  MBXT_ELE_PME_E,
-
-  MBXT_DISP_PME_SETUP,
-  MBXT_DISP_PME_E,
-
-  MBXT_NUM_TIMERS
-};
 
 namespace LAMMPS_NS {
 
@@ -143,6 +98,48 @@ class FixMBX : public Fix {
   void mbxt_stop(int);
   void mbxt_write_summary();
   void mbxt_print_time(const char *, int, double *);
+  enum MBXT_LABELS : int {
+    INIT = 0,
+    UPDATE_XYZ,
+    INIT_LOCAL,
+    UPDATE_XYZ_LOCAL,
+    E1B,
+    E2B_GHOST,
+    E3B_GHOST,
+    E4B_GHOST,
+    DISP,
+    DISP_PME,
+    BUCK,
+    ELE,
+    ACCUMULATE_F,
+    ACCUMULATE_F_LOCAL,
+
+    ELE_PERMDIP_REAL,
+    ELE_PERMDIP_PME,
+
+    ELE_DIPFIELD_REAL,
+    ELE_DIPFIELD_PME,
+
+    ELE_GRAD_REAL,
+    ELE_GRAD_PME,
+    ELE_GRAD_FIN,
+
+    ELE_COMM_REVFOR,
+    ELE_COMM_REVSET,
+    ELE_COMM_REV,
+    ELE_COMM_FORSET,
+    ELE_COMM_FOR,
+
+    ELE_PME_SETUP,
+    ELE_PME_C,
+    ELE_PME_D,
+    ELE_PME_E,
+
+    DISP_PME_SETUP,
+    DISP_PME_E,
+
+    NUM_TIMERS
+  };
 
   bool validateMBXFixParameters(int narg, char **arg);
 
