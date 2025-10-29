@@ -1515,30 +1515,21 @@ void FixBondReact::make_a_guess(Superimpose &super, Reaction &rxn)
   if (assigned_count == nfirst_neighs) status = Status::GUESSFAIL;
 
   // check if all neigh atom types are the same between simulation and unreacted mol
-  int *mol_ntypes = new int[atom->ntypes];
-  int *lcl_ntypes = new int[atom->ntypes];
-
-  for (int i = 0; i < atom->ntypes; i++) {
-    mol_ntypes[i] = 0;
-    lcl_ntypes[i] = 0;
-  }
-
+  std::vector<int> mol_types(nfirst_neighs), lcl_types(nfirst_neighs), shared_types;
   for (int i = 0; i < nfirst_neighs; i++) {
-    mol_ntypes[(int)rxn.reactant->type[(int)rxn.reactant->special[sp.pion][i]-1]-1]++;
-    lcl_ntypes[(int)type[(int)atom->map(xspecial[atom->map(sp.glove[sp.pion])][i])]-1]++; //added -1
+    mol_types[i] = rxn.reactant->type[(int)rxn.reactant->special[sp.pion][i]-1];
+    lcl_types[i] = type[atom->map(xspecial[atom->map(sp.glove[sp.pion])][i])];
   }
 
-  for (int i = 0; i < atom->ntypes; i++) {
-    if (mol_ntypes[i] != lcl_ntypes[i]) {
-      status = Status::GUESSFAIL;
-      delete[] mol_ntypes;
-      delete[] lcl_ntypes;
-      return;
-    }
-  }
+  sort(mol_types.begin(), mol_types.end());
+  sort(lcl_types.begin(), lcl_types.end());
+  std::set_intersection(mol_types.begin(), mol_types.end(), lcl_types.begin(), lcl_types.end(),
+                        std::back_inserter(shared_types));
 
-  delete[] mol_ntypes;
-  delete[] lcl_ntypes;
+  if (shared_types.size() != nfirst_neighs) {
+    status = Status::GUESSFAIL;
+    return;
+  }
 
   // okay everything seems to be in order. let's assign some ID pairs!!!
   neighbor_loop(super, rxn);
