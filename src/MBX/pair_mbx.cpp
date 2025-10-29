@@ -299,9 +299,14 @@ void PairMBX::coeff(int narg, char **arg)
   if (narg < 2) error->all(FLERR, "Incorrect num args for pair coefficients");
   if (!allocated) allocate();
 
-  for (int ntype = 1; ntype <= atom->ntypes; ntype++) {
-    setflag[ntype][ntype] = 1;
+  int count = 0;
+  for (int i = 1; i <= atom->ntypes; i++) {
+    for (int j = i; j <= atom->ntypes; j++) {
+      setflag[i][j] = 1;
+      count++;
+    }
   }
+  if (count == 0) error->all(FLERR, "Incorrect args for pair coefficients");
 
   std::string fix_args = "";
   for (int i = 2; i < narg; ++i) { fix_args += std::string(arg[i]) + " "; }

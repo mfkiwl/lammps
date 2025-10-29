@@ -18,21 +18,17 @@ Examples
 
 .. code-block:: LAMMPS
 
-    # For a system involving water (atom types O=1, H=2)
-    processors      * * * map xyz
     pair_style      mbx 9.0
     pair_coeff      * * 1 h2o 1 2 2 json mbx.json
     compute         mbx all pair mbx
 
     # For a system involving ch4 (atom types C=1, H=2) and
     # water (atom types O=3, H=4)
-    processors      * * * map xyz
     pair_style      mbx 9.0
     pair_coeff      * * 2 ch4 1 2 2 2 2 h2o 3 4 4 json mbx.json
     compute         mbx all pair mbx
 
     # For a system involving water (atom types O=12, H=13) in a hybrid simulation
-    processors      * * * map xyz
     pair_style      hybrid/overlay mbx 9.0 lj/cut 9.0 coul/exclude 9.0
     pair_coeff      * * mbx 2 dp1 1*11 h2o 12 13 13 json mbx.json
     pair_coeff      1*11 1*11 coul/exclude
@@ -40,8 +36,6 @@ Examples
 
     # For a system involving water (atom types O=12, H=13) in a hybrid simulation
     # with special_bonds and coul/exclude to exclude 1-2, 1-3, and 1-4 electrostatics
-    # for the charmm framework
-    processors      * * * map xyz
     special_bonds   charmm
     pair_style      hybrid/overlay mbx 9.0 lj/cut 9.0 coul/exclude 9.0
     pair_coeff      * * mbx 2 dp1 1*11 h2o 12 13 13 json mbx.json
