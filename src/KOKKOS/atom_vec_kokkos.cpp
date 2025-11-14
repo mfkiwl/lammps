@@ -267,6 +267,8 @@ int AtomVecKokkos::pack_comm_kokkos(const int &n,
     }
   }
 
+  if (bonus_flag) pack_comm_bonus_kokkos(n, list, buf);
+
   return n*size_forward;
 }
 
@@ -754,6 +756,7 @@ void AtomVecKokkos::unpack_comm_kokkos(const int &n, const int &first,
     }
     atomKK->modified(Device,datamask_comm);
   }
+  if (bonus_flag) unpack_comm_bonus_kokkos(n, first, buf);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -766,6 +769,7 @@ struct AtomVecKokkos_PackCommVel {
   typename AT::t_kkfloat_1d_3_lr_randomread _x;
   typename AT::t_int_1d_randomread _mask;
   typename AT::t_kkfloat_1d_3_randomread _v;
+  typename AT::t_kkfloat_1d_3_randomread _angmom;
   typename AT::t_kkfloat_1d_4_randomread _mu;
   typename AT::t_kkfloat_1d_4_randomread _sp;
   typename AT::t_kkfloat_1d_3_randomread _omega;
@@ -790,6 +794,7 @@ struct AtomVecKokkos_PackCommVel {
     _x(atomKK->k_x.view<DeviceType>()),
     _mask(atomKK->k_mask.view<DeviceType>()),
     _v(atomKK->k_v.view<DeviceType>()),
+    _angmom(atomKK->k_angmom.view<DeviceType>()),
     _omega(atomKK->k_omega.view<DeviceType>()),
     _dpdTheta(atomKK->k_dpdTheta.view<DeviceType>()),
     _uCond(atomKK->k_uCond.view<DeviceType>()),
@@ -847,6 +852,14 @@ struct AtomVecKokkos_PackCommVel {
           _buf(i,m++) = _v(j,2);
         }
       }
+    }
+
+    // ANGMOM - included for avecEllipsoid
+
+    if (_datamask & ANGMOM_MASK) {
+      _buf(i,m++) = _angmom(j,0);
+      _buf(i,m++) = _angmom(j,1);
+      _buf(i,m++) = _angmom(j,2);
     }
 
     // DIPOLE package
@@ -1026,6 +1039,7 @@ struct AtomVecKokkos_UnpackCommVel {
 
   typename AT::t_kkfloat_1d_3_lr _x;
   typename AT::t_kkfloat_1d_3 _v;
+  typename AT::t_kkfloat_1d_3 _angmom;
   typename AT::t_kkfloat_1d_4 _mu;
   typename AT::t_kkfloat_1d_4 _sp;
   typename AT::t_kkfloat_1d_3 _omega;
@@ -1040,6 +1054,7 @@ struct AtomVecKokkos_UnpackCommVel {
     const int &first, const uint64_t &datamask):
     _x(atomKK->k_x.view<DeviceType>()),
     _v(atomKK->k_v.view<DeviceType>()),
+    _angmom(atomKK->k_angmom.view<DeviceType>()),
     _mu(atomKK->k_mu.view<DeviceType>()),
     _sp(atomKK->k_sp.view<DeviceType>()),
     _omega(atomKK->k_omega.view<DeviceType>()),
@@ -1065,6 +1080,14 @@ struct AtomVecKokkos_UnpackCommVel {
     _v(i+_first,2) = _buf(i,m++);
 
     if constexpr (!DEFAULT) {
+
+      // ANGMOM - included for avecEllipsoid
+
+      if (_datamask & ANGMOM_MASK) {
+        _angmom(i+_first,0) = _buf(i,m++);
+        _angmom(i+_first,1) = _buf(i,m++);
+        _angmom(i+_first,2) = _buf(i,m++);
+      }
 
       // DIPOLE package
 
@@ -1577,6 +1600,9 @@ int AtomVecKokkos::pack_border_kokkos(int n, DAT::tdual_int_1d k_sendlist,
       }
     }
   }
+
+  if (bonus_flag) pack_border_bonus_kokkos(n, k_sendlist, buf, space);
+
   return n*size_border;
 }
 
@@ -1708,6 +1734,8 @@ void AtomVecKokkos::unpack_border_kokkos(const int &n, const int &first,
     }
   }
 
+  if (bonus_flag) unpack_border_bonus_kokkos(n, first, buf, space);
+
   atomKK->modified(space,datamask_border);
 }
 
@@ -1725,6 +1753,7 @@ struct AtomVecKokkos_PackBorderVel {
   const typename AT::t_tagint_1d_randomread _tag;
   const typename AT::t_int_1d_randomread _type;
   const typename AT::t_int_1d_randomread _mask;
+  const typename AT::t_kkfloat_1d_3_randomread _angmom;
   const typename AT::t_tagint_1d_randomread _molecule;
   const typename AT::t_kkfloat_1d_randomread _q;
   const typename AT::t_kkfloat_1d_4_randomread _mu;
@@ -1749,6 +1778,7 @@ struct AtomVecKokkos_PackBorderVel {
       _tag(atomKK->k_tag.view<DeviceType>()),
       _type(atomKK->k_type.view<DeviceType>()),
       _mask(atomKK->k_mask.view<DeviceType>()),
+      _angmom(atomKK->k_angmom.view<DeviceType>()),
       _molecule(atomKK->k_molecule.view<DeviceType>()),
       _q(atomKK->k_q.view<DeviceType>()),
       _v(atomKK->k_v.view<DeviceType>()),
@@ -1798,6 +1828,14 @@ struct AtomVecKokkos_PackBorderVel {
       _buf(i,m++) = _v(j,0);
       _buf(i,m++) = _v(j,1);
       _buf(i,m++) = _v(j,2);
+    }
+
+    // ANGMOM - included for avecEllipsoid
+
+    if (_datamask & ANGMOM_MASK) {
+      _buf(i,m++) = _angmom(j,0);
+      _buf(i,m++) = _angmom(j,1);
+      _buf(i,m++) = _angmom(j,2);
     }
 
     if (_datamask & MOLECULE_MASK)
@@ -1936,6 +1974,7 @@ struct AtomVecKokkos_UnpackBorderVel {
   typename AT::t_tagint_1d _tag;
   typename AT::t_int_1d _type;
   typename AT::t_int_1d _mask;
+  typename AT::t_kkfloat_1d_3 _angmom;
   typename AT::t_tagint_1d _molecule;
   typename AT::t_kkfloat_1d _q;
   typename AT::t_kkfloat_1d_3 _v;
@@ -1957,6 +1996,7 @@ struct AtomVecKokkos_UnpackBorderVel {
     _tag(atomKK->k_tag.view<DeviceType>()),
     _type(atomKK->k_type.view<DeviceType>()),
     _mask(atomKK->k_mask.view<DeviceType>()),
+    _angmom(atomKK->k_angmom.view<DeviceType>()),
     _molecule(atomKK->k_molecule.view<DeviceType>()),
     _q(atomKK->k_q.view<DeviceType>()),
     _v(atomKK->k_v.view<DeviceType>()),
@@ -1992,6 +2032,14 @@ struct AtomVecKokkos_UnpackBorderVel {
     _v(i+_first,2) = _buf(i,m++);
 
     if constexpr (!DEFAULT) {
+
+      // ANGMOM - included for avecEllipsoid
+
+      if (_datamask & ANGMOM_MASK) {
+        _angmom(i+_first,0) = _buf(i,m++);
+        _angmom(i+_first,1) = _buf(i,m++);
+        _angmom(i+_first,2) = _buf(i,m++);
+      }
 
       if (_datamask & MOLECULE_MASK)
         _molecule(i+_first) = (tagint) d_ubuf(_buf(i,m++)).i;
@@ -2117,6 +2165,7 @@ struct AtomVecKokkos_PackExchangeFunctor {
   typename AT::t_kkfloat_1d_4 _sp;
   typename AT::t_kkfloat_1d _radius,_rmass;
   typename AT::t_kkfloat_1d_3 _omega;
+  typename AT::t_kkfloat_1d_3 _angmom;
   typename AT::t_kkfloat_1d _dpdTheta,_uCond,_uMech,_uChem,_uCG,_uCGnew;
 
   typename AT::t_double_2d_lr_um _buf;
@@ -2166,6 +2215,7 @@ struct AtomVecKokkos_PackExchangeFunctor {
       _radius(atomKK->k_radius.view<DeviceType>()),
       _rmass(atomKK->k_rmass.view<DeviceType>()),
       _omega(atomKK->k_omega.view<DeviceType>()),
+      _angmom(atomKK->k_angmom.view<DeviceType>()),
       _dpdTheta(atomKK->k_dpdTheta.view<DeviceType>()),
       _uCond(atomKK->k_uCond.view<DeviceType>()),
       _uMech(atomKK->k_uMech.view<DeviceType>()),
@@ -2281,6 +2331,14 @@ struct AtomVecKokkos_PackExchangeFunctor {
         _buf(mysend,m++) = _omega(i,2);
       }
 
+      // ANGMOM - included for avecEllipsoid
+
+      if (_datamask & ANGMOM_MASK) {
+        _buf(mysend,m++) = _angmom(i,0);
+        _buf(mysend,m++) = _angmom(i,1);
+        _buf(mysend,m++) = _angmom(i,2);
+      }
+
       // DPD-REACT package
 
       if (_datamask & DPDTHETA_MASK) {
@@ -2389,6 +2447,12 @@ struct AtomVecKokkos_PackExchangeFunctor {
           _omega(i,2) = _omega(j,2);
         }
 
+        if (_datamask & ANGMOM_MASK) {
+          _angmom(i,0) = _angmom(j,0);
+          _angmom(i,1) = _angmom(j,1);
+          _angmom(i,2) = _angmom(j,2);
+        }
+
         // DPD-REACT package
 
         if (_datamask & DPDTHETA_MASK) {
@@ -2482,6 +2546,7 @@ struct AtomVecKokkos_UnpackExchangeFunctor {
   typename AT::t_kkfloat_1d_4 _sp;
   typename AT::t_kkfloat_1d _radius,_rmass;
   typename AT::t_kkfloat_1d_3 _omega;
+  typename AT::t_kkfloat_1d_3 _angmom;
   typename AT::t_kkfloat_1d _dpdTheta,_uCond,_uMech,_uChem,_uCG,_uCGnew;
 
   typename AT::t_double_2d_lr_um _buf;
@@ -2534,6 +2599,7 @@ struct AtomVecKokkos_UnpackExchangeFunctor {
       _radius(atomKK->k_radius.view<DeviceType>()),
       _rmass(atomKK->k_rmass.view<DeviceType>()),
       _omega(atomKK->k_omega.view<DeviceType>()),
+      _angmom(atomKK->k_angmom.view<DeviceType>()),
       _dpdTheta(atomKK->k_dpdTheta.view<DeviceType>()),
       _uCond(atomKK->k_uCond.view<DeviceType>()),
       _uMech(atomKK->k_uMech.view<DeviceType>()),
@@ -2648,6 +2714,12 @@ struct AtomVecKokkos_UnpackExchangeFunctor {
           _omega(i,0) = _buf(myrecv,m++);
           _omega(i,1) = _buf(myrecv,m++);
           _omega(i,2) = _buf(myrecv,m++);
+        }
+
+        if (_datamask & ANGMOM_MASK) {
+          _angmom(i,0) = _buf(myrecv,m++);
+          _angmom(i,1) = _buf(myrecv,m++);
+          _angmom(i,2) = _buf(myrecv,m++);
         }
 
         // DPD-REACT package
@@ -2769,6 +2841,8 @@ uint64_t AtomVecKokkos::field2mask(std::string field)
     return OMEGA_MASK;
   else if (field == "torque")
     return TORQUE_MASK;
+  else if (field == "ellipsoid")
+    return ELLIPSOID_MASK;
   else if (field == "molecule")
     return MOLECULE_MASK;
   else if (field == "nspecial")
@@ -2825,6 +2899,7 @@ int AtomVecKokkos::field2size(std::string field)
   else if (field == "radius") return 1;
   else if (field == "omega") return 3;
   else if (field == "torque") return 3;
+  else if (field == "ellipsoid") return 1;
   else if (field == "molecule") return 1;
   else if (field == "special") return 3+atom->maxspecial;
   else if (field == "num_bond") return 1+2*atom->bond_per_atom;

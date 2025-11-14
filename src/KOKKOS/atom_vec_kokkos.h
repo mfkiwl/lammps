@@ -98,6 +98,38 @@ class AtomVecKokkos : virtual public AtomVec {
                              ExecutionSpace space,
                              DAT::tdual_int_1d &k_indices);
 
+  // Bonus functions - MOSTLY PLACEHOLDERS THIS NOW
+
+  virtual void pack_comm_bonus_kokkos(const int &n, const DAT::tdual_int_1d &list,
+                       const DAT::tdual_double_2d_lr &buf) {}
+
+  virtual void unpack_comm_bonus_kokkos(const int &n, const int &nfirst,
+                                      const DAT::tdual_double_2d_lr &buf) {}
+
+  virtual void pack_border_bonus_kokkos(int n, DAT::tdual_int_1d k_sendlist,
+                                      DAT::tdual_double_2d_lr buf,
+                                      ExecutionSpace space) {}
+  virtual void unpack_border_bonus_kokkos(const int &n, const int &nfirst,
+                                      const DAT::tdual_double_2d_lr &buf,
+                                      ExecutionSpace space) {}
+
+  // virtual int unpack_border_bonus_kokkos(const int &n, const int &nfirst,
+  //                           const DAT::tdual_double_2d_lr &buf,
+  //                           ExecutionSpace space) { return 0; }
+
+  // virtual int pack_exchange_bonus_kokkos(const int &nsend,
+  //                                      DAT::tdual_double_2d_lr &buf,
+  //                                      ExecutionSpace space) { return 0; }
+
+  // virtual int unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_lr &k_buf,
+  //                                        int nrecv,
+  //                                        int nlocal,
+  //                                        int dim,
+  //                                        double lo,
+  //                                        double hi,
+  //                                        ExecutionSpace space,
+  //                                        DAT::tdual_int_1d &k_indices) { return 0; }
+
   int size_exchange;
 
   uint64_t datamask_grow;
