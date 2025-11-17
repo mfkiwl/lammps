@@ -86,6 +86,18 @@ class AtomVecEllipsoidKokkos : public AtomVecKokkos, public AtomVecEllipsoid {
                                const DAT::tdual_double_2d_lr &buf,
                                ExecutionSpace space) override;
 
+  void pack_exchange_bonus_kokkos(const int &nsend, DAT::tdual_double_2d_lr &buf,
+                               DAT::tdual_int_1d k_sendlist,
+                               DAT::tdual_int_1d k_copylist,
+                               DAT::tdual_int_1d k_copylist_bonus,
+                               ExecutionSpace space) override;
+
+  void unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_lr &k_buf,
+                                 int nrecv, int nlocal, int dim,
+                                 double lo, double hi,
+                                 ExecutionSpace space,
+                                 DAT::tdual_int_1d &k_indices) override;
+
   /* PLACEHOLDER - probably going to make this *bonus_kokkos functions
   
   int pack_comm_kokkos(const int &n, const DAT::tdual_int_1d &k_sendlist,
@@ -125,8 +137,8 @@ class AtomVecEllipsoidKokkos : public AtomVecKokkos, public AtomVecEllipsoid {
                              
    */
 
-  //int get_status_nlocal_bonus() override;     // Using these for use in
-  //void set_status_nlocal_bonus(int) override; // CommKokkos::exchange_device()
+  int get_status_nlocal_bonus() override;     // Using these for use in
+  void set_status_nlocal_bonus(int) override; // CommKokkos::exchange_device()
 
   // Bonus struct
 
@@ -137,7 +149,8 @@ class AtomVecEllipsoidKokkos : public AtomVecKokkos, public AtomVecEllipsoid {
   HEllipsoidBonusAT::t_bonus_1d h_bonus;
     
  private:
-  double **torque;  
+  double **torque;
+  //int *ellipsoid;
     
   DAT::t_tagint_1d d_tag;
   HAT::t_tagint_1d h_tag;

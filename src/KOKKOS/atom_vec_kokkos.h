@@ -91,6 +91,7 @@ class AtomVecKokkos : virtual public AtomVec {
   int pack_exchange_kokkos(const int &nsend, DAT::tdual_double_2d_lr &buf,
                            DAT::tdual_int_1d k_sendlist,
                            DAT::tdual_int_1d k_copylist,
+                           DAT::tdual_int_1d k_copylist_bonus,
                            ExecutionSpace space);
 
   int unpack_exchange_kokkos(DAT::tdual_double_2d_lr &k_buf, int nrecv,
@@ -112,6 +113,24 @@ class AtomVecKokkos : virtual public AtomVec {
   virtual void unpack_border_bonus_kokkos(const int &n, const int &nfirst,
                                       const DAT::tdual_double_2d_lr &buf,
                                       ExecutionSpace space) {}
+
+  virtual void pack_exchange_bonus_kokkos(const int &nsend, DAT::tdual_double_2d_lr &buf,
+                                        DAT::tdual_int_1d k_sendlist,
+                                        DAT::tdual_int_1d k_copylist,
+                                        DAT::tdual_int_1d k_copylist_bonus,
+                                        ExecutionSpace space) {}
+
+  virtual void unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_lr &k_buf,
+                                          int nrecv, int nlocal, int dim,
+                                          double lo, double hi,
+                                          ExecutionSpace space,
+                                          DAT::tdual_int_1d &k_indices) {}
+
+  
+  // TODO: Think of a way to not have these nlocal_bonus functions
+  // Used in CommKokkos::exchange_device() for avecKKEllipsoid
+  virtual int get_status_nlocal_bonus() { return 0; }
+  virtual void set_status_nlocal_bonus(int) {}
 
   // virtual int unpack_border_bonus_kokkos(const int &n, const int &nfirst,
   //                           const DAT::tdual_double_2d_lr &buf,
@@ -158,6 +177,9 @@ class AtomVecKokkos : virtual public AtomVec {
 
   DAT::t_kkfloat_1d_3 d_omega, d_angmom;
   HAT::t_kkfloat_1d_3 h_omega, h_angmom;
+
+  DAT::t_int_1d d_ellipsoid;
+  HAT::t_int_1d h_ellipsoid;
 
   // FULL
 
