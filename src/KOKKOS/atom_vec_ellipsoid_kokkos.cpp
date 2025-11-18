@@ -494,6 +494,7 @@ void AtomVecEllipsoidKokkos::pack_border_bonus_kokkos(
   int n, DAT::tdual_int_1d k_sendlist, 
   DAT::tdual_double_2d_lr buf, ExecutionSpace space)
 {
+  atomKK->sync(space,ELLIPSOID_MASK|BONUS_MASK);
   if (space==HostKK) {
     AtomVecEllipsoidKokkos_PackBorderBonus<LMPHostType> f(
       atomKK, k_bonus, buf.view_host(), k_sendlist.view_host());
@@ -675,6 +676,7 @@ void AtomVecEllipsoidKokkos::pack_exchange_bonus_kokkos(
   DAT::tdual_int_1d k_copylist_bonus,
   ExecutionSpace space)
 {
+  atomKK->sync(space,ELLIPSOID_MASK|BONUS_MASK);
   if (space == HostKK) {
     AtomVecEllipsoidKokkos_PackExchangeBonus<LMPHostType> f(atomKK,k_bonus,
       k_buf.view_host(),
