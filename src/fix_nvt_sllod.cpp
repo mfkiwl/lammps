@@ -49,6 +49,7 @@ FixNVTSllod::FixNVTSllod(LAMMPS *lmp, int narg, char **arg) :
 
   psllod_flag = 0;
   peculiar_flag = 0;
+  integrator = REVERSIBLE;
   bool user_kick = false;
   if (mtchain_default_flag) mtchain = 1;
 
@@ -70,11 +71,20 @@ FixNVTSllod::FixNVTSllod(LAMMPS *lmp, int narg, char **arg) :
       kick_flag = utils::logical(FLERR,arg[iarg+1],false,lmp);
       user_kick = true;
       iarg += 2;
+    } else if (strcmp(arg[iarg],"integrator") == 0) {
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix nvt/sllod integrator", error);
+      if (strcmp(arg[iarg+1],"reversible") == 0)  integrator = REVERSIBLE;
+      else if (strcmp(arg[iarg+1],"legacy") == 0) integrator = LEGACY;
+      else error->all(FLERR, "Unknown fix {} integrator argument: {}", style, arg[iarg+1]);
+      iarg += 2;
     } else iarg++;
   }
 
   // default to applying velocity kick in lab frame
   if (!user_kick) kick_flag = !peculiar_flag;
+
+  if (integrator == LEGACY && peculiar_flag == 1)
+    error->all(FLERR, "fix {} legacy integrator is not compatible with peculiar=yes", style);
 
   // create a new compute temp style
   // id = fix-ID + temp
@@ -83,6 +93,7 @@ FixNVTSllod::FixNVTSllod(LAMMPS *lmp, int narg, char **arg) :
   if (peculiar_flag) modify->add_compute(fmt::format("{} {} temp",id_temp,group->names[igroup]));
   else modify->add_compute(fmt::format("{} {} temp/deform",id_temp,group->names[igroup]));
   tcomputeflag = 1;
+  nondeformbias = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -91,15 +102,21 @@ void FixNVTSllod::init()
 {
   FixNH::init();
 
-  if (!peculiar_flag && !temperature->tempbias)
-    error->all(FLERR,"Temperature for fix {} does not have a bias", style);
+    if (!peculiar_flag && !temperature->tempbias)
+      error->all(FLERR,"Temperature for fix {} does not have a bias", style);
 
-  if (strcmp(temperature->style,"temp/deform") != 0) {
-    if (comm->me == 0 && !peculiar_flag)
-      error->all(FLERR,"Fix nvt/sllod used with lab-frame velocity and non-deform "
-                     "temperature bias. For non-deform biases, either set peculiar = yes"
-                     "or pass an explicit temp/deform with an extra bias");
-  }
+    if (strcmp(temperature->style,"temp/deform") != 0) {
+      if (integrator == LEGACY) {
+        nondeformbias = 1;
+        if (kick_flag)
+          error->all(FLERR, "fix {} with peculiar=no and kick=yes requires temperature bias "
+                     "to be calculated by compute temp/deform", style);
+      } else if (!peculiar_flag) {
+        error->all(FLERR,"Fix nvt/sllod used with lab-frame velocity and non-deform "
+                       "temperature bias. For non-deform biases, either set peculiar = yes"
+                       "or pass an explicit temp/deform with an extra bias");
+      }
+    }
 
   // check fix deform remap settings
 
@@ -113,38 +130,40 @@ void FixNVTSllod::init()
         (!peculiar_flag && f->remapflag != Domain::V_REMAP))
       error->all(FLERR,"Using fix {} with inconsistent fix deform remap option", style);
 
-    // error on unsupported mixed flows
-    bool elongation = false;
-    if (comm->me == 0) {
-      for (int j = 0; j < 3; ++j) {
-        if (f->set[j].style) {
-          elongation = true;
-          if (f->set[j].style != FixDeform::TRATE)
-            error->warning(FLERR,"fix {} expects the trate style for x/y/z deformation", style);
+    if (integrator == REVERSIBLE) {
+      // error on unsupported mixed flows
+      bool elongation = false;
+      if (comm->me == 0) {
+        for (int j = 0; j < 3; ++j) {
+          if (f->set[j].style) {
+            elongation = true;
+            if (f->set[j].style != FixDeform::TRATE)
+              error->warning(FLERR,"fix {} expects the trate style for x/y/z deformation", style);
+          }
         }
       }
-    }
-    for (int j = 3; j < 6; ++j) {
-      if (f->set[j].style && f->set[j].style != FixDeform::ERATE) {
-        if (elongation) error->all(FLERR,"fix {} requires the erate style for "
-            "xy/xz/yz deformation under mixed shear/extensional flow", style);
-        else if (comm->me == 0)
-          error->warning(FLERR,"Using non-constant shear rate with fix nvt/sllod");
+      for (int j = 3; j < 6; ++j) {
+        if (f->set[j].style && f->set[j].style != FixDeform::ERATE) {
+          if (elongation) error->all(FLERR,"fix {} requires the erate style for "
+              "xy/xz/yz deformation under mixed shear/extensional flow", style);
+          else if (comm->me == 0)
+            error->warning(FLERR,"Using non-constant shear rate with fix nvt/sllod");
+        }
       }
-    }
-    if (comm->me == 0) {
-      // warn about fix deform settings that do not produce a constant flow tensor
-      if (f->set[5].style && f->set[5].rate != 0.0 &&
-          (f->set[3].style || domain->yz != 0.0) &&
-          (f->set[4].style != FixDeform::ERATE ||
-           f->set[5].style != FixDeform::ERATE ||
-           (f->set[3].style && f->set[3].style != FixDeform::ERATE)))
-        error->warning(FLERR,"Shearing xy with a yz tilt is only handled correctly "
-            "if fix deform uses the erate style for xy, xz and yz");
-      if (f->end_flag)
-        error->warning(FLERR,"fix {} requires box deformation to occur with "
-            "position updates to be strictly correct. Set the N parameter of "
-            "fix deform to 0 to enable this.", style);
+      if (comm->me == 0) {
+        // warn about fix deform settings that do not produce a constant flow tensor
+        if (f->set[5].style && f->set[5].rate != 0.0 &&
+            (f->set[3].style || domain->yz != 0.0) &&
+            (f->set[4].style != FixDeform::ERATE ||
+             f->set[5].style != FixDeform::ERATE ||
+             (f->set[3].style && f->set[3].style != FixDeform::ERATE)))
+          error->warning(FLERR,"Shearing xy with a yz tilt is only handled correctly "
+              "if fix deform uses the erate style for xy, xz and yz");
+        if (f->end_flag)
+          error->warning(FLERR,"fix {} requires box deformation to occur with "
+              "position updates to be strictly correct. Set the N parameter of "
+              "fix deform to 0 to enable this.", style);
+      }
     }
 
     if (kick_flag) {
@@ -173,6 +192,8 @@ void FixNVTSllod::init()
 
 void FixNVTSllod::nve_x()
 {
+  if (integrator == LEGACY) return FixNH::nve_x();
+
   double **v = atom->v;
   double **x = atom->x;
   int *mask = atom->mask;
@@ -268,6 +289,49 @@ void FixNVTSllod::nve_x()
   // pass in dtv to account for update to box shape
   if (!peculiar_flag)
     dynamic_cast<ComputeTempDeform*>(temperature)->apply_deform_bias_all(dtv);
+}
+
+/* ----------------------------------------------------------------------
+   perform half-step scaling of velocities using legacy method
+   NOTE: this style of integration is not time-reversible under mixed
+         flows, and neglects the change in streaming velocity caused by
+         the position update.
+-----------------------------------------------------------------------*/
+
+void FixNVTSllod::nh_v_temp()
+{
+  if (integrator == REVERSIBLE) return FixNH::nh_v_temp();
+
+  // remove and restore bias = streaming velocity = Hrate*lamda + Hratelo
+  // thermostat thermal velocity only
+  // vdelu = SLLOD correction = Hrate*Hinv*vthermal
+  // for non temp/deform BIAS:
+  //   calculate temperature since some computes require temp
+  //   computed on current nlocal atoms to remove bias
+
+  if (nondeformbias) temperature->compute_scalar();
+
+  double **v = atom->v;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+  if (igroup == atom->firstgroup) nlocal = atom->nfirst;
+
+  double h_two[6],vdelu[3];
+  MathExtra::multiply_shape_shape(domain->h_rate,domain->h_inv,h_two);
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) {
+      if (!psllod_flag) temperature->remove_bias(i,v[i]);
+      vdelu[0] = h_two[0]*v[i][0] + h_two[5]*v[i][1] + h_two[4]*v[i][2];
+      vdelu[1] = h_two[1]*v[i][1] + h_two[3]*v[i][2];
+      vdelu[2] = h_two[2]*v[i][2];
+      if (psllod_flag) temperature->remove_bias(i,v[i]);
+      v[i][0] = v[i][0]*factor_eta - dthalf*vdelu[0];
+      v[i][1] = v[i][1]*factor_eta - dthalf*vdelu[1];
+      v[i][2] = v[i][2]*factor_eta - dthalf*vdelu[2];
+      temperature->restore_bias(i,v[i]);
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */

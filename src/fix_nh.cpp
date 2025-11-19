@@ -355,13 +355,15 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg],"ext") == 0) {
       iarg += 2;
 
-    // keywords psllod, peculiar and kick are parsed in fix/nvt/sllod
+    // keywords psllod, peculiar, kick and integrator are parsed in fix/nvt/sllod
 
     } else if (strcmp(arg[iarg],"psllod") == 0) {
       iarg += 2;
     } else if (strcmp(arg[iarg], "peculiar") == 0) {
       iarg += 2;
     } else if (strcmp(arg[iarg], "kick") == 0) {
+      iarg += 2;
+    } else if (strcmp(arg[iarg], "integrator") == 0) {
       iarg += 2;
 
     } else error->all(FLERR,"Unknown fix {} keyword: {}", style, arg[iarg]);
