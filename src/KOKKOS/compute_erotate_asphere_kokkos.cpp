@@ -44,9 +44,6 @@ void ComputeERotateAsphereKokkos<DeviceType>::init()
   ComputeERotateAsphere::init();
 
   if (avec_line || avec_tri) error->all(FLERR,"No Kokkos implementation for line or tri atom styles");
-  
-  //auto avecEllipKK = dynamic_cast<AtomVecEllipsoidKokkos *>(atom->style_match("ellipsoid"));
-  //if (!avecEllipKK) error->all(FLERR,"erotate/asphere/kk requires atom style ellipsoid/kk");
 
 }
 
@@ -79,7 +76,6 @@ double ComputeERotateAsphereKokkos<DeviceType>::compute_scalar()
   {
     // local variables for lambda capture
 
-    auto l_omega = omega;
     auto l_angmom = angmom;
     auto l_rmass = rmass;
     auto l_mask = mask;
@@ -93,10 +89,11 @@ double ComputeERotateAsphereKokkos<DeviceType>::compute_scalar()
         // Vanilla has if statements here checking for ellipsoid, line, tri
         // Kokkos version only supports ellipsoid this now, so this part of the if statement is not needed
         if (l_ellipsoid(i) >= 0) {
-          double wbody[3], inertia[3];
+          double inertia[3], wbody[3];
           double rot[3][3];
-          auto quat = l_bonus(l_ellipsoid(i)).quat;
           auto shape = l_bonus(l_ellipsoid(i)).shape;
+          auto quat = l_bonus(l_ellipsoid(i)).quat;
+
           // principal moments of inertia
 
           inertia[0] = l_rmass(i) * ( (shape[1]*shape[1] + shape[2]*shape[2])/5.0 );
@@ -106,7 +103,8 @@ double ComputeERotateAsphereKokkos<DeviceType>::compute_scalar()
           // wbody = angular velocity in body frame
           
           MathExtraKokkos::quat_to_mat(quat,rot);
-          MathExtraKokkos::transpose_matvec(rot,l_omega.data() + i*3,wbody);
+          double angmom_vec[3] = {l_angmom(i,0), l_angmom(i,1), l_angmom(i,2)};
+          MathExtraKokkos::transpose_matvec(rot,angmom_vec,wbody);
           wbody[0] /= inertia[0];
           wbody[1] /= inertia[1];
           wbody[2] /= inertia[2];
