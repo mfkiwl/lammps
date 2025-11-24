@@ -26,6 +26,8 @@
 #include "memory_kokkos.h"
 #include "modify.h"
 
+#include "compute_erotate_asphere_kokkos.h" // DEBUG
+
 #include <cstring>
 
 using namespace LAMMPS_NS;
@@ -38,8 +40,8 @@ AtomVecKokkos(lmp), AtomVecEllipsoid(lmp)
 {
   //no_border_vel_flag = 0;
   //unpack_exchange_indices_flag = 1;
-  size_border = 23;
-  size_forward = 8;
+  //size_border = 23;
+  //size_forward = 8;
   k_nghost_bonus = DAT::tdual_int_scalar("atomEllipKK:k_nghost_bonus");
   k_count_bonus = DAT::tdual_int_scalar("atomEllipKK:k_count_bonus");
 }
@@ -380,6 +382,20 @@ struct AtomVecEllipsoidKokkos_PackCommBonus {
 void AtomVecEllipsoidKokkos::pack_comm_bonus_kokkos(const int &n, const DAT::tdual_int_1d &list,
                                           const DAT::tdual_double_2d_lr &buf)
 {
+  printf("DEBUG: Doing pack_comm_bonus_kokkos\n");
+  // Locate a ComputeERotateAsphere instance among registered computes and call compute_scalar().
+  ComputeERotateAsphere *cerotate = nullptr;
+  for (int ic = 0; ic < modify->ncompute; ++ic) {
+    cerotate = dynamic_cast<ComputeERotateAsphere*>(modify->compute[ic]);
+    if (cerotate) break;
+  }
+  double erot = 0.0;
+  if (cerotate) {
+    erot = cerotate->compute_scalar();
+    printf("DEBUG: Found ComputeERotateAsphere, erot = %f\n", erot);
+  } else {
+    printf("DEBUG: ComputeERotateAsphere not found; using erot = %f\n", erot);
+  }
   if (lmp->kokkos->forward_comm_on_host) {
     atomKK->sync(HostKK,ELLIPSOID_MASK|BONUS_MASK);
     struct AtomVecEllipsoidKokkos_PackCommBonus<LMPHostType> f(atomKK,k_bonus,buf,list);
@@ -433,7 +449,20 @@ struct AtomVecEllipsoidKokkos_UnpackCommBonus {
 void AtomVecEllipsoidKokkos::unpack_comm_bonus_kokkos(
   const int &n, const int &first,
   const DAT::tdual_double_2d_lr &buf) {
-
+  printf("DEBUG: Doing unpack_comm_bonus_kokkos\n");
+  // Locate a ComputeERotateAsphere instance among registered computes and call compute_scalar().
+  ComputeERotateAsphere *cerotate = nullptr;
+  for (int ic = 0; ic < modify->ncompute; ++ic) {
+    cerotate = dynamic_cast<ComputeERotateAsphere*>(modify->compute[ic]);
+    if (cerotate) break;
+  }
+  double erot = 0.0;
+  if (cerotate) {
+    erot = cerotate->compute_scalar();
+    printf("DEBUG: Found ComputeERotateAsphere, erot = %f\n", erot);
+  } else {
+    printf("DEBUG: ComputeERotateAsphere not found; using erot = %f\n", erot);
+  }
   if (lmp->kokkos->forward_comm_on_host) {
     atomKK->modified(HostKK,ELLIPSOID_MASK|BONUS_MASK);
     struct AtomVecEllipsoidKokkos_UnpackCommBonus<LMPHostType> f(
@@ -457,8 +486,8 @@ struct AtomVecEllipsoidKokkos_PackBorderBonus {
   typename AT::t_double_2d_lr _buf;
   const typename AT::t_int_1d_const _list;
   const typename AtomVecEllipsoidKokkosBonusArray
-           <DeviceType>::t_bonus_1d _bonus;
-  const typename AT::t_int_1d _ellipsoid;
+           <DeviceType>::t_bonus_1d_randomread _bonus;
+  const typename AT::t_int_1d_randomread _ellipsoid;
 
   AtomVecEllipsoidKokkos_PackBorderBonus(
     const AtomKokkos* atomKK,
@@ -475,6 +504,7 @@ struct AtomVecEllipsoidKokkos_PackBorderBonus {
     const int j = _list(i);
     const int j_bonus = _ellipsoid(j);
     if (j_bonus < 0) {
+      printf("ERROR: In pack_border_bonus_kokkos, ellipsoid ID < 0 for atom %d\n", j);
       _buf(i,7) = d_ubuf(j_bonus).d;
     } else {
       _buf(i,7) = d_ubuf(j_bonus).d;
@@ -492,8 +522,22 @@ struct AtomVecEllipsoidKokkos_PackBorderBonus {
 /* ---------------------------------------------------------------------- */
 void AtomVecEllipsoidKokkos::pack_border_bonus_kokkos(
   int n, DAT::tdual_int_1d k_sendlist, 
-  DAT::tdual_double_2d_lr buf, ExecutionSpace space)
+  DAT::tdual_double_2d_lr &buf, ExecutionSpace space)
 {
+  printf("DEBUG: Doing pack_border_bonus_kokkos\n");
+  // Locate a ComputeERotateAsphere instance among registered computes and call compute_scalar().
+  ComputeERotateAsphere *cerotate = nullptr;
+  for (int ic = 0; ic < modify->ncompute; ++ic) {
+    cerotate = dynamic_cast<ComputeERotateAsphere*>(modify->compute[ic]);
+    if (cerotate) break;
+  }
+  double erot = 0.0;
+  if (cerotate) {
+    erot = cerotate->compute_scalar();
+    printf("DEBUG: Found ComputeERotateAsphere, erot = %f\n", erot);
+  } else {
+    printf("DEBUG: ComputeERotateAsphere not found; using erot = %f\n", erot);
+  }
   atomKK->sync(space,ELLIPSOID_MASK|BONUS_MASK);
   if (space==HostKK) {
     AtomVecEllipsoidKokkos_PackBorderBonus<LMPHostType> f(
@@ -526,14 +570,15 @@ struct AtomVecEllipsoidKokkos_UnpackBorderBonus {
     const typename DEllipsoidBonusAT::tdual_bonus_1d &bonus,
     const typename AT::t_double_2d_lr_const &buf,
     const int& first,
-    const int &nlocal_bonus, 
-    typename AT::tdual_int_scalar &nghost_bonus):
+    const int &nlocal_bonus,
+    const typename AT::t_int_scalar &nghost_bonus):
+
     _buf(buf),
     _first(first),
     _bonus(bonus.view<DeviceType>()),
     _ellipsoid(atomKK->k_ellipsoid.view<DeviceType>()),
     _nlocal_bonus(nlocal_bonus),
-    _nghost_bonus(nghost_bonus.template view<DeviceType>()) {};
+    _nghost_bonus(nghost_bonus) {};
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const int& i) const {
@@ -541,6 +586,7 @@ struct AtomVecEllipsoidKokkos_UnpackBorderBonus {
     int ellipID = static_cast<int> (d_ubuf(_buf(i,7)).i);
 
     if (ellipID == 0 ) {
+      printf("ERROR: In unpack_border_bonus_kokkos, ellipsoid ID = 0 for atom %d\n", i+_first);
       _ellipsoid(i+_first) = -1;
     } else {
       int j = _nlocal_bonus + Kokkos::atomic_fetch_add(&_nghost_bonus(),1);
@@ -563,23 +609,36 @@ void AtomVecEllipsoidKokkos::unpack_border_bonus_kokkos(const int &n, const int 
                             const DAT::tdual_double_2d_lr &buf,ExecutionSpace space) {
   while (first+n >= nmax) grow(0);
   while (n+nlocal_bonus+nghost_bonus >= nmax_bonus) grow_bonus();
-
+  printf("DEBUG: Doing unpack_border_bonus_kokkos\n");
+  // Locate a ComputeERotateAsphere instance among registered computes and call compute_scalar().
+  ComputeERotateAsphere *cerotate = nullptr;
+  for (int ic = 0; ic < modify->ncompute; ++ic) {
+    cerotate = dynamic_cast<ComputeERotateAsphere*>(modify->compute[ic]);
+    if (cerotate) break;
+  }
+  double erot = 0.0;
+  if (cerotate) {
+    erot = cerotate->compute_scalar();
+    printf("DEBUG: Found ComputeERotateAsphere, erot = %f\n", erot);
+  } else {
+    printf("DEBUG: ComputeERotateAsphere not found; using erot = %f\n", erot);
+  }
   if (space==HostKK) {
-    k_nghost_bonus.h_view() = nghost_bonus;
+    k_nghost_bonus.view_host()() = nghost_bonus;
     struct AtomVecEllipsoidKokkos_UnpackBorderBonus<LMPHostType> f(
       atomKK, k_bonus, buf.view_host(), first,
-      this->nlocal_bonus, k_nghost_bonus);
+      this->nlocal_bonus, k_nghost_bonus.view_host());
     Kokkos::parallel_for(n,f);
   } else {
-    k_nghost_bonus.h_view() = nghost_bonus;
-    k_nghost_bonus.modify<LMPHostType>();
-    k_nghost_bonus.sync<LMPDeviceType>();
+    k_nghost_bonus.view_host()() = nghost_bonus;
+    k_nghost_bonus.modify_host();
+    k_nghost_bonus.sync_device();
     struct AtomVecEllipsoidKokkos_UnpackBorderBonus<LMPDeviceType> f(
       atomKK, k_bonus, buf.view_device(), first,
-      this->nlocal_bonus, k_nghost_bonus);
+      this->nlocal_bonus, k_nghost_bonus.view_device());
     Kokkos::parallel_for(n,f);
-    k_nghost_bonus.modify<LMPDeviceType>();
-    k_nghost_bonus.sync<LMPHostType>();
+    k_nghost_bonus.modify_device();
+    k_nghost_bonus.sync_host();
   }
   atomKK->modified(space,ELLIPSOID_MASK|BONUS_MASK);
 }
@@ -769,7 +828,7 @@ void AtomVecEllipsoidKokkos::unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_l
 
   if (space == HostKK) {
     k_count.view_host()(0) = nlocal;
-    k_count_bonus.h_view() = nlocal_bonus;
+    k_count_bonus.view_host()() = nlocal_bonus;
     if (k_indices.view_host().data()) {
       struct AtomVecEllipsoidKokkos_UnpackExchangeBonus<LMPHostType,1> f(
         atomKK, k_bonus, k_buf.view_host(),
@@ -787,7 +846,7 @@ void AtomVecEllipsoidKokkos::unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_l
     k_count.view_host()(0) = nlocal;
     k_count.modify_host();
     k_count.sync_device();
-    k_count_bonus.h_view() = nlocal_bonus;
+    k_count_bonus.view_host()() = nlocal_bonus;
     k_count_bonus.modify_host();
     k_count_bonus.sync_device();
     if (k_indices.view_host().data()) {
