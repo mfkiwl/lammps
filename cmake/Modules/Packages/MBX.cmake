@@ -18,17 +18,6 @@ else()
   set(MBX_CONFIG_MPI "--disable-mpi")
 endif()
 
-
-# TODO: change to static release tarball
-set(MBX_URL "https://github.com/paesanilab/MBX/archive/refs/tags/v1.3.0.tar.gz"
-  CACHE STRING "URL for MBX tarball")
-set(MBX_MD5 "7cfbf221f9c249c364c7f47769d0d768" CACHE STRING "MD5 checksum of MBX tarball")
-
-mark_as_advanced(MBX_URL)
-mark_as_advanced(MBX_MD5)
-
-
-
 set(MBX_MODE "static" CACHE STRING "Linkage mode for MBX library")
 set(MBX_MODE_VALUES static shared runtime)
 set_property(CACHE MBX_MODE PROPERTY STRINGS ${MBX_MODE_VALUES})
@@ -45,7 +34,7 @@ endif()
 
 find_package(PkgConfig QUIET)
 set(DOWNLOAD_MBX_DEFAULT ON)
-if(PKG_CONFIG_FOUND)
+if(PKG_CONFIG_FOUND AND NOT DEFINED MBX_GIT_TAG)
   pkg_check_modules(MBX QUIET mbx)
   if(MBX_FOUND)
     set(DOWNLOAD_MBX_DEFAULT OFF)
@@ -55,6 +44,15 @@ endif()
 option(DOWNLOAD_MBX "Download MBX package instead of using an already installed one" ${DOWNLOAD_MBX_DEFAULT})
 if(DOWNLOAD_MBX)
   message(STATUS "MBX download requested - we will build our own")
+  
+  if(MBX_GIT_TAG)
+    message(STATUS "Using user-specified MBX branch/tag: ${MBX_GIT_TAG}")
+    set(MBX_GIT_TAG ${MBX_GIT_TAG})
+  else()
+    message(STATUS "Using default MBX tag: v1.3.2")
+    set(MBX_GIT_TAG v1.3.2)
+  endif()
+
   set(MBX_BUILD_BYPRODUCTS "<INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}mbx${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
   # MBX perform autoreconf -fi
@@ -65,9 +63,11 @@ if(DOWNLOAD_MBX)
 
   include(ExternalProject)
   ExternalProject_Add(mbx_build
-    URL     ${MBX_URL}
-    URL_MD5 ${MBX_MD5}
-    CONFIGURE_COMMAND --prefix=<INSTALL_DIR>
+    GIT_REPOSITORY https://github.com/paesanilab/MBX.git
+    GIT_TAG ${MBX_GIT_TAG}
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+    CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
                       ${MBX_CONFIG_MPI}
                       CXX=${MBX_CONFIG_CXX}
                       CC=${MBX_CONFIG_CC}

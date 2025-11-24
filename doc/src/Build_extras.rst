@@ -48,6 +48,7 @@ This is the list of packages that may require additional steps.
    * :ref:`KOKKOS <kokkos>`
    * :ref:`LEPTON <lepton>`
    * :ref:`MACHDYN <machdyn>`
+   * :ref:`MBX <mbx>`
    * :ref:`MDI <mdi>`
    * :ref:`MISC <misc>`
    * :ref:`ML-HDNNP <ml-hdnnp>`
@@ -1591,6 +1592,37 @@ TBB and MKL.
 
 ----------
 
+
+.. _mbx:
+
+MBX package
+-----------
+
+By default, if no version of MBX is already installed and discoverable
+using PKGCONFIG, the MBX package will be built using the
+stable release version of the MBX library from its git repository.
+
+This behavior can be overridden by specifying a different git tag
+using the option below.
+
+.. tabs::
+
+   .. tab:: CMake build
+
+      .. code-block:: bash
+
+         -D MBX_GIT_TAG=value    # override default git tag for MBX
+
+   .. tab:: Traditional make
+
+      .. versionchanged:: 10Sep2025
+
+      The MBX package no longer supports the traditional make build.
+      You need to build LAMMPS with CMake.
+
+
+
+
 .. _mdi:
 
 MDI package
@@ -1902,5 +1934,5 @@ your system.
 
       .. versionchanged:: 10Sep2025
 
-      The VTK package no longer supports the the traditional make build.
+      The VTK package no longer supports the traditional make build.
       You need to build LAMMPS with CMake.
