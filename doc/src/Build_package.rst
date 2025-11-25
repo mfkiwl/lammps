@@ -47,7 +47,6 @@ packages:
    * :ref:`KOKKOS <kokkos>`
    * :ref:`LEPTON <lepton>`
    * :ref:`MACHDYN <machdyn>`
-   * :ref:`MBX <mbx>`
    * :ref:`MDI <mdi>`
    * :ref:`MISC <misc>`
    * :ref:`ML-HDNNP <ml-hdnnp>`
