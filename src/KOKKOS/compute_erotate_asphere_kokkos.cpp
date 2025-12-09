@@ -43,8 +43,10 @@ void ComputeERotateAsphereKokkos<DeviceType>::init()
 {
   ComputeERotateAsphere::init();
 
+  // Vanilla has if statements here checking for ellipsoid, line, tri
+  // Kokkos version only supports ellipsoid this now, so this part of the if statement is not needed
   if (avec_line || avec_tri) error->all(FLERR,"No Kokkos implementation for line or tri atom styles");
-
+  avecEllipKK = dynamic_cast<AtomVecEllipsoidKokkos *>(atom->style_match("ellipsoid"));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -62,9 +64,6 @@ double ComputeERotateAsphereKokkos<DeviceType>::compute_scalar()
   mask = atomKK->k_mask.view<DeviceType>();
   int nlocal = atom->nlocal;
 
-  // Vanilla has if statements here checking for ellipsoid, line, tri
-  // Kokkos version only supports ellipsoid this now, so this part of the if statement is not needed
-  auto avecEllipKK = dynamic_cast<AtomVecEllipsoidKokkos *>(atom->style_match("ellipsoid"));
   ellipsoid = atomKK->k_ellipsoid.view<DeviceType>();
   bonus = avecEllipKK->k_bonus.view<DeviceType>();
 

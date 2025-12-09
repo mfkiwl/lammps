@@ -42,6 +42,7 @@ class ComputeERotateAsphereKokkos : public ComputeERotateAsphere {
   double compute_scalar() override;
 
  private:
+  class AtomVecEllipsoidKokkos *avecEllipKK;
   typename AT::t_kkfloat_1d_3_randomread omega;
   typename AT::t_kkfloat_1d_3_randomread angmom;
   typename AT::t_kkfloat_1d_randomread rmass;
