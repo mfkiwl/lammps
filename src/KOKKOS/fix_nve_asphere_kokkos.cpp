@@ -34,6 +34,8 @@ FixNVEAsphereKokkos<DeviceType>::FixNVEAsphereKokkos(LAMMPS *lmp, int narg, char
 
   datamask_read = EMPTY_MASK;
   datamask_modify = EMPTY_MASK;
+
+  avecEllipKK = dynamic_cast<AtomVecEllipsoidKokkos *>(atom->style_match("ellipsoid"));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -61,7 +63,6 @@ void FixNVEAsphereKokkos<DeviceType>::initial_integrate(int /*vflag*/)
   atomKK->sync(execution_space, X_MASK | V_MASK | F_MASK | ANGMOM_MASK | TORQUE_MASK | 
                                 RMASS_MASK | ELLIPSOID_MASK | BONUS_MASK | MASK_MASK);
   
-  auto avecEllipKK = dynamic_cast<AtomVecEllipsoidKokkos *>(atom->style_match("ellipsoid"));
   bonus = avecEllipKK->k_bonus.view<DeviceType>();
   ellipsoid = atomKK->k_ellipsoid.view<DeviceType>();
 
@@ -93,7 +94,8 @@ void FixNVEAsphereKokkos<DeviceType>::initial_integrate_item(const int i) const
 
   const KK_FLOAT dtq = 0.5 * dtv;
   double inertia[3], omega[3];
-  double *shape, *quat, *angmom_ptr;
+  double *shape, *quat;
+  double angm[3];
 
   if (mask(i) & groupbit) {
     const double dtfm = dtf / rmass(i);
@@ -104,31 +106,32 @@ void FixNVEAsphereKokkos<DeviceType>::initial_integrate_item(const int i) const
     x(i,1) += dtv * v(i,1);
     x(i,2) += dtv * v(i,2);
 
-    // update angular momentum by 1/2 step
-
-    angmom_ptr = angmom.data() + i * 3;
-    angmom_ptr[0] += dtf * torque(i,0);
-    angmom_ptr[1] += dtf * torque(i,1);
-    angmom_ptr[2] += dtf * torque(i,2);
+    // update angular momentum by 1/2 step into a local array
+    angm[0] = angmom(i,0) + dtf * torque(i,0);
+    angm[1] = angmom(i,1) + dtf * torque(i,1);
+    angm[2] = angmom(i,2) + dtf * torque(i,2);
 
     // principal moments of inertia
-    
     quat = bonus(ellipsoid(i)).quat;
     shape = bonus(ellipsoid(i)).shape;
 
     inertia[0] = INERTIA*rmass(i) *
                  (shape[1]*shape[1] + shape[2]*shape[2]);
     inertia[1] = INERTIA*rmass(i) *
-                (shape[0]*shape[0] + shape[2]*shape[2]);
+                 (shape[0]*shape[0] + shape[2]*shape[2]);
     inertia[2] = INERTIA*rmass(i) *
-                (shape[0]*shape[0] + shape[1]*shape[1]);
+                 (shape[0]*shape[0] + shape[1]*shape[1]);
 
     // compute omega at 1/2 step from angmom at 1/2 step and current q
     // update quaternion a full step via Richardson iteration
     // returns new normalized quaternion
+    MathExtraKokkos::mq_to_omega(angm, quat, inertia, omega);
+    MathExtraKokkos::richardson(quat, angm, omega, inertia, dtq);
 
-    MathExtraKokkos::mq_to_omega(angmom_ptr,quat,inertia,omega);
-    MathExtraKokkos::richardson(quat,angmom_ptr,omega,inertia,dtq);
+    // write back updated angular momentum
+    angmom(i,0) = angm[0];
+    angmom(i,1) = angm[1];
+    angmom(i,2) = angm[2];
   }
 }
 
@@ -181,9 +184,8 @@ void FixNVEAsphereKokkos<DeviceType>::fused_integrate(int /*vflag*/)
 {
   atomKK->sync(execution_space, X_MASK | V_MASK | F_MASK | ANGMOM_MASK | TORQUE_MASK | 
                                 RMASS_MASK | ELLIPSOID_MASK | BONUS_MASK | MASK_MASK);
-  
-  auto avec = dynamic_cast<AtomVecEllipsoidKokkos *>(atom->style_match("ellipsoid"));
-  bonus = avec->k_bonus.view<DeviceType>();
+
+  bonus = avecEllipKK->k_bonus.view<DeviceType>();
   ellipsoid = atomKK->k_ellipsoid.view<DeviceType>();
 
   x = atomKK->k_x.view<DeviceType>();
@@ -212,7 +214,8 @@ void FixNVEAsphereKokkos<DeviceType>::fused_integrate_item(const int i) const
 {
   const KK_FLOAT dtq = 0.5 * dtv;
   double inertia[3], omega[3];
-  double *shape, *quat, *angmom_ptr;
+  double *shape, *quat;
+  double angm[3];
 
   if (mask(i) & groupbit) {
     const double dtfm = 2.0 * dtf / rmass(i);
@@ -226,12 +229,10 @@ void FixNVEAsphereKokkos<DeviceType>::fused_integrate_item(const int i) const
     x(i,1) += dtv * v(i,1);
     x(i,2) += dtv * v(i,2);
 
-    // update angular momentum by 1/2 step
-
-    angmom_ptr = angmom.data() + i * 3;
-    angmom_ptr[0] += dtf * torque(i,0);
-    angmom_ptr[1] += dtf * torque(i,1);
-    angmom_ptr[2] += dtf * torque(i,2);
+    // update angular momentum by 1/2 step into a local array
+    angm[0] = angmom(i,0) + dtf * torque(i,0);
+    angm[1] = angmom(i,1) + dtf * torque(i,1);
+    angm[2] = angmom(i,2) + dtf * torque(i,2);
 
     // principal moments of inertia
     
@@ -241,16 +242,21 @@ void FixNVEAsphereKokkos<DeviceType>::fused_integrate_item(const int i) const
     inertia[0] = INERTIA*rmass(i) *
                  (shape[1]*shape[1] + shape[2]*shape[2]);
     inertia[1] = INERTIA*rmass(i) *
-                (shape[0]*shape[0] + shape[2]*shape[2]);
+                 (shape[0]*shape[0] + shape[2]*shape[2]);
     inertia[2] = INERTIA*rmass(i) *
-                (shape[0]*shape[0] + shape[1]*shape[1]);
+                 (shape[0]*shape[0] + shape[1]*shape[1]);
 
     // compute omega at 1/2 step from angmom at 1/2 step and current q
     // update quaternion a full step via Richardson iteration
     // returns new normalized quaternion
 
-    MathExtraKokkos::mq_to_omega(angmom_ptr,quat,inertia,omega);
-    MathExtraKokkos::richardson(quat,angmom_ptr,omega,inertia,dtq);
+    MathExtraKokkos::mq_to_omega(angm, quat, inertia, omega);
+    MathExtraKokkos::richardson(quat, angm, omega, inertia, dtq);
+
+    // write back updated angular momentum
+    angmom(i,0) = angm[0];
+    angmom(i,1) = angm[1];
+    angmom(i,2) = angm[2];
   }
 }
 
