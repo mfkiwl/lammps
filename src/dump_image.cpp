@@ -1747,7 +1747,17 @@ void DumpImage::create_image()
             color = image->color2rgb("red");
           }
           image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,fixarray[i][7]+fixflag2,(int)fixflag1);
+        } else if (fixvec[i] == TRIANGLE) {
+          if (fcolor) {
+            color = fcolor;
+          } else if (fixcolor == TYPE) {
+            itype = static_cast<int>(fixarray[i][0]);
+            color = colortype[itype];
+          } else {
+            color = image->color2rgb("red");
+          }
         }
+        image->draw_triangle(&fixarray[i][1],&fixarray[i][4],&fixarray[i][7],color);
       }
     }
   }

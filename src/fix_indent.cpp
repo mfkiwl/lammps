@@ -125,17 +125,25 @@ FixIndent::FixIndent(LAMMPS *lmp, int narg, char **arg) :
   // set up indenter visualization
 
   if (istyle == SPHERE) {
-    // only one object to draw
+    // only one sphere object to draw
     memory->create(imgobjs, 1, "fix_indent:imgobjs");
     memory->create(imgparms, 1, 5, "fix_indent:imgparms");
     imgobjs[0] = DumpImage::SPHERE;
     imgparms[0][0] = 1;    // use color of first atom type
   } else if (istyle == CYLINDER) {
-    // only one object to draw
+    // only one cylinder object to draw
     memory->create(imgobjs, 1, "fix_indent:imgobjs");
     memory->create(imgparms, 1, 8, "fix_indent:imgparms");
     imgobjs[0] = DumpImage::CYLINDER;
     imgparms[0][0] = 1;    // use color of first atom type
+  } else if (istyle == PLANE) {
+    // two triangle objects to draw
+    memory->create(imgobjs, 2, "fix_indent:imgobjs");
+    memory->create(imgparms, 2, 10, "fix_indent:imgparms");
+    imgobjs[0] = DumpImage::TRIANGLE;
+    imgobjs[1] = DumpImage::TRIANGLE;
+    imgparms[0][0] = 1;    // use color of first atom type by default
+    imgparms[1][0] = 1;    // use color of first atom type by default
   }
 }
 
@@ -366,7 +374,7 @@ void FixIndent::post_force(int /*vflag*/)
       }
     }
 
-    // store indenter object visualization parameters
+    // store indenter object visualization parameters: positions of cylinder edges and diameter
 
     imgparms[0][1] = ctr[0];
     imgparms[0][2] = ctr[1];
@@ -451,7 +459,7 @@ void FixIndent::post_force(int /*vflag*/)
 
     double plane{pstr ? input->variable->compute_equal(pvar) : pvalue};
 
-    for (int i = 0; i < nlocal; i++)
+    for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit) {
         dr = planeside * (plane - x[i][cdim]);
         if (dr >= 0.0) continue;
@@ -460,6 +468,72 @@ void FixIndent::post_force(int /*vflag*/)
         indenter[0] -= k3 * dr * dr * dr;
         indenter[cdim + 1] -= fmag;
       }
+    }
+
+    // store indenter object visualization parameters: positions of cylinder edges and diameter
+
+    switch (cdim) {
+    case 0:
+      imgparms[0][1] = planeside * plane;
+      imgparms[0][2] = domain->boxlo[1];
+      imgparms[0][3] = domain->boxlo[2];
+      imgparms[0][4] = planeside * plane;
+      imgparms[0][5] = domain->boxhi[1];
+      imgparms[0][6] = domain->boxlo[2];
+      imgparms[0][7] = planeside * plane;
+      imgparms[0][8] = domain->boxlo[1];
+      imgparms[0][9] = domain->boxhi[2];
+      imgparms[1][1] = planeside * plane;
+      imgparms[1][2] = domain->boxhi[1];
+      imgparms[1][3] = domain->boxhi[2];
+      imgparms[1][4] = planeside * plane;
+      imgparms[1][5] = domain->boxlo[1];
+      imgparms[1][6] = domain->boxhi[2];
+      imgparms[1][7] = planeside * plane;
+      imgparms[1][8] = domain->boxhi[1];
+      imgparms[1][9] = domain->boxlo[2];
+      break;
+    case 1:
+      imgparms[0][1] = domain->boxlo[0];
+      imgparms[0][2] = planeside * plane;
+      imgparms[0][3] = domain->boxlo[2];
+      imgparms[0][4] = domain->boxhi[0];
+      imgparms[0][5] = planeside * plane;
+      imgparms[0][6] = domain->boxlo[2];
+      imgparms[0][7] = domain->boxlo[0];
+      imgparms[0][8] = planeside * plane;
+      imgparms[0][9] = domain->boxhi[2];
+      imgparms[1][1] = domain->boxhi[0];
+      imgparms[1][2] = planeside * plane;
+      imgparms[1][3] = domain->boxhi[2];
+      imgparms[1][4] = domain->boxlo[0];
+      imgparms[1][5] = planeside * plane;
+      imgparms[1][6] = domain->boxhi[2];
+      imgparms[1][7] = domain->boxhi[0];
+      imgparms[1][8] = planeside * plane;
+      imgparms[1][9] = domain->boxlo[2];
+      break;
+    case 2:
+      imgparms[0][1] = domain->boxlo[0];
+      imgparms[0][2] = domain->boxlo[1];
+      imgparms[0][3] = planeside * plane;
+      imgparms[0][4] = domain->boxhi[0];
+      imgparms[0][5] = domain->boxlo[1];
+      imgparms[0][6] = planeside * plane;
+      imgparms[0][7] = domain->boxlo[0];
+      imgparms[0][8] = domain->boxhi[1];
+      imgparms[0][9] = planeside * plane;
+      imgparms[1][1] = domain->boxhi[0];
+      imgparms[1][2] = domain->boxhi[1];
+      imgparms[1][3] = planeside * plane;
+      imgparms[1][4] = domain->boxlo[0];
+      imgparms[1][5] = domain->boxhi[1];
+      imgparms[1][6] = planeside * plane;
+      imgparms[1][7] = domain->boxhi[0];
+      imgparms[1][8] = domain->boxlo[1];
+      imgparms[1][9] = planeside * plane;
+      break;
+    }
   }
 
   if (varflag) modify->addstep_compute(update->ntimestep + 1);
@@ -898,6 +972,7 @@ double FixIndent::closest(double *x, double *near, double *nearest, double dsq)
 
 /* ----------------------------------------------------------------------
    provide graphics information to dump image to render indenter
+   data has been copied to dedicated storage during fix indent execution
 ------------------------------------------------------------------------- */
 int FixIndent::image(int *&objs, double **&parms)
 {
@@ -907,6 +982,8 @@ int FixIndent::image(int *&objs, double **&parms)
     return 1;
   else if (istyle == CYLINDER)
     return 1;
+  else if (istyle == PLANE)
+    return 2;
   else
     return 0;
 }

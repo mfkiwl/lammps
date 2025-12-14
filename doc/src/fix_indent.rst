@@ -211,9 +211,9 @@ The fix will pass geometry information about the indenter to *dump
 image* so that the indenter object will be included in the rendered
 image.
 
-This feature currently only supports spherical and cylindrical
+This feature currently only supports spherical, cylindrical, and planar
 indenters. The *fflag1* setting of *dump image fix* has no impact on
-rendering a spherical indenter.  For a cylindrical indenter it
+rendering a spherical or planar indenter.  For a cylindrical indenter it
 determines whether the cylinder is capped with a sphere at the ends: 0
 means no caps, 1 means the lower end is capped, 2 means the upper end is
 capped, and 3 means both ends are capped.  The *fflag2* setting allows
