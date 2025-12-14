@@ -1705,6 +1705,8 @@ void DumpImage::create_image()
           } else if (fixcolor == TYPE) {
             itype = static_cast<int>(fixarray[i][0]);
             color = colortype[itype];
+          } else {
+            color = image->color2rgb("red");
           }
           image->draw_sphere(&fixarray[i][1],color,fixarray[i][4]-fixflag2);
         } else if (fixvec[i] == LINE) {
@@ -1713,6 +1715,8 @@ void DumpImage::create_image()
           } else if (fixcolor == TYPE) {
             itype = static_cast<int>(fixarray[i][0]);
             color = colortype[itype];
+          } else {
+            color = image->color2rgb("red");
           }
           image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,fixflag1,3);
         } else if (fixvec[i] == TRI) {
@@ -1721,6 +1725,8 @@ void DumpImage::create_image()
           } else if (fixcolor == TYPE) {
             itype = static_cast<int>(fixarray[i][0]);
             color = colortype[itype];
+          } else {
+            color = image->color2rgb("red");
           }
           p1 = &fixarray[i][1];
           p2 = &fixarray[i][4];
@@ -1737,6 +1743,8 @@ void DumpImage::create_image()
           } else if (fixcolor == TYPE) {
             itype = static_cast<int>(fixarray[i][0]);
             color = colortype[itype];
+          } else {
+            color = image->color2rgb("red");
           }
           image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,fixarray[i][7]-fixflag2,(int)fixflag1);
         }

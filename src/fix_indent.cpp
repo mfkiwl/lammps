@@ -129,13 +129,13 @@ FixIndent::FixIndent(LAMMPS *lmp, int narg, char **arg) :
     memory->create(imgobjs, 1, "fix_indent:imgobjs");
     memory->create(imgparms, 1, 5, "fix_indent:imgparms");
     imgobjs[0] = DumpImage::SPHERE;
-    imgparms[0][0] = atom->ntypes;    // use color of the last atom type
+    imgparms[0][0] = 1;    // use color of first atom type
   } else if (istyle == CYLINDER) {
     // only one object to draw
     memory->create(imgobjs, 1, "fix_indent:imgobjs");
     memory->create(imgparms, 1, 8, "fix_indent:imgparms");
     imgobjs[0] = DumpImage::CYLINDER;
-    imgparms[0][0] = atom->ntypes;    // use color of the last atom type
+    imgparms[0][0] = 1;    // use color of first atom type
   }
 }
 
