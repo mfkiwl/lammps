@@ -1708,7 +1708,7 @@ void DumpImage::create_image()
           } else {
             color = image->color2rgb("red");
           }
-          image->draw_sphere(&fixarray[i][1],color,fixarray[i][4]-fixflag2);
+          image->draw_sphere(&fixarray[i][1],color,fixarray[i][4]+fixflag2);
         } else if (fixvec[i] == LINE) {
           if (fcolor) {
             color = fcolor;
@@ -1746,7 +1746,7 @@ void DumpImage::create_image()
           } else {
             color = image->color2rgb("red");
           }
-          image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,fixarray[i][7]-fixflag2,(int)fixflag1);
+          image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,fixarray[i][7]+fixflag2,(int)fixflag1);
         }
       }
     }

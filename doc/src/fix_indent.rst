@@ -217,8 +217,9 @@ rendering a spherical indenter.  For a cylindrical indenter it
 determines whether the cylinder is capped with a sphere at the ends: 0
 means no caps, 1 means the lower end is capped, 2 means the upper end is
 capped, and 3 means both ends are capped.  The *fflag2* setting allows
-to adjust the radius of the rendered object.  In many cases you want to
-use a value > 0 so that the rendered indenter object does not obscure
+to adjust the radius of the rendered object for spherical and
+cylindrical indenders.  In many cases you want to use a value < 0 to
+reduce the radius of the rendered object to that it does not obscure
 atoms close to it.
 
 
