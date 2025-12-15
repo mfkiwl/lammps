@@ -515,6 +515,7 @@ The *fix* keyword can be used with a :doc:`fix <fix>` that produces
 objects to be drawn.  Below is a list of supported fixes:
 
 * :doc:`fix indent <fix_indent>`
+* :doc:`fix smd/wall_surface <fix_smd_wall_surface>`
 * :doc:`fix wall/lj93 <fix_wall>`
 * :doc:`fix wall/lj126 <fix_wall>`
 * :doc:`fix wall/lj1043 <fix_wall>`
@@ -531,7 +532,7 @@ object from multiple fixes.  The fix keyword is followed by the
 numerical values *fflag1* and *fflag2*.
 
 The color style may be either *type*, *element*, or *const*.  The first
-two will use the same color as assigned to the corresonding atom type
+two will use the same color as assigned to the corresponding atom type
 and thus it depends on the fix which atom type it associates with any
 object.  Often this will be atom type 1.  For the *const* type a
 constant color will be used that can be changed with a *dump_modify

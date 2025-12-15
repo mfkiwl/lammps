@@ -50,6 +50,22 @@ directory.
 See `this PDF guide <PDF/MACHDYN_LAMMPS_userguide.pdf>`_ to use Smooth Mach
 Dynamics in LAMMPS.
 
+Dump image info
+"""""""""""""""
+
+.. versionadded:: TBD
+
+Fix *smd/wall\_surface* supports the *fix* keyword of :doc:`dump image
+<dump_image>`.  The fix will pass geometry information about the wall
+particles to *dump image* so that they be included in the rendered
+image.
+
+The *fflag1* setting of *dump image fix* determine whether the wall will
+be rendered as triangles (1) or as a mesh of cylinders (2) or both (3).
+
+The *fflag2* setting determines the diameter of the cylinders for an
+*fflag1* setting of either 2 or 3.
+
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
