@@ -1728,6 +1728,8 @@ void DumpImage::create_image()
       if (fixvec[i] == SPHERE) {
         image->draw_sphere(&fixarray[i][1],color,fixarray[i][4]+ifix.flag2);
       } else if (fixvec[i] == LINE) {
+        // @sjplimp for consistency this should be:
+        // image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,ifix.flag2,ifix.flag1);
         image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,ifix.flag1,3);
       } else if (fixvec[i] == TRI) {
         p1 = &fixarray[i][1];
