@@ -209,18 +209,26 @@ Dump image info
 Fix indent supports the *fix* keyword of :doc:`dump image <dump_image>`.
 The fix will pass geometry information about the indenter to *dump
 image* so that the indenter object will be included in the rendered
-image.
+image.  This feature currently only supports spherical, cylindrical, and
+planar indenters.  Please note, that for :doc:`2d systems <dimension>`,
+a planar indenter rendered as a plane would be invisible and it is thus
+rendered as a cylinder.
 
-This feature currently only supports spherical, cylindrical, and planar
-indenters. The *fflag1* setting of *dump image fix* has no impact on
-rendering a spherical or planar indenter.  For a cylindrical indenter it
-determines whether the cylinder is capped with a sphere at the ends: 0
-means no caps, 1 means the lower end is capped, 2 means the upper end is
-capped, and 3 means both ends are capped.  The *fflag2* setting allows
-to adjust the radius of the rendered object for spherical and
-cylindrical indenders.  In many cases you want to use a value < 0 to
-reduce the radius of the rendered object to that it does not obscure
-atoms close to it.
+The *fflag1* setting of *dump image fix* has no impact on rendering a
+spherical indenter or a planar indenter in 3d systems.  For a
+cylindrical indenter and a planar indenter in 2d systems it determines
+whether the cylinder is capped with a sphere at the ends: 0 means no
+caps, 1 means the lower end is capped, 2 means the upper end is capped,
+and 3 means both ends are capped.
+
+The *fflag2* setting allows to adjust the radius of the rendered object
+for spherical indenters, cylindrical indenders, and planar indenters in
+2d systems.  In many cases you want to use a value < 0 to reduce the
+radius of the rendered object to that it does not obscure atoms close to
+it.  For a planar indenter in 2d systems, it should be set to a value >
+0 or the indenter will not be visible since the diameter is set
+internally to zero in that case due to lack of a suitable heuristic for
+deriving a meaningful diameter.
 
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""

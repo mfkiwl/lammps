@@ -59,7 +59,7 @@ FixIndent::FixIndent(LAMMPS *lmp, int narg, char **arg) :
   ilevel_respa = 0;
 
   k = utils::numeric(FLERR, arg[3], false, lmp);
-  if (k < 0.0) error->all(FLERR, "Illegal fix indent force constant: {}", k);
+  if (k < 0.0) error->all(FLERR, 3, "Illegal fix indent force constant: {}", k);
   k3 = k / 3.0;
 
   // read geometry of indenter and optional args
@@ -125,25 +125,33 @@ FixIndent::FixIndent(LAMMPS *lmp, int narg, char **arg) :
   // set up indenter visualization
 
   if (istyle == SPHERE) {
-    // only one sphere object to draw
+    // one sphere object to draw
     memory->create(imgobjs, 1, "fix_indent:imgobjs");
     memory->create(imgparms, 1, 5, "fix_indent:imgparms");
     imgobjs[0] = DumpImage::SPHERE;
     imgparms[0][0] = 1;    // use color of first atom type
   } else if (istyle == CYLINDER) {
-    // only one cylinder object to draw
+    // one cylinder object to draw
     memory->create(imgobjs, 1, "fix_indent:imgobjs");
     memory->create(imgparms, 1, 8, "fix_indent:imgparms");
     imgobjs[0] = DumpImage::CYLINDER;
     imgparms[0][0] = 1;    // use color of first atom type
   } else if (istyle == PLANE) {
-    // two triangle objects to draw
-    memory->create(imgobjs, 2, "fix_indent:imgobjs");
-    memory->create(imgparms, 2, 10, "fix_indent:imgparms");
-    imgobjs[0] = DumpImage::TRIANGLE;
-    imgobjs[1] = DumpImage::TRIANGLE;
-    imgparms[0][0] = 1;    // use color of first atom type by default
-    imgparms[1][0] = 1;    // use color of first atom type by default
+    if (domain->dimension == 2) {
+      // one cylinder object to draw in 2d
+      memory->create(imgobjs, 1, "fix_indent:imgobjs");
+      memory->create(imgparms, 1, 8, "fix_indent:imgparms");
+      imgobjs[0] = DumpImage::CYLINDER;
+      imgparms[0][0] = 1;    // use color of first atom type
+    } else {
+      // two triangle objects to draw in 3d
+      memory->create(imgobjs, 2, "fix_indent:imgobjs");
+      memory->create(imgparms, 2, 10, "fix_indent:imgparms");
+      imgobjs[0] = DumpImage::TRIANGLE;
+      imgobjs[1] = DumpImage::TRIANGLE;
+      imgparms[0][0] = 1;    // use color of first atom type by default
+      imgparms[1][0] = 1;    // use color of first atom type by default
+    }
   }
 }
 
@@ -470,69 +478,95 @@ void FixIndent::post_force(int /*vflag*/)
       }
     }
 
-    // store indenter object visualization parameters: positions of cylinder edges and diameter
+    // store indenter object visualization parameters
 
-    switch (cdim) {
-      case 0:
-        imgparms[0][1] = planeside * plane;
-        imgparms[0][2] = domain->boxlo[1];
-        imgparms[0][3] = domain->boxlo[2];
-        imgparms[0][4] = planeside * plane;
-        imgparms[0][5] = domain->boxhi[1];
-        imgparms[0][6] = domain->boxlo[2];
-        imgparms[0][7] = planeside * plane;
-        imgparms[0][8] = domain->boxlo[1];
-        imgparms[0][9] = domain->boxhi[2];
-        imgparms[1][1] = planeside * plane;
-        imgparms[1][2] = domain->boxhi[1];
-        imgparms[1][3] = domain->boxhi[2];
-        imgparms[1][4] = planeside * plane;
-        imgparms[1][5] = domain->boxlo[1];
-        imgparms[1][6] = domain->boxhi[2];
-        imgparms[1][7] = planeside * plane;
-        imgparms[1][8] = domain->boxhi[1];
-        imgparms[1][9] = domain->boxlo[2];
-        break;
-      case 1:
-        imgparms[0][1] = domain->boxlo[0];
-        imgparms[0][2] = planeside * plane;
-        imgparms[0][3] = domain->boxlo[2];
-        imgparms[0][4] = domain->boxhi[0];
-        imgparms[0][5] = planeside * plane;
-        imgparms[0][6] = domain->boxlo[2];
-        imgparms[0][7] = domain->boxlo[0];
-        imgparms[0][8] = planeside * plane;
-        imgparms[0][9] = domain->boxhi[2];
-        imgparms[1][1] = domain->boxhi[0];
-        imgparms[1][2] = planeside * plane;
-        imgparms[1][3] = domain->boxhi[2];
-        imgparms[1][4] = domain->boxlo[0];
-        imgparms[1][5] = planeside * plane;
-        imgparms[1][6] = domain->boxhi[2];
-        imgparms[1][7] = domain->boxhi[0];
-        imgparms[1][8] = planeside * plane;
-        imgparms[1][9] = domain->boxlo[2];
-        break;
-      case 2:
-        imgparms[0][1] = domain->boxlo[0];
-        imgparms[0][2] = domain->boxlo[1];
-        imgparms[0][3] = planeside * plane;
-        imgparms[0][4] = domain->boxhi[0];
-        imgparms[0][5] = domain->boxlo[1];
-        imgparms[0][6] = planeside * plane;
-        imgparms[0][7] = domain->boxlo[0];
-        imgparms[0][8] = domain->boxhi[1];
-        imgparms[0][9] = planeside * plane;
-        imgparms[1][1] = domain->boxhi[0];
-        imgparms[1][2] = domain->boxhi[1];
-        imgparms[1][3] = planeside * plane;
-        imgparms[1][4] = domain->boxlo[0];
-        imgparms[1][5] = domain->boxhi[1];
-        imgparms[1][6] = planeside * plane;
-        imgparms[1][7] = domain->boxhi[0];
-        imgparms[1][8] = domain->boxlo[1];
-        imgparms[1][9] = planeside * plane;
-        break;
+    if (domain->dimension == 2) {
+      switch (cdim) {
+        case 0:
+          imgparms[0][1] = planeside * plane;
+          imgparms[0][2] = domain->boxlo[1];
+          imgparms[0][3] = 0.0;
+          imgparms[0][4] = planeside * plane;
+          imgparms[0][5] = domain->boxhi[1];
+          imgparms[0][6] = 0.0;
+          imgparms[0][7] = 0.0;    // no simple guess for diameter. need to use fflag2 to adjust
+          break;
+        case 1:
+          imgparms[0][1] = domain->boxlo[0];
+          imgparms[0][2] = planeside * plane;
+          imgparms[0][3] = 0.0;
+          imgparms[0][4] = domain->boxhi[0];
+          imgparms[0][5] = planeside * plane;
+          imgparms[0][6] = 0.0;
+          imgparms[0][7] = 0.0;    // no simple guess for diameter. need to use fflag2 to adjust
+          break;
+        case 2:;    // no planar indenter allowed in z-direction for 2d systems
+          break;
+      }
+    } else {
+      // two triangles
+      switch (cdim) {
+        case 0:
+          imgparms[0][1] = planeside * plane;
+          imgparms[0][2] = domain->boxlo[1];
+          imgparms[0][3] = domain->boxlo[2];
+          imgparms[0][4] = planeside * plane;
+          imgparms[0][5] = domain->boxhi[1];
+          imgparms[0][6] = domain->boxlo[2];
+          imgparms[0][7] = planeside * plane;
+          imgparms[0][8] = domain->boxlo[1];
+          imgparms[0][9] = domain->boxhi[2];
+          imgparms[1][1] = planeside * plane;
+          imgparms[1][2] = domain->boxhi[1];
+          imgparms[1][3] = domain->boxhi[2];
+          imgparms[1][4] = planeside * plane;
+          imgparms[1][5] = domain->boxlo[1];
+          imgparms[1][6] = domain->boxhi[2];
+          imgparms[1][7] = planeside * plane;
+          imgparms[1][8] = domain->boxhi[1];
+          imgparms[1][9] = domain->boxlo[2];
+          break;
+        case 1:
+          imgparms[0][1] = domain->boxlo[0];
+          imgparms[0][2] = planeside * plane;
+          imgparms[0][3] = domain->boxlo[2];
+          imgparms[0][4] = domain->boxhi[0];
+          imgparms[0][5] = planeside * plane;
+          imgparms[0][6] = domain->boxlo[2];
+          imgparms[0][7] = domain->boxlo[0];
+          imgparms[0][8] = planeside * plane;
+          imgparms[0][9] = domain->boxhi[2];
+          imgparms[1][1] = domain->boxhi[0];
+          imgparms[1][2] = planeside * plane;
+          imgparms[1][3] = domain->boxhi[2];
+          imgparms[1][4] = domain->boxlo[0];
+          imgparms[1][5] = planeside * plane;
+          imgparms[1][6] = domain->boxhi[2];
+          imgparms[1][7] = domain->boxhi[0];
+          imgparms[1][8] = planeside * plane;
+          imgparms[1][9] = domain->boxlo[2];
+          break;
+        case 2:
+          imgparms[0][1] = domain->boxlo[0];
+          imgparms[0][2] = domain->boxlo[1];
+          imgparms[0][3] = planeside * plane;
+          imgparms[0][4] = domain->boxhi[0];
+          imgparms[0][5] = domain->boxlo[1];
+          imgparms[0][6] = planeside * plane;
+          imgparms[0][7] = domain->boxlo[0];
+          imgparms[0][8] = domain->boxhi[1];
+          imgparms[0][9] = planeside * plane;
+          imgparms[1][1] = domain->boxhi[0];
+          imgparms[1][2] = domain->boxhi[1];
+          imgparms[1][3] = planeside * plane;
+          imgparms[1][4] = domain->boxlo[0];
+          imgparms[1][5] = domain->boxhi[1];
+          imgparms[1][6] = planeside * plane;
+          imgparms[1][7] = domain->boxhi[0];
+          imgparms[1][8] = domain->boxlo[1];
+          imgparms[1][9] = planeside * plane;
+          break;
+      }
     }
   }
 
@@ -983,7 +1017,10 @@ int FixIndent::image(int *&objs, double **&parms)
   else if (istyle == CYLINDER)
     return 1;
   else if (istyle == PLANE)
-    return 2;
+    if (domain->dimension == 2)
+      return 1;
+    else
+      return 2;
   else
     return 0;
 }
