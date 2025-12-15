@@ -23,20 +23,32 @@ DumpStyle(image,DumpImage);
 #include "dump_custom.h"
 
 namespace LAMMPS_NS {
+
+// forward declarations
+class AtomVecBody;
+class AtomVecLine;
+class AtomVecTri;
+class Compute;
+class Fix;
+class Grid2d;
+class Grid3d;
+class Image;
+class LAMMPS;
 class Region;
+
 class DumpImage : public DumpCustom {
  public:
   int multifile_override;                            // used by write_dump command
   enum { SPHERE, LINE, TRI, CYLINDER, TRIANGLE };    // used by some Body and Fix child classes
 
-  DumpImage(class LAMMPS *, int, char **);
+  DumpImage(LAMMPS *, int, char **);
   ~DumpImage() override;
   int pack_forward_comm(int, int *, double *, int, int *) override;
   void unpack_forward_comm(int, int, double *) override;
 
  protected:
   int filetype;
-  enum { PPM, JPG, PNG };
+  enum { PPM, JPG, PNG };    // file type constants
 
   int atomflag;         // 0/1 for draw atoms
   int acolor, adiam;    // what determines color/diam of atoms
@@ -51,9 +63,6 @@ class DumpImage : public DumpCustom {
   int bodyflag;                   // 0/1 for draw atoms as bodies
   int bodycolor;                  // what determines color of bodies
   double bodyflag1, bodyflag2;    // user-specified params for drawing bodies
-  int fixflag;                    // 0/1 to draw what fix provides
-  int fixcolor;                   // what determines color of fix objects
-  double fixflag1, fixflag2;      // user-specified params for fix objects
 
   int bondflag;         // NO/YES/AUTO for drawing bonds
   int bcolor, bdiam;    // what determines color/diam of bonds
@@ -82,11 +91,11 @@ class DumpImage : public DumpCustom {
   double **colortype, **colorelement, **bcolortype;    // per-type colors
 
   int gridflag;    // 0/1 for draw grid cells
-  class Grid2d *grid2d;
-  class Grid3d *grid3d;
+  Grid2d *grid2d;
+  Grid3d *grid3d;
   char *id_grid_compute, *id_grid_fix;
-  class Compute *grid_compute;
-  class Fix *grid_fix;
+  Compute *grid_compute;
+  Fix *grid_fix;
   int grid_igrid, grid_idata, grid_index;
   int nxgrid, nygrid, nzgrid;
   int nxlo_in, nxhi_in, nylo_in, nyhi_in, nzlo_in, nzhi_in;
@@ -94,18 +103,31 @@ class DumpImage : public DumpCustom {
   int ngrid, maxgrid;
   double gcorners[8][3];
 
-  class AtomVecLine *avec_line;    // ptrs to atom style (sub)classes
-  class AtomVecTri *avec_tri;
-  class AtomVecBody *avec_body;
+  AtomVecLine *avec_line;    // ptrs to atom style (sub)classes
+  AtomVecTri *avec_tri;
+  AtomVecBody *avec_body;
 
-  class Fix *fixptr;    // ptr to Fix that provides image data
-  char *id_fix;
-  double *fcolor;    // custom color choice for fix
+  struct FixInfo {
+    FixInfo() = delete;
+    FixInfo(const std::string &_id, Fix *_ptr, int _colorstyle, double _flag1, double _flag2,
+            double *_rgb) :
+        id(_id), ptr(_ptr), colorstyle(_colorstyle), flag1(_flag1), flag2(_flag2), rgb(_rgb)
+    {
+    }
 
-  class Image *image;    // class that renders each image
+    Fix *ptr;
+    std::string id;
+    int colorstyle;
+    double flag1;
+    double flag2;
+    double *rgb;
+  };
 
-  class RegionInfo {
-   public:
+  std::vector<FixInfo> fixes;
+
+  Image *image;    // class that renders each image
+
+  struct RegionInfo {
     RegionInfo() = delete;
     RegionInfo(const std::string &_id, Region *_ptr, double *_color, int _style,
                double _diameter = 0.5, int _npoints = 0) :

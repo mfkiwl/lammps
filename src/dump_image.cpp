@@ -58,6 +58,8 @@
 #include <cmath>
 #include <cstring>
 
+// clang-format on
+
 // helper functions for generating triangle meshes
 
 namespace {
@@ -204,8 +206,8 @@ void ellipsoid2wireframe(LAMMPS_NS::Image *img, int level, const double *color, 
   }
 }
 
-void ellipsoid2filled(LAMMPS_NS::Image *img, int level, const double *color,
-                      const double *center, const double *radius, LAMMPS_NS::Region *reg)
+void ellipsoid2filled(LAMMPS_NS::Image *img, int level, const double *color, const double *center,
+                      const double *radius, LAMMPS_NS::Region *reg)
 {
   vec3 offset = {center[0], center[1], center[2]};
 
@@ -280,7 +282,7 @@ using MathConst::DEG2RAD;
 
 static constexpr double BIG = 1.0e20;
 
-enum { NUMERIC, ATOM, TYPE, ELEMENT, ATTRIBUTE };
+enum { NUMERIC, ATOM, TYPE, ELEMENT, ATTRIBUTE, CONSTANT};
 enum { STATIC, DYNAMIC };
 enum { NO = 0, YES = 1, AUTO = 2 };
 enum { FILLED, FRAME, POINTS };
@@ -293,8 +295,8 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
     diamtype(nullptr), diamelement(nullptr), bdiamtype(nullptr), colortype(nullptr),
     colorelement(nullptr), bcolortype(nullptr), grid2d(nullptr), grid3d(nullptr),
     id_grid_compute(nullptr), id_grid_fix(nullptr), grid_compute(nullptr), grid_fix(nullptr),
-    gbuf(nullptr), avec_line(nullptr), avec_tri(nullptr), avec_body(nullptr), fixptr(nullptr),
-    id_fix(nullptr), fcolor(nullptr), image(nullptr), chooseghost(nullptr), bufcopy(nullptr)
+    gbuf(nullptr), avec_line(nullptr), avec_tri(nullptr), avec_body(nullptr), image(nullptr),
+    chooseghost(nullptr), bufcopy(nullptr)
 {
   if (binary || multiproc) error->all(FLERR, 4, "Invalid dump image filename {}", filename);
 
@@ -307,6 +309,7 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
 
   has_id = true;
 
+  // clang-format off
   // set filetype based on filename suffix
 
   if (utils::strmatch(filename, "\\.jpg$") || utils::strmatch(filename, "\\.JPG$")
@@ -354,7 +357,7 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
 
   atomflag = YES;
   gridflag = NO;
-  lineflag = triflag = bodyflag = fixflag = NO;
+  lineflag = triflag = bodyflag = NO;
 
   if (atom->nbondtypes == 0) bondflag = NO;
   else {
@@ -475,13 +478,17 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
 
     } else if (strcmp(arg[iarg],"fix") == 0) {
       if (iarg+5 > narg) utils::missing_cmd_args(FLERR,"dump image fix", error);
-      fixflag = YES;
-      delete[] id_fix;
-      id_fix = utils::strdup(arg[iarg+1]);
+      std::string id_fix = arg[iarg+1];
+      auto *fixptr = modify->get_fix_by_id(id_fix);
+      if (!fixptr) error->all(FLERR, iarg+1, "Dump image fix ID {} does not exist", id_fix);
+      int fixcolor = TYPE;
       if (strcmp(arg[iarg+2],"type") == 0) fixcolor = TYPE;
-      else error->all(FLERR, iarg+2, "Dump image fix only supports color by type");
-      fixflag1 = utils::numeric(FLERR,arg[iarg+3],false,lmp);
-      fixflag2 = utils::numeric(FLERR,arg[iarg+4],false,lmp);
+      else if (strcmp(arg[iarg+2],"element") == 0) fixcolor = ELEMENT;
+      else if (strcmp(arg[iarg+2],"const") == 0) fixcolor = CONSTANT;
+      else error->all(FLERR, iarg+2, "Unsupported color style for dump image fix {}", arg[iarg+2]);
+      double fixflag1 = utils::numeric(FLERR,arg[iarg+3],false,lmp);
+      double fixflag2 = utils::numeric(FLERR,arg[iarg+4],false,lmp);
+      fixes.emplace_back(id_fix, fixptr, fixcolor, fixflag1, fixflag2, image->color2rgb("red"));
       iarg += 5;
 
     } else if (strcmp(arg[iarg],"region") == 0) {
@@ -665,7 +672,7 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
     } else error->all(FLERR,"Unknown dump image keyword {}", arg[iarg]);
   }
 
-  // error checks and setup for lineflag, triflag, bodyflag, fixflag
+  // error checks and setup for lineflag, triflag, bodyflag
 
   if (lineflag) {
     avec_line = dynamic_cast<AtomVecLine *>(atom->style_match("line"));
@@ -685,12 +692,6 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
 
   extraflag = 0;
   if (lineflag || triflag || bodyflag) extraflag = 1;
-
-  if (fixflag) {
-    fixptr = modify->get_fix_by_id(id_fix);
-    if (!fixptr)
-      error->all(FLERR, Error::NOLASTLINE, "Fix ID {} for dump image does not exist", id_fix);
-  }
 
   // allocate image buffer now that image size is known
 
@@ -782,7 +783,6 @@ DumpImage::~DumpImage()
 
   delete[] id_grid_compute;
   delete[] id_grid_fix;
-  delete[] id_fix;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -915,11 +915,12 @@ void DumpImage::init_style()
       error->all(FLERR, "Dump image autobond cutoff is larger than periodic domain");
   }
 
-  // check if fix with visualization still exists
-  if (fixflag) {
-    fixptr = modify->get_fix_by_id(id_fix);
+  // check if fixes with visualization info still exist
+  for (auto &ifix : fixes) {
+    auto *fixptr = modify->get_fix_by_id(ifix.id);
     if (!fixptr)
-      error->all(FLERR, Error::NOLASTLINE, "Fix ID {} for dump image does not exist", id_fix);
+      error->all(FLERR, Error::NOLASTLINE, "Fix ID {} for dump image does not exist", ifix.id);
+    ifix.ptr = fixptr;
 
     // check if fix data for dump image is available at the required steps.
 
@@ -1216,8 +1217,8 @@ void DumpImage::create_image()
   int i,j,k,m,n,itype,atom1,atom2,imol,iatom,btype,ibonus,drawflag;
   tagint tagprev;
   double diameter,delx,dely,delz;
-  int *bodyvec,*fixvec;
-  double **bodyarray,**fixarray;
+  int *bodyvec;
+  double **bodyarray;
   double *color,*color1,*color2;
   double *p1,*p2,*p3;
   double pt1[3],pt2[3],pt3[3];
@@ -1693,81 +1694,56 @@ void DumpImage::create_image()
     }
   }
 
-  // render objects provided by a fix
+  // render objects provided by fixes
 
-  if (fixflag) {
+  for (const auto &ifix : fixes) {
     int tridraw = 0;
     int edgedraw = 0;
     if (domain->dimension == 3) {
       tridraw = 1;
       edgedraw = 1;
-      if ((int) fixflag1 == 2) tridraw = 0;
-      if ((int) fixflag1 == 1) edgedraw = 0;
+      if ((int) ifix.flag1 == 2) tridraw = 0;
+      if ((int) ifix.flag1 == 1) edgedraw = 0;
     }
 
-    n = fixptr->image(fixvec,fixarray);
-    if (fixvec && fixarray) {
-      for (i = 0; i < n; i++) {
-        if (fixvec[i] == SPHERE) {
-          if (fcolor) {
-            color = fcolor;
-          } else if (fixcolor == TYPE) {
-            itype = static_cast<int>(fixarray[i][0]);
-            color = colortype[itype];
-          } else {
-            color = image->color2rgb("red");
-          }
-          image->draw_sphere(&fixarray[i][1],color,fixarray[i][4]+fixflag2);
-        } else if (fixvec[i] == LINE) {
-          if (fcolor) {
-            color = fcolor;
-          } else if (fixcolor == TYPE) {
-            itype = static_cast<int>(fixarray[i][0]);
-            color = colortype[itype];
-          } else {
-            color = image->color2rgb("red");
-          }
-          image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,fixflag1,3);
-        } else if (fixvec[i] == TRI) {
-          if (fcolor) {
-            color = fcolor;
-          } else if (fixcolor == TYPE) {
-            itype = static_cast<int>(fixarray[i][0]);
-            color = colortype[itype];
-          } else {
-            color = image->color2rgb("red");
-          }
-          p1 = &fixarray[i][1];
-          p2 = &fixarray[i][4];
-          p3 = &fixarray[i][7];
-          if (tridraw) image->draw_triangle(p1,p2,p3,color);
-          if (edgedraw) {
-            image->draw_cylinder(p1,p2,color,fixflag2,3);
-            image->draw_cylinder(p2,p3,color,fixflag2,3);
-            image->draw_cylinder(p3,p1,color,fixflag2,3);
-          }
-        } else if (fixvec[i] == CYLINDER) {
-          if (fcolor) {
-            color = fcolor;
-          } else if (fixcolor == TYPE) {
-            itype = static_cast<int>(fixarray[i][0]);
-            color = colortype[itype];
-          } else {
-            color = image->color2rgb("red");
-          }
-          image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,
-                               fixarray[i][7]+fixflag2,(int)fixflag1);
-        } else if (fixvec[i] == TRIANGLE) {
-          if (fcolor) {
-            color = fcolor;
-          } else if (fixcolor == TYPE) {
-            itype = static_cast<int>(fixarray[i][0]);
-            color = colortype[itype];
-          } else {
-            color = image->color2rgb("red");
-          }
-          image->draw_triangle(&fixarray[i][1],&fixarray[i][4],&fixarray[i][7],color);
+    int *fixvec = nullptr;
+    double **fixarray = nullptr;
+    n = ifix.ptr->image(fixvec,fixarray);
+    for (i = 0; i < n; i++) {
+      if (!fixvec || !fixarray) continue;
+
+      // set color
+      if (ifix.colorstyle == TYPE) {
+        itype = static_cast<int>(fixarray[i][0]);
+        color = colortype[itype];
+      } else if  (ifix.colorstyle == ELEMENT) {
+        itype = static_cast<int>(fixarray[i][0]);
+        color = colorelement[itype];
+      } else if  (ifix.colorstyle == CONSTANT) {
+        color = ifix.rgb;
+      } else {
+        color = image->color2rgb("red");
+      }
+
+      if (fixvec[i] == SPHERE) {
+        image->draw_sphere(&fixarray[i][1],color,fixarray[i][4]+ifix.flag2);
+      } else if (fixvec[i] == LINE) {
+        image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,ifix.flag1,3);
+      } else if (fixvec[i] == TRI) {
+        p1 = &fixarray[i][1];
+        p2 = &fixarray[i][4];
+        p3 = &fixarray[i][7];
+        if (tridraw) image->draw_triangle(p1,p2,p3,color);
+        if (edgedraw) {
+          image->draw_cylinder(p1,p2,color,ifix.flag2,3);
+          image->draw_cylinder(p2,p3,color,ifix.flag2,3);
+          image->draw_cylinder(p3,p1,color,ifix.flag2,3);
         }
+      } else if (fixvec[i] == CYLINDER) {
+        image->draw_cylinder(&fixarray[i][1],&fixarray[i][4],color,
+                             fixarray[i][7]+ifix.flag2,(int)ifix.flag1);
+      } else if (fixvec[i] == TRIANGLE) {
+        image->draw_triangle(&fixarray[i][1],&fixarray[i][4],&fixarray[i][7],color);
       }
     }
   }
@@ -2634,9 +2610,11 @@ int DumpImage::modify_param(int narg, char **arg)
   }
 
   if (strcmp(arg[0],"fcolor") == 0) {
-    if (narg < 2) error->all(FLERR,"Illegal dump_modify command");
-    fcolor = image->color2rgb(arg[1]);
-    return 2;
+    if (narg < 3) error->all(FLERR,"Illegal dump_modify command");
+    for (auto &ifix : fixes) {
+      if (ifix.id == arg[1]) ifix.rgb = image->color2rgb(arg[2]);
+    }
+    return 3;
   }
 
   return 0;

@@ -160,8 +160,9 @@ Syntax
        *color* args = name R G B
          name = name of color
          R,G,B = red/green/blue numeric values from 0.0 to 1.0
-       *fcolor* args = color
-         color = name of color for fix objects
+       *fcolor* args = fix-ID color
+         fix-ID = ID of the fix
+         color = name of color for image objects provided by this fix
        *framerate* arg = fps
          fps = frames per second for movie
        *gmap* args = identical to *amap* args
@@ -506,6 +507,10 @@ change this via the dump_modify command.
 
 ----------
 
+.. versionchanged:: TBD
+
+   Support for several fix styles added and more flexible color selection
+
 The *fix* keyword can be used with a :doc:`fix <fix>` that produces
 objects to be drawn.  Below is a list of supported fixes:
 
@@ -520,14 +525,23 @@ objects to be drawn.  Below is a list of supported fixes:
 * :doc:`fix wall/morse <fix_wall>`
 * :doc:`fix wall/table <fix_wall>`
 
+The fix keyword may be used multiple time to include visualizations of
+object from multiple fixes.  The fix keyword is followed by the
+:doc:`fix ID <fix>` of the fix, the color style setting and two
+numerical values *fflag1* and *fflag2*.
+
+The color style may be either *type*, *element*, or *const*.  The first
+two will use the same color as assigned to the corresonding atom type
+and thus it depends on the fix which atom type it associates with any
+object.  Often this will be atom type 1.  For the *const* type a
+constant color will be used that can be changed with a *dump_modify
+fcolor* command (see below).  By default the constant color will be
+"red" (same as the default color for atom type 1).
+
 The *fflag1* and *fflag2* settings are numerical values which are used
 by *dump image* to adjust how the drawing of the objects communicated
 by the fix is done.  See the documentation of the individual fixes for
 a description of what these parameters mean.
-
-The only setting currently allowed for the *color* value is *type*,
-which will color the fix objects in the same color as atom type 1.
-By default this will be "red".
 
 ----------
 
@@ -1035,8 +1049,10 @@ pre-defined color names with new RBG values.
 .. versionadded:: TBD
 
 The *fcolor* keyword sets the color of any image objects created by a
-fix.  The color name can be any of the 140 pre-defined colors (see
-below) or a color name defined by the *dump_modify color* option.
+fix.  The first argument is the fix ID used with the *dump image fix*
+command and the second argument is the color name.  The color name can
+be any of the 140 pre-defined colors (see below) or a color name defined
+by the *dump_modify color* option.
 
 ----------
 
