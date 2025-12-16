@@ -524,6 +524,8 @@ objects to be drawn.  Below is a list of supported fixes:
 * :doc:`fix wall/harmonic/outside <fix_wall>`
 * :doc:`fix wall/lepton <fix_wall>`
 * :doc:`fix wall/morse <fix_wall>`
+* :doc:`fix wall/reflect <fix_wall_reflect>`
+* :doc:`fix wall/reflect/stochastic <fix_wall_reflect_stochastic>`
 * :doc:`fix wall/table <fix_wall>`
 
 The fix keyword may be used multiple time to include visualizations of

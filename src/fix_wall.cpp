@@ -403,8 +403,10 @@ void FixWall::post_force(int vflag)
     }
 
     wall_particle(m, wallwhich[m], coord);
+
+    // record wall info for dump image
     if (domain->dimension == 2) {
-      // one cylinder for 2d. we "guess" the diameter by using sigma. can be adjusted with fparam2
+      // one cylinder for 2d. diameter is zero and can be set with fparam2
       switch (wallwhich[m]) {
         case XLO:    // fallthrough
         case XHI:

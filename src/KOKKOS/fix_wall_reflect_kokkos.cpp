@@ -66,6 +66,9 @@ void FixWallReflectKokkos<DeviceType>::post_integrate()
     dim = wallwhich[m] / 2;
     side = wallwhich[m] % 2;
 
+    // record wall graphics objects for dump image
+    wall_update_objs(m,wallwhich[m],coord);
+
     copymode = 1;
     Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType, TagFixWallReflectPostIntegrate>(0,nlocal),*this);
     copymode = 0;

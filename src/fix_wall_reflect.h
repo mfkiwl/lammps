@@ -35,6 +35,8 @@ class FixWallReflect : public Fix {
   void init() override;
   void post_integrate() override;
 
+  int image(int *&, double **&) override;
+
  protected:
   int nwall;
   int wallwhich[6], wallstyle[6];
@@ -43,8 +45,11 @@ class FixWallReflect : public Fix {
   int varindex[6];
   int varflag;
   double xscale, yscale, zscale;
+  int *imgobjs;
+  double **imgparms;
 
   virtual void wall_particle(int m, int which, double coord);
+  void wall_update_objs(int m, int which, double coord);
 };
 
 }    // namespace LAMMPS_NS

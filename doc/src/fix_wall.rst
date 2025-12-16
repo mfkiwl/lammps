@@ -497,6 +497,8 @@ if you want the interpolation tables of length Ntable to match exactly
 what is in the tabulated file (with effectively no preliminary
 interpolation), you should set Ntable = Nfile.
 
+-----------------
+
 Dump image info
 """""""""""""""
 
@@ -517,7 +519,9 @@ means both ends are capped.  The *fflag2* setting allows to adjust the
 radius of the rendered cylinder.  It should be set to a value > 0 or the
 cylinder will not be visible since the diameter is set internally to
 zero due to lack of a suitable heuristic for deriving a meaningful
-diameter for all types of walls.
+diameter for all types of walls and unit settings.
+
+-----------------
 
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
