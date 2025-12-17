@@ -270,7 +270,7 @@ void FixWallReflect::wall_particle(int /* m */, int which, double coord)
 }
 
 /* ----------------------------------------------------------------------
-   update wall graphics object infor for dump image
+   update wall graphics object info for dump image
 ------------------------------------------------------------------------- */
 
 void FixWallReflect::wall_update_objs(int m, int which, double coord)

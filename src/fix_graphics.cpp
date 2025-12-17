@@ -109,7 +109,7 @@ FixGraphics::FixGraphics(LAMMPS *lmp, int narg, char **arg) :
         varflag = 1;
         cylinder.x2str = utils::strdup(arg[iarg + 5] + 2);
       } else
-        cylinder.pos2[X] = utils::numeric(FLERR, arg[iarg + 4], false, lmp);
+        cylinder.pos2[X] = utils::numeric(FLERR, arg[iarg + 5], false, lmp);
       if (strstr(arg[iarg + 6], "v_") == arg[iarg + 6]) {
         varflag = 1;
         cylinder.y2str = utils::strdup(arg[iarg + 6] + 2);
@@ -155,7 +155,7 @@ FixGraphics::FixGraphics(LAMMPS *lmp, int narg, char **arg) :
         varflag = 1;
         arrow.x2str = utils::strdup(arg[iarg + 5] + 2);
       } else
-        arrow.bot[X] = utils::numeric(FLERR, arg[iarg + 4], false, lmp);
+        arrow.bot[X] = utils::numeric(FLERR, arg[iarg + 5], false, lmp);
       if (strstr(arg[iarg + 6], "v_") == arg[iarg + 6]) {
         varflag = 1;
         arrow.y2str = utils::strdup(arg[iarg + 6] + 2);
