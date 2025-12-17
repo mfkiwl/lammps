@@ -14,7 +14,7 @@ Syntax
 * graphics = style name of this fix command
 * Nevery = update graphics information every this many time steps
 * one or more keyword/args pairs may be appended
-* keyword = *sphere* or *cylinder*
+* keyword = *sphere* or *cylinder* or *arrow* or *progbar*
 
   .. parsed-literal::
 
@@ -28,6 +28,22 @@ Syntax
          x1, y1, z1, x2, y2, z2 = positions of the centers at the two ends of the cylinder (distance units)
          R = cylinder radius (distance units)
          any of x1, y1, z1, x2, y2, z2, and R can be a variable (see below)
+       *arrow* args = type x1 y1 z1 x2 y2 z2 R ratio
+         type = an atom type value to select the color of the sphere
+         x1, y1, z1, x2, y2, z2 = positions of the centers at the tip and the bottom of the arrow (distance units)
+         R = cylinder radius (distance units)
+         ratio = tip to body ratio (unitless)
+         any of x1, y1, z1, x2, y2, z2, and R can be a variable (see below)
+       *progbar* args = type1 type2 dim x y z length ratio R tics
+         type1 = an atom type value to select the color of the progress bar body and the tics
+         type2 = an atom type value to select the color of the progress indicator
+         dim = *x* or *y* or *z*, direction of the progress bar
+         x, y, z = position of the progress bar center (distance units)
+         length = length of progress bar (distance units)
+         ratio = progress status (unitless)
+         R = cylinder radius (distance units)
+         tics = number of tics (unitless)
+         only the progress ratio value can be a variable (see below)
 
 Examples
 """"""""
@@ -55,12 +71,14 @@ corresponding atom type when the *type* coloring scheme is used in the
 :doc:`dump image fix <dump_image>` command is used.  The color may also
 be that of the atom type's element or just a globally set constant color
 for *all* objects of this fix instance, which can be changed using a
-:doc:`dump modify fcolor <dump_image>` command.
+:doc:`dump modify fcolor <dump_image>` command.  For the *progbar*
+object *two* atom type values must be specified.
 
 Available graphics objects are (see above for exact command line syntax):
 
 - *sphere* - a sphere defined by its center location and its radius
 - *cylinder* - a cylinder defined by its two center endpoints and its radius
+- *arrow* - a cylinder with a cone at one side
 
 Most of the quantities defining a graphics object can be specified as an
 equal-style :doc:`variable <variable>`, namely *x*, *y*, *z*, or *R* for

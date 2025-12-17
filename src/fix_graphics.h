@@ -62,30 +62,35 @@ class FixGraphics : public Fix {
   struct ArrowItem {
     int style;
     int type;
-    int dim;
-    int tics;
-    double pos[3];
-    double dir[3];
+    double tip[3];
+    double bot[3];
     double diameter;
-    double length;
-    char *xstr, *ystr, *zstr, *dxstr, *dystr, *dzstr, *lstr;
+    double ratio;
+    char *x1str, *y1str, *z1str, *x2str, *y2str, *z2str, *dstr;
+    int x1var, y1var, z1var, x2var, y2var, z2var, dvar;
   };
 
   struct ProgbarItem {
     int style;
-    int type;
+    int type1;
+    int type2;
     int dim;
     int tics;
     double pos[3];
     double diameter;
     double length;
+    double progress;
     char *pstr;
+    int pvar;
   };
 
   union GraphicsItem {
     GraphicsItem() = delete;
     GraphicsItem(const SphereItem &s) : sphere(s) {}
     GraphicsItem(const CylinderItem &c) : cylinder(c) {}
+    GraphicsItem(const ArrowItem &a) : arrow(a) {}
+    GraphicsItem(const ProgbarItem &p) : progbar(p) {}
+    ~GraphicsItem();
 
     int style;
     SphereItem sphere;
