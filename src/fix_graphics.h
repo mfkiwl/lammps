@@ -40,7 +40,6 @@ class FixGraphics : public Fix {
   int *imgobjs;
   double **imgparms;
 
-  int numitems;
   struct SphereItem {
     int style;
     int type;
@@ -48,6 +47,16 @@ class FixGraphics : public Fix {
     double diameter;
     char *xstr, *ystr, *zstr, *dstr;
     int xvar, yvar, zvar, dvar;
+  };
+
+  struct CylinderItem {
+    int style;
+    int type;
+    double pos1[3];
+    double pos2[3];
+    double diameter;
+    char *x1str, *y1str, *z1str, *x2str, *y2str, *z2str, *dstr;
+    int x1var, y1var, z1var, x2var, y2var, z2var, dvar;
   };
 
   struct ArrowItem {
@@ -74,8 +83,13 @@ class FixGraphics : public Fix {
   };
 
   union GraphicsItem {
+    GraphicsItem() = delete;
+    GraphicsItem(const SphereItem &s) : sphere(s) {}
+    GraphicsItem(const CylinderItem &c) : cylinder(c) {}
+
     int style;
     SphereItem sphere;
+    CylinderItem cylinder;
     ArrowItem arrow;
     ProgbarItem progbar;
   };

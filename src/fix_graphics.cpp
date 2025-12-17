@@ -25,11 +25,12 @@
 #include "variable.h"
 
 #include <cstring>
+#include <utility>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-enum { SPHERE, ARROW, PROGBAR };
+enum { SPHERE, CYLINDER, ARROW, PROGBAR };
 enum { X, Y, Z };
 
 /* ---------------------------------------------------------------------- */
@@ -52,7 +53,10 @@ FixGraphics::FixGraphics(LAMMPS *lmp, int narg, char **arg) :
   while (iarg < narg) {
     if (strcmp(arg[iarg], "sphere") == 0) {
       if (iarg + 6 > narg) utils::missing_cmd_args(FLERR, "fix graphics sphere", error);
-      SphereItem sphere{SPHERE, 1, {0.0, 0.0, 0.0}, 0.0, 0, 0, 0, 0, -1, -1, -1, -1};
+      // clang-format off
+      SphereItem sphere{SPHERE, 1, {0.0, 0.0, 0.0}, 0.0, nullptr, nullptr, nullptr, nullptr,
+                        -1, -1, -1, -1};
+      // clang-format on
       sphere.type = utils::inumeric(FLERR, arg[iarg + 1], false, lmp);
       if (strstr(arg[iarg + 2], "v_") == arg[iarg + 2]) {
         varflag = 1;
@@ -74,11 +78,55 @@ FixGraphics::FixGraphics(LAMMPS *lmp, int narg, char **arg) :
         sphere.dstr = utils::strdup(arg[iarg + 5] + 2);
       } else
         sphere.diameter = 2.0 * utils::numeric(FLERR, arg[iarg + 5], false, lmp);
-      GraphicsItem g;
-      g.sphere = sphere;
-      items.emplace_back(g);
+      items.emplace_back(std::move(sphere));
       ++numobjs;
       iarg += 6;
+    } else if (strcmp(arg[iarg], "cylinder") == 0) {
+      if (iarg + 9 > narg) utils::missing_cmd_args(FLERR, "fix graphics cylinder", error);
+      // clang-format off
+      CylinderItem cylinder{CYLINDER, 1, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0.0,
+                            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+                            -1, -1, -1, -1, -1, -1, -1};
+      // clang-format on
+      cylinder.type = utils::inumeric(FLERR, arg[iarg + 1], false, lmp);
+      if (strstr(arg[iarg + 2], "v_") == arg[iarg + 2]) {
+        varflag = 1;
+        cylinder.x1str = utils::strdup(arg[iarg + 2] + 2);
+      } else
+        cylinder.pos1[0] = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
+      if (strstr(arg[iarg + 3], "v_") == arg[iarg + 3]) {
+        varflag = 1;
+        cylinder.y1str = utils::strdup(arg[iarg + 3] + 2);
+      } else
+        cylinder.pos1[1] = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
+      if (strstr(arg[iarg + 4], "v_") == arg[iarg + 4]) {
+        varflag = 1;
+        cylinder.z1str = utils::strdup(arg[iarg + 4] + 2);
+      } else
+        cylinder.pos1[2] = utils::numeric(FLERR, arg[iarg + 4], false, lmp);
+      if (strstr(arg[iarg + 5], "v_") == arg[iarg + 5]) {
+        varflag = 1;
+        cylinder.x2str = utils::strdup(arg[iarg + 5] + 2);
+      } else
+        cylinder.pos2[0] = utils::numeric(FLERR, arg[iarg + 4], false, lmp);
+      if (strstr(arg[iarg + 6], "v_") == arg[iarg + 6]) {
+        varflag = 1;
+        cylinder.y2str = utils::strdup(arg[iarg + 6] + 2);
+      } else
+        cylinder.pos2[1] = utils::numeric(FLERR, arg[iarg + 6], false, lmp);
+      if (strstr(arg[iarg + 7], "v_") == arg[iarg + 7]) {
+        varflag = 1;
+        cylinder.z2str = utils::strdup(arg[iarg + 7] + 2);
+      } else
+        cylinder.pos2[2] = utils::numeric(FLERR, arg[iarg + 7], false, lmp);
+      if (strstr(arg[iarg + 8], "v_") == arg[iarg + 8]) {
+        varflag = 1;
+        cylinder.dstr = utils::strdup(arg[iarg + 8] + 2);
+      } else
+        cylinder.diameter = 2.0 * utils::numeric(FLERR, arg[iarg + 8], false, lmp);
+      items.emplace_back(std::move(cylinder));
+      ++numobjs;
+      iarg += 9;
     } else {
       error->all(FLERR, iarg, "Unknown fix graphics keyword {}", arg[iarg]);
     }
@@ -152,6 +200,80 @@ void FixGraphics::init()
         gi.sphere.dvar = ivar;
       }
       ++n;
+    } else if (gi.style == CYLINDER) {
+      imgobjs[n] = DumpImage::CYLINDER;
+      imgparms[n][0] = gi.cylinder.type;
+      if (gi.cylinder.x1str) {
+        int ivar = input->variable->find(gi.cylinder.x1str);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.x1str);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.x1str);
+        gi.cylinder.x1var = ivar;
+      }
+      if (gi.cylinder.y1str) {
+        int ivar = input->variable->find(gi.cylinder.y1str);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.y1str);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.y1str);
+        gi.cylinder.y1var = ivar;
+      }
+      if (gi.cylinder.z1str) {
+        int ivar = input->variable->find(gi.cylinder.z1str);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.z1str);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.z1str);
+        gi.cylinder.z1var = ivar;
+      }
+      if (gi.cylinder.x2str) {
+        int ivar = input->variable->find(gi.cylinder.x2str);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.x2str);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.x2str);
+        gi.cylinder.x2var = ivar;
+      }
+      if (gi.cylinder.y2str) {
+        int ivar = input->variable->find(gi.cylinder.y2str);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.y2str);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.y2str);
+        gi.cylinder.y2var = ivar;
+      }
+      if (gi.cylinder.z2str) {
+        int ivar = input->variable->find(gi.cylinder.z2str);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.z2str);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.z2str);
+        gi.cylinder.z2var = ivar;
+      }
+      if (gi.cylinder.dstr) {
+        int ivar = input->variable->find(gi.cylinder.dstr);
+        if (ivar < 0)
+          error->all(FLERR, Error::NOLASTLINE, "Variable name {} for fix graphics does not exist",
+                     gi.cylinder.dstr);
+        if (input->variable->equalstyle(ivar) == 0)
+          error->all(FLERR, Error::NOLASTLINE,
+                     "Fix graphics variable {} is not equal-style variable", gi.cylinder.dstr);
+        gi.cylinder.dvar = ivar;
+      }
+      ++n;
     } else if (gi.style == ARROW) {
     } else if (gi.style == PROGBAR) {
     }
@@ -177,6 +299,29 @@ void FixGraphics::end_of_step()
       imgparms[n][2] = gi.sphere.pos[1];
       imgparms[n][3] = gi.sphere.pos[2];
       imgparms[n][4] = gi.sphere.diameter;
+      ++n;
+    } else if (gi.style == CYLINDER) {
+      if (gi.cylinder.x1str)
+        gi.cylinder.pos1[0] = input->variable->compute_equal(gi.cylinder.x1var);
+      if (gi.cylinder.y1str)
+        gi.cylinder.pos1[1] = input->variable->compute_equal(gi.cylinder.y1var);
+      if (gi.cylinder.z1str)
+        gi.cylinder.pos1[2] = input->variable->compute_equal(gi.cylinder.z1var);
+      if (gi.cylinder.x2str)
+        gi.cylinder.pos2[0] = input->variable->compute_equal(gi.cylinder.x2var);
+      if (gi.cylinder.y2str)
+        gi.cylinder.pos2[1] = input->variable->compute_equal(gi.cylinder.y2var);
+      if (gi.cylinder.z2str)
+        gi.cylinder.pos2[2] = input->variable->compute_equal(gi.cylinder.z2var);
+      if (gi.cylinder.dstr)
+        gi.cylinder.diameter = 2.0 * input->variable->compute_equal(gi.cylinder.dvar);
+      imgparms[n][1] = gi.cylinder.pos1[0];
+      imgparms[n][2] = gi.cylinder.pos1[1];
+      imgparms[n][3] = gi.cylinder.pos1[2];
+      imgparms[n][4] = gi.cylinder.pos2[0];
+      imgparms[n][5] = gi.cylinder.pos2[1];
+      imgparms[n][6] = gi.cylinder.pos2[2];
+      imgparms[n][7] = gi.cylinder.diameter;
       ++n;
     } else if (gi.style == ARROW) {
     } else if (gi.style == PROGBAR) {

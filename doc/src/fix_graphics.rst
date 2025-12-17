@@ -14,7 +14,7 @@ Syntax
 * graphics = style name of this fix command
 * Nevery = update graphics information every this many time steps
 * one or more keyword/args pairs may be appended
-* keyword = *sphere* or *units*
+* keyword = *sphere* or *cylinder*
 
   .. parsed-literal::
 
@@ -22,15 +22,20 @@ Syntax
          type = an atom type value to select the color of the sphere
          x, y, z = position of the center of the sphere (distance units)
          R = sphere radius (distance units)
-         any of x, y, z, R can be a variable (see below)
+         any of x, y, z, and R can be a variable (see below)
+       *cylinder* args = type x1 y1 z1 x2 y2 z2 R
+         type = an atom type value to select the color of the sphere
+         x1, y1, z1, x2, y2, z2 = positions of the centers at the two ends of the cylinder (distance units)
+         R = cylinder radius (distance units)
+         any of x1, y1, z1, x2, y2, z2, and R can be a variable (see below)
 
 Examples
 """"""""
 
 .. code-block:: LAMMPS
 
-   fix 1 all graphics 100 sphere 0.0 0.0 15.0 3.0 sphere 0.0 0.0 5.0 1.0
-   fix 1 all graphics 1000 sphere v_x v_y 0.0 v_radius
+   fix 1 all graphics 100 sphere 1 0.0 0.0 15.0 3.0 sphere 2 0.0 0.0 5.0 1.0
+   fix 1 all graphics 1000 sphere 1 v_x v_y 0.0 v_radius cylinder 1 v_x v_y 0.0 v_x v_y 10.0 3.0
 
 Description
 """""""""""
@@ -55,13 +60,15 @@ for *all* objects of this fix instance, which can be changed using a
 Available graphics objects are (see above for exact command line syntax):
 
 - *sphere* - a sphere defined by its center location and its radius
-     
+- *cylinder* - a cylinder defined by its two center endpoints and its radius
+
 Most of the quantities defining a graphics object can be specified as an
 equal-style :doc:`variable <variable>`, namely *x*, *y*, *z*, or *R* for
-a *sphere*.  If any of these values is a variable, it should be
+a *sphere* or namely *x1*, *y1*, *z1*, *x2*, *y2*, *z2*, or *R* for a
+*cylinder*.  If any of these values is a variable, it should be
 specified as `v_name`, where `name` is the variable name.  In this case,
-the variable will be evaluated each *Nevery* timestep, and its value used
-to define the indenter geometry.
+the variable will be evaluated each *Nevery* timestep, and its value
+used to define the indenter geometry.
 
 Note that equal-style variables can specify formulas with various
 mathematical functions, and include :doc:`thermo_style <thermo_style>`
