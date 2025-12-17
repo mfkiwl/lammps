@@ -23,7 +23,9 @@
 #include "granular_model.h"
 #include "gran_sub_mod.h"
 #include "domain.h"
+#include "dump_image.h"
 #include "error.h"
+#include "fix_wall.h"
 #include "input.h"
 #include "math_const.h"
 #include "math_extra.h"
@@ -54,7 +56,7 @@ enum {NONE,CONSTANT,EQUAL};
 
 FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg), idregion(nullptr), tstr(nullptr), history_one(nullptr),
-  fix_rigid(nullptr), mass_rigid(nullptr)
+  fix_rigid(nullptr), mass_rigid(nullptr), imgobjs(nullptr), imgparms(nullptr)
 {
   if (narg < 4) utils::missing_cmd_args(FLERR,"fix wall/gran", error);
 
@@ -128,41 +130,71 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
 
   // wallstyle args
 
+  numwalls = 0;
   if (iarg >= narg) error->all(FLERR, "Illegal fix wall/gran command");
 
   if (strcmp(arg[iarg],"xplane") == 0) {
     if (narg < iarg+3) error->all(FLERR,"Illegal fix wall/gran command");
     wallstyle = XPLANE;
-    if (strcmp(arg[iarg+1],"NULL") == 0) lo = -BIG;
-    else lo = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-    if (strcmp(arg[iarg+2],"NULL") == 0) hi = BIG;
-    else hi = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+    numwalls = 0;
+    if (strcmp(arg[iarg+1],"NULL") == 0) {
+      lo = -BIG;
+    } else {
+      lo = utils::numeric(FLERR,arg[iarg+1],false,lmp);
+      ++numwalls;
+    }
+    if (strcmp(arg[iarg+2],"NULL") == 0) {
+      hi = BIG;
+    } else {
+      hi = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+      ++numwalls;
+    }
     iarg += 3;
   } else if (strcmp(arg[iarg],"yplane") == 0) {
     if (narg < iarg+3) error->all(FLERR,"Illegal fix wall/gran command");
     wallstyle = YPLANE;
-    if (strcmp(arg[iarg+1],"NULL") == 0) lo = -BIG;
-    else lo = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-    if (strcmp(arg[iarg+2],"NULL") == 0) hi = BIG;
-    else hi = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+    numwalls = 0;
+    if (strcmp(arg[iarg+1],"NULL") == 0) {
+      lo = -BIG;
+    } else {
+      lo = utils::numeric(FLERR,arg[iarg+1],false,lmp);
+      ++numwalls;
+    }
+    if (strcmp(arg[iarg+2],"NULL") == 0) {
+      hi = BIG;
+    } else {
+      hi = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+      ++numwalls;
+    }
     iarg += 3;
   } else if (strcmp(arg[iarg],"zplane") == 0) {
     if (narg < iarg+3) error->all(FLERR,"Illegal fix wall/gran command");
     wallstyle = ZPLANE;
-    if (strcmp(arg[iarg+1],"NULL") == 0) lo = -BIG;
-    else lo = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-    if (strcmp(arg[iarg+2],"NULL") == 0) hi = BIG;
-    else hi = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+    numwalls = 0;
+    if (strcmp(arg[iarg+1],"NULL") == 0) {
+      lo = -BIG;
+    } else {
+      lo = utils::numeric(FLERR,arg[iarg+1],false,lmp);
+      ++numwalls;
+    }
+    if (strcmp(arg[iarg+2],"NULL") == 0) {
+      hi = BIG;
+    } else {
+      hi = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+      ++numwalls;
+    }
     iarg += 3;
   } else if (strcmp(arg[iarg],"zcylinder") == 0) {
     if (narg < iarg+2) error->all(FLERR,"Illegal fix wall/gran command");
     wallstyle = ZCYLINDER;
+    numwalls = 1;
     lo = hi = 0.0;
     cylradius = utils::numeric(FLERR,arg[iarg+1],false,lmp);
     iarg += 2;
   } else if (strcmp(arg[iarg],"region") == 0) {
     if (narg < iarg+2) error->all(FLERR,"Illegal fix wall/gran command");
     wallstyle = REGION;
+    numwalls = 0;
     delete[] idregion;
     idregion = utils::strdup(arg[iarg+1]);
     iarg += 2;
@@ -271,6 +303,37 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
   }
 
   time_origin = update->ntimestep;
+
+  // for rendering walls with dump image.
+  if ((wallstyle == XPLANE) || (wallstyle == YPLANE) || (wallstyle == ZPLANE)) {
+    if (domain->dimension == 2) {
+      // one cylinder object per wall to draw in 2d
+      memory->create(imgobjs, numwalls, "fix_indent:imgobjs");
+      memory->create(imgparms, numwalls, 8, "fix_indent:imgparms");
+      for (int m = 0; m < numwalls; ++m) {
+        imgobjs[m] = DumpImage::CYLINDER;
+        imgparms[m][0] = 1;    // use color of first atom type by default
+      }
+    } else {
+      // two triangle objects per wall to draw in 3d
+      memory->create(imgobjs, 2 * numwalls, "fix_indent:imgobjs");
+      memory->create(imgparms, 2 * numwalls, 10, "fix_indent:imgparms");
+      for (int m = 0; m < numwalls; ++m) {
+        imgobjs[2 * m] = DumpImage::TRIANGLE;
+        imgobjs[2 * m + 1] = DumpImage::TRIANGLE;
+        imgparms[2 * m][0] = 1;        // use color of first atom type by default
+        imgparms[2 * m + 1][0] = 1;    // use color of first atom type by default
+      }
+    }
+  } else if (wallstyle == ZCYLINDER) {
+    // one cylinder object per wall to draw
+    memory->create(imgobjs, numwalls, "fix_indent:imgobjs");
+    memory->create(imgparms, numwalls, 8, "fix_indent:imgparms");
+    for (int m = 0; m < numwalls; ++m) {
+      imgobjs[m] = DumpImage::CYLINDER;
+      imgparms[m][0] = 1;    // use color of first atom type by default
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -291,6 +354,9 @@ FixWallGran::~FixWallGran()
   delete[] idregion;
   memory->destroy(history_one);
   memory->destroy(mass_rigid);
+
+  memory->destroy(imgobjs);
+  memory->destroy(imgparms);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -553,6 +619,37 @@ void FixWallGran::post_force(int /*vflag*/)
         array_atom[i][8 + n] = model->svector[n];
     }
   }
+
+  // update wall image information
+  int m = 0;
+  if (wallstyle == XPLANE) {
+    if (lo != -BIG) {
+      FixWall::update_image_plane(m, FixWall::XLO, wlo, imgparms, domain);
+      ++m;
+    }
+    if (hi != BIG) {
+      FixWall::update_image_plane(m, FixWall::XHI, whi, imgparms, domain);
+      ++m;
+    }
+  } else if (wallstyle == YPLANE) {
+    if (lo != -BIG) {
+      FixWall::update_image_plane(m, FixWall::YLO, wlo, imgparms, domain);
+      ++m;
+    }
+    if (hi != BIG) {
+      FixWall::update_image_plane(m, FixWall::YHI, whi, imgparms, domain);
+      ++m;
+    }
+  } else if (wallstyle == ZPLANE) {
+    if (lo != -BIG) {
+      FixWall::update_image_plane(m, FixWall::ZLO, wlo, imgparms, domain);
+      ++m;
+    }
+    if (hi != BIG) {
+      FixWall::update_image_plane(m, FixWall::ZHI, whi, imgparms, domain);
+      ++m;
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -730,4 +827,33 @@ void FixWallGran::reset_dt()
 {
   dt = update->dt;
   model->dt = dt;
+}
+
+/* ----------------------------------------------------------------------
+   provide graphics information to dump image to render wall as plane
+   data has been copied to dedicated storage during fix indent execution
+------------------------------------------------------------------------- */
+
+int FixWallGran::image(int *&objs, double **&parms)
+{
+  objs = imgobjs;
+  parms = imgparms;
+  switch (wallstyle) {
+    case XPLANE:    // fallthrough
+    case YPLANE:    // fallthrough
+    case ZPLANE:
+      if (domain->dimension == 2) {
+        return numwalls;
+      } else {
+        return 2 * numwalls;
+      }
+      break;
+    case ZCYLINDER:
+      return 0;
+      break;
+    case REGION:    // can visualize region directly
+      return 0;
+      break;
+  }
+  return 0;
 }

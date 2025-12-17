@@ -520,6 +520,7 @@ objects to be drawn.  Below is a list of supported fixes:
 * :doc:`fix wall/lj126 <fix_wall>`
 * :doc:`fix wall/lj1043 <fix_wall>`
 * :doc:`fix wall/colloid <fix_wall>`
+* :doc:`fix wall/gran <fix_wall_gran>`
 * :doc:`fix wall/harmonic <fix_wall>`
 * :doc:`fix wall/harmonic/outside <fix_wall>`
 * :doc:`fix wall/lepton <fix_wall>`
@@ -528,9 +529,9 @@ objects to be drawn.  Below is a list of supported fixes:
 * :doc:`fix wall/reflect/stochastic <fix_wall_reflect_stochastic>`
 * :doc:`fix wall/table <fix_wall>`
 
-The fix keyword may be used multiple time to include visualizations of
-object from multiple fixes.  The fix keyword is followed by the
-:doc:`fix ID <fix>` of the fix, the color style setting and two
+The fix keyword may be used multiple times to include visualizations of
+graphics objects from multiple fixes.  The fix keyword is followed by
+the :doc:`fix ID <fix>` of the fix, the color style setting and two
 numerical values *fflag1* and *fflag2*.
 
 The color style may be either *type*, *element*, or *const*.  The first
