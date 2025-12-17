@@ -57,6 +57,8 @@ Examples
 Description
 """""""""""
 
+.. versionadded:: TBD
+
 This fix allows to add arbitrary objects to images rendered with
 :doc:`dump image <dump_image>` using the *fix* keyword.
 
