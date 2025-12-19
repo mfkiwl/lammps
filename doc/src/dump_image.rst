@@ -594,6 +594,9 @@ Draw styles *filled*\, *transparent*\, and *frame* support only
 "primitive" region styles (no unions or intersections), but the *points*
 draw style supports *all* region styles.
 
+Recommended transparency settings are the values of 0.25, 0.5, or 0.75
+when used in combination with *fsaa on*.
+
 ----------
 
 The *size* keyword sets the width and height of the created images,
@@ -1078,7 +1081,7 @@ pre-defined color names with new RBG values.
 
 ----------
 
-**Transparency settings**
+**Transparency settings for atoms bonds and standard visualization objects**
 
 .. versionadded:: TBD
 
@@ -1091,6 +1094,9 @@ written to the image.  This can be controlled with various
 *subboxtrans* for the subdomain box lines.  The transparency value
 must be between 0.0 (invisible) and 1.0 (fully opaque).  The default
 setting for all is 1.0.
+
+Recommended transparency settings are the values of 0.25, 0.5, or 0.75
+when used in combination with *fsaa on*.
 
 ----------
 
