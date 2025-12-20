@@ -695,6 +695,42 @@ int BodyRoundedPolyhedron::image(int ibonus, double flag1, double flag2,
           imdata[nelements][6] += x[0];
           imdata[nelements][7] += x[1];
           imdata[nelements][8] += x[2];
+
+          // shift triangles toward the outside of the body by half diameter when also drawing edges
+          if (edgeflag) {
+            double vec1[3];
+            // get center of face
+            double vec2[3] = {imdata[nelements][0],imdata[nelements][1],imdata[nelements][2]};
+            vec2[0] += imdata[nelements][3] + imdata[nelements][6] + imdata[nelements-1][3];
+            vec2[1] += imdata[nelements][4] + imdata[nelements][7] + imdata[nelements-1][4];
+            vec2[2] += imdata[nelements][5] + imdata[nelements][8] + imdata[nelements-1][5];
+            vec2[0] *= 0.25;
+            vec2[1] *= 0.25;
+            vec2[2] *= 0.25;
+            // get direction from center of body to face and scale to half diameter length
+            MathExtra::sub3(vec2,x,vec1);
+            MathExtra::snormalize3(0.5*diam,vec1,vec2);
+            // add shift to triangle corners
+            imdata[nelements][0] += vec2[0];
+            imdata[nelements][1] += vec2[1];
+            imdata[nelements][2] += vec2[2];
+            imdata[nelements][3] += vec2[0];
+            imdata[nelements][4] += vec2[1];
+            imdata[nelements][5] += vec2[2];
+            imdata[nelements][6] += vec2[0];
+            imdata[nelements][7] += vec2[1];
+            imdata[nelements][8] += vec2[2];
+            imdata[nelements-1][0] += vec2[0];
+            imdata[nelements-1][1] += vec2[1];
+            imdata[nelements-1][2] += vec2[2];
+            imdata[nelements-1][3] += vec2[0];
+            imdata[nelements-1][4] += vec2[1];
+            imdata[nelements-1][5] += vec2[2];
+            imdata[nelements-1][6] += vec2[0];
+            imdata[nelements-1][7] += vec2[1];
+            imdata[nelements-1][8] += vec2[2];
+          }
+
           ++nelements;
         } else {
           imflag[nelements] = DumpImage::TRI;
@@ -710,6 +746,32 @@ int BodyRoundedPolyhedron::image(int ibonus, double flag1, double flag2,
           imdata[nelements][6] += x[0];
           imdata[nelements][7] += x[1];
           imdata[nelements][8] += x[2];
+
+          // shift triangle toward the outside of the body by half diameter when also drawing edges
+          if (edgeflag) {
+            double vec1[3];
+            // get center of face
+            double vec2[3] = {imdata[nelements][0],imdata[nelements][1],imdata[nelements][2]};
+            vec2[0] += imdata[nelements][3] + imdata[nelements][6];
+            vec2[1] += imdata[nelements][4] + imdata[nelements][7];
+            vec2[2] += imdata[nelements][5] + imdata[nelements][8];
+            vec2[0] *= 1.0/3.0;
+            vec2[1] *= 1.0/3.0;
+            vec2[2] *= 1.0/3.0;
+            // get direction from center of body to face and scale to half diameter length
+            MathExtra::sub3(vec2,x,vec1);
+            MathExtra::snormalize3(0.5*diam,vec1,vec2);
+            // add shift to triangle corners
+            imdata[nelements][0] += vec2[0];
+            imdata[nelements][1] += vec2[1];
+            imdata[nelements][2] += vec2[2];
+            imdata[nelements][3] += vec2[0];
+            imdata[nelements][4] += vec2[1];
+            imdata[nelements][5] += vec2[2];
+            imdata[nelements][6] += vec2[0];
+            imdata[nelements][7] += vec2[1];
+            imdata[nelements][8] += vec2[2];
+          }
           ++nelements;
         }
       }

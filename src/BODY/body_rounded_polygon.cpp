@@ -553,13 +553,15 @@ int BodyRoundedPolygon::image(int ibonus, double flag1, double flag2,
         MathExtra::matvec(p,&bonus->dvalue[3*i],imdata[nelements+i]);
         imdata[nelements+i][0] += x[0];
         imdata[nelements+i][1] += x[1];
-        imdata[nelements+i][2] = 0.0;
+        imdata[nelements+i][2] = edgeflag ? 0.5*diam : 0.0;
         center[0] += imdata[nelements+i][0];
         center[1] += imdata[nelements+i][1];
+        center[2] += imdata[nelements+i][2];
       }
       double invn = 1.0/n;
       center[0] *= invn;
       center[1] *= invn;
+      center[2] *= invn;
 
       // construct triangles
       const int nmax = nelements + n;
@@ -570,10 +572,11 @@ int BodyRoundedPolygon::image(int ibonus, double flag1, double flag2,
         if (next == nmax) next = nmax - n;
         imdata[nelements][3] = center[0];
         imdata[nelements][4] = center[1];
-        imdata[nelements][5] = 0.0;
+        imdata[nelements][5] = center[2];
         imdata[nelements][6] = imdata[next][0];
         imdata[nelements][7] = imdata[next][1];
-        imdata[nelements][8] = 0.0;
+        imdata[nelements][8] = edgeflag ? 0.5*diam : 0.0;
+
         ++nelements;
       }
     }
