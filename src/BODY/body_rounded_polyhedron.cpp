@@ -46,8 +46,7 @@ BodyRoundedPolyhedron::BodyRoundedPolyhedron(LAMMPS *lmp, int narg, char **arg) 
 
   int nmin = utils::inumeric(FLERR,arg[1],false,lmp);
   int nmax = utils::inumeric(FLERR,arg[2],false,lmp);
-  if (nmin <= 0 || nmin > nmax)
-    error->all(FLERR,"Invalid body rounded/polyhedron command");
+  if (nmin <= 0 || nmin > nmax) error->all(FLERR,"Invalid body rounded/polyhedron command");
 
   size_forward = 0;
 
@@ -201,8 +200,7 @@ void BodyRoundedPolyhedron::data_body(int ibonus, int ninteger, int ndouble,
   int nsub = ifile[0];
   int ned = ifile[1];
   int nfac = ifile[2];
-  if (nsub < 1)
-    error->one(FLERR,"Incorrect integer value in Bodies section of data file");
+  if (nsub < 1) error->one(FLERR,"Incorrect integer value in Bodies section of data file");
 
   // nentries = number of double entries to be read from Body section:
   // nsub == 1,2:
@@ -243,8 +241,7 @@ void BodyRoundedPolyhedron::data_body(int ibonus, int ninteger, int ndouble,
   double *inertia = bonus->inertia;
   double evectors[3][3];
   int ierror = MathEigen::jacobi3(tensor,inertia,evectors);
-  if (ierror) error->one(FLERR,
-                         "Insufficient Jacobi rotations for body nparticle");
+  if (ierror) error->one(FLERR,"Insufficient Jacobi rotations for body nparticle");
 
   // if any principal moment < scaled EPSILON, set to 0.0
 
@@ -532,11 +529,9 @@ double BodyRoundedPolyhedron::radius_body(int /*ninteger*/, int ndouble,
   else nentries = 6 + 3*nsub + 2*nedges + MAX_FACE_SIZE*nfac + 1;
 
   if (nsub < 1)
-    error->one(FLERR,"Incorrect integer value in "
-               "Bodies section of data file");
+    error->one(FLERR,"Incorrect integer value in Bodies section of data file");
   if (ndouble != nentries)
-    error->one(FLERR,"Incorrect # of floating-point values in "
-               "Bodies section of data file");
+    error->one(FLERR,"Incorrect # of floating-point values in Bodies section of data file");
 
   // sub-particle coords are relative to body center at (0,0,0)
   // offset = 6 for sub-particle coords

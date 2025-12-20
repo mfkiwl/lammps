@@ -20,6 +20,7 @@
 
 #include "atom.h"
 #include "atom_vec_body.h"
+#include "dump_image.h"
 #include "domain.h"
 #include "dump_image.h"
 #include "error.h"
@@ -43,15 +44,13 @@ BodyRoundedPolygon::BodyRoundedPolygon(LAMMPS *lmp, int narg, char **arg) :
   if (narg != 3) error->all(FLERR,"Invalid body rounded/polygon command");
 
   if (domain->dimension != 2)
-    error->all(FLERR,"Atom_style body rounded/polygon "
-               "can only be used in 2d simulations");
+    error->all(FLERR,"Atom_style body rounded/polygon can only be used in 2d simulations");
 
   // nmin and nmax are minimum and maximum number of vertices
 
   int nmin = utils::inumeric(FLERR,arg[1],false,lmp);
   int nmax = utils::inumeric(FLERR,arg[2],false,lmp);
-  if (nmin <= 0 || nmin > nmax)
-    error->all(FLERR,"Invalid body rounded/polygon command");
+  if (nmin <= 0 || nmin > nmax) error->all(FLERR,"Invalid body rounded/polygon command");
 
   size_forward = 0;
 
@@ -166,20 +165,16 @@ void BodyRoundedPolygon::data_body(int ibonus, int ninteger, int ndouble,
   // set ninteger, ndouble in bonus and allocate 2 vectors of ints, doubles
 
   if (ninteger != 1)
-    error->one(FLERR,"Incorrect # of integer values in "
-               "Bodies section of data file");
+    error->one(FLERR,"Incorrect # of integer values in Bodies section of data file");
   int nsub = ifile[0];
-  if (nsub < 1)
-    error->one(FLERR,"Incorrect integer value in "
-               "Bodies section of data file");
+  if (nsub < 1) error->one(FLERR,"Incorrect integer value in Bodies section of data file");
 
   // nentries = number of double entries to be read from Body section:
   //   6 for inertia + 3*nsub for vertex coords + 1 for rounded radius
 
   int nentries = 6 + 3*nsub + 1;
   if (ndouble != nentries)
-    error->one(FLERR,"Incorrect # of floating-point values in "
-             "Bodies section of data file");
+    error->one(FLERR,"Incorrect # of floating-point values in Bodies section of data file");
 
   bonus->ninteger = 1;
   bonus->ivalue = icp->get(bonus->iindex);
@@ -201,8 +196,7 @@ void BodyRoundedPolygon::data_body(int ibonus, int ninteger, int ndouble,
   double *inertia = bonus->inertia;
   double evectors[3][3];
   int ierror = MathEigen::jacobi3(tensor,inertia,evectors);
-  if (ierror) error->one(FLERR,
-                         "Insufficient Jacobi rotations for body nparticle");
+  if (ierror) error->one(FLERR,"Insufficient Jacobi rotations for body nparticle");
 
   // if any principal moment < scaled EPSILON, set to 0.0
 
@@ -434,11 +428,9 @@ double BodyRoundedPolygon::radius_body(int /*ninteger*/, int ndouble,
 {
   int nsub = ifile[0];
   if (nsub < 1)
-    error->one(FLERR,"Incorrect integer value in "
-               "Bodies section of data file");
+    error->one(FLERR,"Incorrect integer value in Bodies section of data file");
   if (ndouble != 6 + 3*nsub + 1)
-    error->one(FLERR,"Incorrect # of floating-point values in "
-               "Bodies section of data file");
+    error->one(FLERR,"Incorrect # of floating-point values in Bodies section of data file");
 
   // sub-particle coords are relative to body center at (0,0,0)
   // offset = 6 for sub-particle coords
