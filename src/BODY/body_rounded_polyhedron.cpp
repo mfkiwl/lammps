@@ -64,7 +64,7 @@ BodyRoundedPolyhedron::BodyRoundedPolyhedron(LAMMPS *lmp, int narg, char **arg) 
   maxexchange = 3 + 3*nmax+2*nmax+MAX_FACE_SIZE*nmax+1+1;  // icp max + dcp max
 
   memory->create(imflag,3*nmax,"body/rounded/polyhedron:imflag");
-  memory->create(imdata,3*nmax,9,"body/polyhedron:imdata");
+  memory->create(imdata,3*nmax,9,"body/rounded/polyhedron:imdata");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -629,7 +629,7 @@ int BodyRoundedPolyhedron::image(int ibonus, double flag1, double flag2,
     int nedges = bonus->ivalue[1];
     if (nvertices == 2) nedges = 1;                  // special case: just two vertices -> one rod
     double *edge_ends = &bonus->dvalue[3*nvertices]; // skip over vertex positions in body data
-    if (edgeflag || (nedges == 1)) {                 // always draw edges for rods
+    if (edgeflag || (nedges == 1)) {                 // always draw edge for rod
       for (int i = 0; i < nedges; i++) {
         imflag[nelements] = DumpImage::LINE;
 
