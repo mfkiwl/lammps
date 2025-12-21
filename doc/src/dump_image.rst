@@ -49,11 +49,11 @@ Syntax
        *tri* = color tflag width
          color = *type*
          tflag = 1 for just triangle, 2 for just tri edges, 3 for both
-         width = numeric value for tringle edge width (distance units)
+         width = numeric value for triangle edge width (distance units)
        *ellipsoid* = color eflag level width
          color = *type*
          eflag = 1 for triangles, 2 for wireframe, 3 for both
-         level = mesh refinement level, value between 1 (low resolution) and 6 (ultra high resolution)
+         level = mesh refinement level, value between 1 (low resolution) and 5 (ultra high resolution)
          width = diameter of wireframe edges (distance units) (ignored for triangles)
        *body* = color bflag1 bflag2
          color = *type*
@@ -519,17 +519,17 @@ and repeats itself for types > 6.
 
 The *level* setting determines the number of triangles in the mesh of
 triangles and thus the resolution of the representation of the
-ellipsoid.  At level 1 the ellipsoid it represented by an octahedron
+ellipsoid.  At level 1 the ellipsoid is represented by an octahedron
 that is stretched according to the ellipsoid's shape parameters.  For
-each higher level, all of the triangles are replaced by 4 triangles and
-their edges are shifted to be on the surface of the ellipsoid.  The
+each higher level, each of the triangles is replaced by four triangles
+and their edges are shifted to be on the surface of the ellipsoid.  The
 maximum allowed level is 5 (corresponding to 2048 triangles).
 
 .. note::
 
    At higher mesh refinement levels some artifacts from the image
    rendering library can appear due to rounding.  These can be
-   partially suppressed by using the *fsaa on* setting.
+   partially suppressed by using the *fsaa yes* setting.
 
 ----------
 
