@@ -601,7 +601,7 @@ int BodyRoundedPolyhedron::image(int ibonus, double flag1, double flag2,
   int nelements = 0;
   AtomVecBody::Bonus *const bonus = &avec->bonus[ibonus];
   const double *const x = atom->x[bonus->ilocal];
-  const double diam = (flag1 <= 0.0) ? 2.0 * enclosing_radius(bonus) : flag1;
+  const double diam = (flag1 <= 0.0) ? 2.0 * rounded_radius(bonus) : flag1;
 
   MathExtra::quat_to_mat(bonus->quat,p); // get rotation matrix for body frame to box frame
 
