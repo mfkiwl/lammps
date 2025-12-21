@@ -24,7 +24,7 @@ Syntax
 * color = atom attribute that determines color of each atom
 * diameter = atom attribute that determines size of each atom
 * zero or more keyword/value pairs may be appended
-* keyword = *atom* or *adiam* or *autobond* or *bond* or *grid* or *line* or *tri* or *body* or *fix* or *size* or *view* or *center* or *up* or *zoom* or *box* or *axes* or *region* or *subbox* or *shiny* or *fsaa* or *ssao*
+* keyword = *atom* or *adiam* or *autobond* or *bond* or *grid* or *line* or *tri* or *ellipsoid* or *body* or *fix* or *size* or *view* or *center* or *up* or *zoom* or *box* or *axes* or *region* or *subbox* or *shiny* or *fsaa* or *ssao*
 
   .. parsed-literal::
 
@@ -50,6 +50,11 @@ Syntax
          color = *type*
          tflag = 1 for just triangle, 2 for just tri edges, 3 for both
          width = numeric value for tringle edge width (distance units)
+       *ellipsoid* = color eflag level width
+         color = *type*
+         eflag = 1 for triangles, 2 for wireframe, 3 for both
+         level = mesh refinement level, value between 1 (low resolution) and 6 (ultra high resolution)
+         width = diameter of wireframe edges (distance units) (ignored for triangles)
        *body* = color bflag1 bflag2
          color = *type*
          bflag1,bflag2 = 2 numeric flags to affect how bodies are drawn
@@ -370,7 +375,7 @@ The *atom* keyword allow you to turn off the drawing of all atoms, if
 the specified value is *no*\ .  Note that this will not turn off the
 drawing of particles that are represented as lines, triangles, or
 bodies, as discussed below.  These particles can be drawn separately
-if the *line*, *tri*, or *body* keywords are used.
+if the *line*, *tri*, *ellipsoid*, or *body* keywords are used.
 
 The *adiam* keyword allows you to override the *diameter* setting to
 set a single numeric *size*\ .  All atoms will be drawn with that
@@ -487,8 +492,44 @@ default the mapping of types to colors is as follows:
 * type 5 = aqua
 * type 6 = cyan
 
-and repeats itself for types > 6.  There is not yet an option to
-change this via the dump_modify command.
+and repeats itself for types > 6.
+
+----------
+
+.. versionadded:: TBD
+
+The *ellipsoid* keyword can be used when :doc:`atom_style ellipsoid
+<atom_style>` is used to define particles as ellipsoids, and will draw
+them as a mesh of triangles or edges or both, depending on the setting
+for *eflag*\ .  If edges are drawn, the *width* setting determines the
+diameters of the line segments.  If this keyword is not used, ellipsoid
+particles will be drawn as spheres, the same as if they were regular
+atoms.  The only setting currently allowed for the *color* value is
+*type*, which will color the triangles according to the atom type of the
+particle.  By default the mapping of types to colors is as follows:
+
+* type 1 = red
+* type 2 = green
+* type 3 = blue
+* type 4 = yellow
+* type 5 = aqua
+* type 6 = cyan
+
+and repeats itself for types > 6.
+
+The *level* setting determines the number of triangles in the mesh of
+triangles and thus the resolution of the representation of the
+ellipsoid.  At level 1 the ellipsoid it represented by an octahedron
+that is stretched according to the ellipsoid's shape parameters.  For
+each higher level, all of the triangles are replaced by 4 triangles and
+their edges are shifted to be on the surface of the ellipsoid.  The
+maximum allowed level is 5 (corresponding to 2048 triangles).
+
+.. note::
+
+   At higher mesh refinement levels some artefacts from the image
+   rendering library can appear due to rounding.  These can be
+   partially suppressed by using the *fsaa on* setting.
 
 ----------
 
@@ -520,8 +561,7 @@ particle.  By default the mapping of types to colors is as follows:
 * type 5 = aqua
 * type 6 = cyan
 
-and repeats itself for types > 6.  There is not yet an option to
-change this via the dump_modify command.
+and repeats itself for types > 6.
 
 ----------
 

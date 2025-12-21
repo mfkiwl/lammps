@@ -443,7 +443,7 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
         error->all(FLERR, iarg+2, "Dump image ellipsoid only supports style setting 1, 2, or 3");
       elevel = utils::inumeric(FLERR,arg[iarg+3],false,lmp);
       if (elevel == 0) elevel = 4; // default setting
-      if (elevel > 6)
+      if (elevel > 5)
         error->all(FLERR, iarg+3, "Dump image ellipsoid mesh refinement level is too large");
       ediamvalue = utils::numeric(FLERR,arg[iarg+4],false,lmp);
       iarg += 5;
