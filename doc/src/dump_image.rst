@@ -527,7 +527,7 @@ maximum allowed level is 5 (corresponding to 2048 triangles).
 
 .. note::
 
-   At higher mesh refinement levels some artefacts from the image
+   At higher mesh refinement levels some artifacts from the image
    rendering library can appear due to rounding.  These can be
    partially suppressed by using the *fsaa on* setting.
 

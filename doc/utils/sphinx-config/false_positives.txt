@@ -2831,6 +2831,7 @@ obabo
 ochre
 ocl
 octahedral
+octahedron
 octants
 Odegard
 Og
