@@ -13,39 +13,37 @@ Syntax
 * ID, group-ID are documented in :doc:`fix <fix>` command
 * graphics/replica = style name of this fix command
 * Nevery = update graphics information every this many time steps
-* type = an atom type value to select the color of the replica
-* one or more keyword/args pairs may be appended
-* keyword = *isovalue* or *radius* or *quality* or *filename* or *binary* or *pad*
+* keyword = *display* or *average*
 
   .. parsed-literal::
 
-     *isovalue* value = isovalue for the replica selection (unitless)
-     *radius* value = radius of the atoms for computing the isoreplica density (may be a variable)
-     *quality* keyword = replica algorithm quality setting
-        keyword = one of *max*, *high*, *medium*, or *low*
-     *filename* name = name pattern for output of a sequence of STL format mesh files (must contain a \* character to be replaced by the timestep number)
-     *binary* logical = select whether to output a binary STL file (default is text mode)
-     *pad* number = pad the timestep in the output file name with zeroes to have this many digits (default is 0)
+     *display* args = type radius transparency
+       type = zero to retain the atom type or an atom type to set the color to that of that atom type
+       radius = radius for the atoms
+       transparency = transparency setting for the atoms, a value from 0 (invisible) to 1 (fully opaque)
+     *average* args = type radius transparency
+       type = zero to retain the atom type or an atom type to set the color to that of that atom type
+       radius = radius for the atoms or 0 to set the radius to that of the largest distance from the center
+       transparency = transparency setting for the atoms, a value from 0 (invisible) to 1 (fully opaque)
 
 Examples
 """"""""
 
 .. code-block:: LAMMPS
 
-   fix sf1 water graphics/replica 200 5 isovalue 0.1 radius 1.5 quality high
-   fix stl water graphics/replica 200 5 filename water-replica-*.stl pad 10
+   fix sf1 water graphics/replica 200 display 0 0.2 1.0 average 3 0.0 0.25
 
 Description
 """""""""""
 
 .. versionadded:: TBD
 
-This fix allows to add an isoreplica graphics object to images rendered with
-:doc:`dump image <dump_image>` using the *fix* keyword and optionally to output
-the computed mesh as a series of STL format files for external processing.
+This fix allows to add spheres to images rendered with :doc:`dump image
+<dump_image>` using the *fix* keyword to represent atoms from all
+replicas of a multi-replica simulation.
 
-The *group-ID* sets the group ID of the atoms selected to be represented
-by the replica.  This may be a dynamic group.
+The *group-ID* sets the group ID of the atoms selected to be
+represented.  This may be a dynamic group.
 
 The *Nevery* keyword determines how often the replica graphics data is
 updated.  This should be the same value as the corresponding *N*
@@ -53,23 +51,23 @@ parameter of the :doc:`dump <dump>` image command.  LAMMPS will stop
 with an error message if the settings for this fix and the dump command
 are not compatible.
 
-The *type* quantity determines the color of the object.  Its represents
-an *atom* type and the object will be colored the same as the
+There are two keywords available that determine what is shown: *display*
+and *average*.  With *display* all atoms from all replica and are in the
+fix group will be displayed.  With *average* only the average position
+of the atoms with the same atom-ID across all replica will be shown.
+
+The *type* quantity determines the color of the objects.  Its represents
+an *atom* type and the atoms will be colored the same as the
 corresponding atom type when the *type* coloring scheme is used in the
-:doc:`dump image fix <dump_image>` command is used.  The color may also
-be that of the atom type's element or just a globally set constant color
-for *all* objects of this fix instance, which can be changed using a
-:doc:`dump modify fcolor <dump_image>` command.
+:doc:`dump image fix <dump_image>` command.  If the value of *type* is
+0 then the atom type of the individual atoms is used.
 
-The *isovalue* keyword argument sets the isovalue used to compute the replica.
+The *radius* quantity determines the radius of the atoms.  The value of
+*radius* is 0 then largest distance of an atom to the average position
+from all replicas is used.
 
-*R* sets the radius for the atoms.  It may be a variable reference (*v_name*)
-for a variable (called "name") that can be either an equal-style or an
-atom-style or compatible variable.
-
-The *quality* keyword can have any of these words as argument: "max", "high",
-"medium", or "low" and selects the smoothness and resolution of the replica
-graphics object.
+The *transparency* quantity determines the transparency of the objects.
+Its value must be between 0 (invisible) and 1 (fully opaque).
 
 -----------
 
@@ -79,19 +77,15 @@ Dump image info
 .. versionadded:: TBD
 
 Fix graphics/replica is designed to be used with the *fix* keyword of
-:doc:`dump image <dump_image>`.  The fix will construct an isoreplica
-based on the positions and radii of the atoms in the fix group and pass
-the graphics geometry information about it to *dump image* so that it is
-included in the rendered image.
+:doc:`dump image <dump_image>`.  The fix will add spheres based on the
+atoms in the fix group across all replica to *dump image* so that they
+are included in the rendered image.
 
-The *fflag1* setting of *dump image fix* determines whether the replica
-will be rendered as a set of connected triangles (1) or as a mesh of
-cylinders (2).
+The *fflag1* setting of *dump image fix* are currently ignored.
 
-In case of using triangles, the *fflag2* setting determines the
-transparency of the triangles and must use a value between 0.0
-(invisible) and 1.0 (fully opaque).  If using a mesh of cylinders, the
-*fflag2* setting determines the diameter of the cylinders.
+and *fflag2* setting of *dump image fix* is used as an adjustment
+to the radius of the rendered sphere.  Since the radius is already
+determined by this fix, it is recommended to set this flag to 0.0.
 
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -35,6 +35,15 @@ class FixGraphicsReplica : public Fix {
   int image(int *&, double **&) override;
 
  protected:
+  bool dflag;
+  int dtype;
+  double dradius;
+  double dtrans;
+  bool aflag;
+  int atype;
+  double aradius;
+  double atrans;
+
   int numobjs;
   int *imgobjs;
   double **imgparms;
