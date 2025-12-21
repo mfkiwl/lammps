@@ -14,7 +14,8 @@
 /* ----------------------------------------------------------------------
    Originally modified from CG-DNA/fix_nve_dotc_langevin.cpp.
 
-   Contributing author: Sam Cameron (University of Bristol)
+   Contributing authors: Sam Cameron (University of Bristol),
+                         Arthur Straube (Zuse Institute Berlin)
 ------------------------------------------------------------------------- */
 
 #include "fix_brownian_base.h"
@@ -46,6 +47,7 @@ FixBrownianBase::FixBrownianBase(LAMMPS *lmp, int narg, char **arg) :
   dipole_flag = 0;
   rot_temp_flag = 0;
   planar_rot_flag = 0;
+  rot_style = ROT_GEOMETRIC;
   g2 = 0.0;
 
   if (narg < 5) utils::missing_cmd_args(FLERR, "fix brownian", error);
@@ -176,6 +178,14 @@ FixBrownianBase::FixBrownianBase(LAMMPS *lmp, int narg, char **arg) :
       if (domain->dimension == 2)
         error->all(FLERR, "The planar_rotation keyword is not allowed for 2D simulations");
       iarg = iarg + 1;
+
+    } else if (strcmp(arg[iarg], "rotation_style") == 0) {
+      if (narg == iarg + 1) { error->all(FLERR, "Fix brownian rotation_style requires a value."); }
+
+      if (strcmp(arg[iarg + 1], "projection") == 0) rot_style = ROT_PROJECTION;
+      else if (strcmp(arg[iarg + 1], "geometric") == 0) rot_style = ROT_GEOMETRIC;
+      else error->all(FLERR, "Fix brownian rotation_style must be projection or geometric.");
+      iarg = iarg + 2;
 
     } else {
       error->all(FLERR, "Illegal fix brownian command.");
