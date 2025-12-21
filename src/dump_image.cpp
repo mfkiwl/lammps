@@ -1363,13 +1363,13 @@ void DumpImage::create_image()
       }
       double opacity = aopacity[atom->type[j]];
 
-      MathExtra::quat_to_mat(avec_tri->bonus[tri[i]].quat,mat);
-      MathExtra::matvec(mat,avec_tri->bonus[tri[i]].c1,pt1);
-      MathExtra::matvec(mat,avec_tri->bonus[tri[i]].c2,pt2);
-      MathExtra::matvec(mat,avec_tri->bonus[tri[i]].c3,pt3);
-      MathExtra::add3(pt1,x[i],pt1);
-      MathExtra::add3(pt2,x[i],pt2);
-      MathExtra::add3(pt3,x[i],pt3);
+      MathExtra::quat_to_mat(avec_tri->bonus[tri[j]].quat,mat);
+      MathExtra::matvec(mat,avec_tri->bonus[tri[j]].c1,pt1);
+      MathExtra::matvec(mat,avec_tri->bonus[tri[j]].c2,pt2);
+      MathExtra::matvec(mat,avec_tri->bonus[tri[j]].c3,pt3);
+      MathExtra::add3(pt1,x[j],pt1);
+      MathExtra::add3(pt2,x[j],pt2);
+      MathExtra::add3(pt3,x[j],pt3);
 
       if (tridraw) image->draw_triangle(pt1,pt2,pt3,color,opacity);
       if (edgedraw) {
