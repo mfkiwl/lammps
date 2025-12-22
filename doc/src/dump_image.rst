@@ -531,7 +531,7 @@ maximum allowed level is 6 (corresponding to 8192 triangles).
 .. admonition:: Image quality versus rendering speed
    :class: Hint
 
-   Since the rendered ellisoids are constructed from iteratively refined
+   Since the rendered ellipsoids are constructed from iteratively refined
    triangle meshes, the image quality increases with each refinement
    level, but so does the computational effort to render the image.
    Rendering only triangles is much faster than rendering the wireframe
