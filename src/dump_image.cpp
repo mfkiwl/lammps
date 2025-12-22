@@ -74,25 +74,40 @@ constexpr double SMALL = 1.0e-10;
 using vec3 = std::array<double, 3>;
 using triangle = std::array<vec3, 3>;
 
-vec3 vecadd(const vec3 &a, const vec3 &b)
+inline vec3 operator+(const vec3 &a, const vec3 &b)
 {
-  vec3 sum(a);
-  sum[0] += b[0];
-  sum[1] += b[1];
-  sum[2] += b[2];
-  return sum;
+  return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
+}
+inline vec3 operator-(const vec3 &a, const vec3 &b)
+{
+  return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
+}
+inline vec3 operator*(double s, const vec3 &v)
+{
+  return {s * v[0], s * v[1], s * v[2]};
+}
+inline vec3 operator*(const vec3 &v, double s)
+{
+  return s * v;
+}
+inline double vec3dot(const vec3 &a, const vec3 &b)
+{
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+inline vec3 vec3cross(const vec3 &a, const vec3 &b)
+{
+  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
 }
 
-vec3 vecnorm(const vec3 &a)
+inline double vec3len(const vec3 &v)
 {
-  vec3 norm(a);
-  const double val = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
-  double scale = 1.0;
-  if (val > 0.0) scale = 1.0 / sqrt(val);
-  norm[0] *= scale;
-  norm[1] *= scale;
-  norm[2] *= scale;
-  return norm;
+  return std::sqrt(vec3dot(v, v));
+}
+
+inline vec3 vec3norm(const vec3 &v)
+{
+  double n = vec3len(v);
+  return (n > 0.0) ? (1.0 / n) * v : vec3{0.0, 0.0, 0.0};
 }
 
 double radscale(const double *radius, const vec3 &pos)
@@ -108,9 +123,9 @@ std::vector<triangle> refine_triangle_list(const std::vector<triangle> &inlist)
 {
   std::vector<triangle> outlist;
   for (const auto &tri : inlist) {
-    vec3 posa = vecnorm(vecadd(tri[0], tri[2]));
-    vec3 posb = vecnorm(vecadd(tri[0], tri[1]));
-    vec3 posc = vecnorm(vecadd(tri[1], tri[2]));
+    vec3 posa = vec3norm(tri[0] + tri[2]);
+    vec3 posb = vec3norm(tri[0] + tri[1]);
+    vec3 posc = vec3norm(tri[1] + tri[2]);
     outlist.push_back({tri[0], posb, posa});
     outlist.push_back({posb, tri[1], posc});
     outlist.push_back({posa, posb, posc});
@@ -125,9 +140,7 @@ void scale_and_displace_triangle(triangle &tri, const double *radius, const vec3
   for (int i = 0; i < 3; ++i) {
     auto &t = tri[i];
     const auto scale = radscale(radius, t);
-    t[0] = t[0] * scale + offs[0];
-    t[1] = t[1] * scale + offs[1];
-    t[2] = t[2] * scale + offs[2];
+    t = t * scale + offs;
   }
 }
 
@@ -200,6 +213,7 @@ void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *co
 
   double p[3][3];
   vec3 e1, e2, e3;
+  const vec3 offs{center[0], center[1], center[2]};
 
   // define level 1 octahedron triangle mesh
   std::vector<triangle> trilist = {{OCT5, OCT4, OCT1}, {OCT2, OCT4, OCT5}, {OCT6, OCT4, OCT2},
@@ -217,19 +231,17 @@ void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *co
     // set shape
     for (int i = 0; i < 3; ++i) {
       auto &t = tri[i];
-      const auto scale = radscale(radius, t);
-      t[0] *= scale;
-      t[1] *= scale;
-      t[2] *= scale;
+      const auto scale = t = radscale(radius, t) * t;
     }
     // rotate
     MathExtra::matvec(p, tri[0].data(), e1.data());
     MathExtra::matvec(p, tri[1].data(), e2.data());
     MathExtra::matvec(p, tri[2].data(), e3.data());
     // translate
-    e1 = vecadd(e1, {center[0], center[1], center[2]});
-    e2 = vecadd(e2, {center[0], center[1], center[2]});
-    e3 = vecadd(e3, {center[0], center[1], center[2]});
+    e1 = e1 + offs;
+    e2 = e2 + offs;
+    e3 = e3 + offs;
+    vec3{center[0], center[1], center[2]};
     if (dotri) img->draw_triangle(e1.data(), e2.data(), e3.data(), color, opacity);
     if (doframe) {
       img->draw_cylinder(e1.data(), e2.data(), color, diameter, 3, opacity);
@@ -238,6 +250,116 @@ void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *co
     }
   }
 }
+
+class ArrowObj {
+ public:
+  // build the list of triangles and positions in (1.0, 0.0, 0.0) direction.
+  void construct(double _tipl = 0.2, double _tipw = 0.1, double radius = 0.1, int res = RESOLUTION)
+  {
+    triangles.clear();
+
+    // we want at least 2 iterations.
+    if (res < 2) return;
+
+    // store settings for arrow template
+
+    tiplength = _tipl;
+    tipwidth = _tipw;
+    diameter = 2.0 * radius;
+    resolution = res;
+
+    vec3 tip = vec3{0.5, 0.0, 0.0};
+    vec3 mid = vec3{0.5 - tiplength, 0.0, 0.0};
+    vec3 bot = vec3{-0.5, 0.0, 0.0};
+
+    // construct list of triangles for the tip of the arrow. p1, p2 are the points on the "rim".
+
+    const double radinc = MY_2PI / resolution;
+    vec3 p1{0.5 - tiplength, 0.0, 0.0};
+    vec3 p2{0.5 - tiplength, 0.0, 0.0};
+    for (int i = 0; i < resolution; ++i) {
+      p1[1] = (radius + tipwidth) * sin(radinc * i - RADOVERLAP);
+      p1[2] = (radius + tipwidth) * cos(radinc * i - RADOVERLAP);
+      p2[1] = (radius + tipwidth) * sin(radinc * (i + 1));
+      p2[2] = (radius + tipwidth) * cos(radinc * (i + 1));
+      triangles.emplace_back(triangle{p1, tip, p2});
+      triangles.emplace_back(triangle{p1, mid, p2});
+    }
+
+    // construct list of triangles for the cap at the bottom
+
+    p1[0] = -0.5;
+    p2[0] = -0.5;
+    for (int i = 0; i < resolution; ++i) {
+      p1[1] = radius * sin(radinc * i);
+      p1[2] = radius * cos(radinc * i);
+      p2[1] = radius * sin(radinc * (i + 1));
+      p2[2] = radius * cos(radinc * (i + 1));
+      triangles.emplace_back(triangle{p1, bot, p2});
+    }
+  }
+
+  // transform build the list of triangles and positions in (1.0, 0.0, 0.0) direction.
+
+  std::vector<triangle> transform(const vec3 &dir, const vec3 &offs, double len, double width)
+  {
+    std::vector<triangle> arrow;
+
+    // normalize direction vector
+    vec3 u = vec3norm(dir);
+
+    // vector is too short. can't draw anything. return empty list
+    if (vec3len(u) < SMALL) return arrow;
+
+    // construct orthonormal basis around vector
+    vec3 a = (std::fabs(u[0]) < 0.9) ? vec3{1.0, 0.0, 0.0} : vec3{0.0, 1.0, 0.0};
+    vec3 v = vec3norm(vec3cross(u, a));
+    vec3 w = vec3cross(u, v);
+
+    // now process the arrow template triangles
+    arrow.reserve(triangles.size());
+    for (const auto &tri : triangles) {
+      vec3 p1 = (len * tri[0][0] * u) + (width * tri[0][1] * v) + (width * tri[0][2] * w) + offs;
+      vec3 p2 = (len * tri[1][0] * u) + (width * tri[1][1] * v) + (width * tri[1][2] * w) + offs;
+      vec3 p3 = (len * tri[2][0] * u) + (width * tri[2][1] * v) + (width * tri[2][2] * w) + offs;
+      arrow.push_back({p1, p2, p3});
+    }
+    return arrow;
+  }
+
+  void draw(LAMMPS_NS::Image *img, const double *color, const double *center, double length,
+            const double *data, double scale, double opacity)
+  {
+    // construct arrow template with default settings if not already done
+    if (!triangles.size()) construct();
+
+    // transform template
+    double lscale = vec3len({data[0], data[1], data[2]}) * length;
+    double wscale = scale / diameter;
+    auto arrow =
+        transform({data[0], data[1], data[2]}, {center[0], center[1], center[2]}, lscale, wscale);
+
+    // nothing to draw
+    if (!arrow.size()) return;
+
+    for (const auto &tri : arrow) {
+      img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
+    }
+
+    // infer cylinder end points from list of triangles
+    if (arrow.size() > resolution + 2)
+      img->draw_cylinder(arrow[resolution + 1][1].data(), arrow[arrow.size() - 2][1].data(), color,
+                         scale, 0, opacity);
+  }
+
+ private:
+  double tiplength;
+  double tipwidth;
+  double diameter;
+  std::vector<triangle> triangles;
+  int resolution;
+};
+
 }    // namespace
 
 using namespace LAMMPS_NS;
@@ -1771,6 +1893,10 @@ void DumpImage::create_image()
                              fixarray[i][7]+ifix.flag2,(int)ifix.flag1,opacity);
       } else if (fixvec[i] == TRIANGLE) {
         image->draw_triangle(&fixarray[i][1],&fixarray[i][4],&fixarray[i][7],color,opacity);
+      } else if (fixvec[i] == ARROW) {
+        ArrowObj arrow;
+        arrow.draw(image, color, &fixarray[i][1], fixarray[i][7], &fixarray[i][4],
+                   fixarray[i][8],opacity);
       } else if (fixvec[i] == BOND) {
         int type1 = static_cast<int>(fixarray[i][0] - 1.0) % ntypes + 1;
         int type2 = static_cast<int>(fixarray[i][1] - 1.0) % ntypes + 1;

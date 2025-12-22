@@ -218,7 +218,7 @@ FixGraphics::FixGraphics(LAMMPS *lmp, int narg, char **arg) :
     }
   }
   memory->create(imgobjs, numobjs, "fix_graphics:imgobjs");
-  memory->create(imgparms, numobjs, 8, "fix_graphics:imgparms");
+  memory->create(imgparms, numobjs, 9, "fix_graphics:imgparms");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -395,7 +395,7 @@ void FixGraphics::init()
       }
       ++n;
     } else if (gi.style == ARROW) {
-      imgobjs[n] = DumpImage::CYLINDER;
+      imgobjs[n] = DumpImage::ARROW;
       imgparms[n][0] = gi.arrow.type;
       if (gi.arrow.x1str) {
         int ivar = input->variable->find(gi.arrow.x1str);
@@ -467,9 +467,6 @@ void FixGraphics::init()
                      "Fix graphics variable {} is not equal-style variable", gi.arrow.dstr);
         gi.arrow.dvar = ivar;
       }
-      ++n;
-      imgobjs[n] = DumpImage::CYLINDER;
-      imgparms[n][0] = gi.arrow.type;
       ++n;
     } else if (gi.style == PROGBAR) {
       imgobjs[n] = DumpImage::CYLINDER;
@@ -625,23 +622,18 @@ void FixGraphics::end_of_step()
       if (gi.arrow.dstr) gi.arrow.diameter = 2.0 * input->variable->compute_equal(gi.arrow.dvar);
 
       double mid[3], vec[3];
-      MathExtra::sub3(gi.arrow.bot, gi.arrow.tip, vec);
-      MathExtra::scaleadd3(gi.arrow.ratio, vec, gi.arrow.tip, mid);
-      imgparms[n][1] = gi.arrow.tip[X];
-      imgparms[n][2] = gi.arrow.tip[Y];
-      imgparms[n][3] = gi.arrow.tip[Z];
-      imgparms[n][4] = mid[X];
-      imgparms[n][5] = mid[Y];
-      imgparms[n][6] = mid[Z];
-      imgparms[n][7] = gi.arrow.diameter * (1.0 + 5.0 * gi.arrow.ratio);
-      ++n;
-      imgparms[n][1] = mid[X];
-      imgparms[n][2] = mid[Y];
-      imgparms[n][3] = mid[Z];
-      imgparms[n][4] = gi.arrow.bot[X];
-      imgparms[n][5] = gi.arrow.bot[Y];
-      imgparms[n][6] = gi.arrow.bot[Z];
-      imgparms[n][7] = gi.arrow.diameter;
+      MathExtra::add3(gi.arrow.tip, gi.arrow.bot, vec);
+      MathExtra::scale3(0.5,vec,mid);
+      MathExtra::sub3(gi.arrow.tip, gi.arrow.bot, vec);
+      imgparms[n][1] = mid[0];
+      imgparms[n][2] = mid[1];
+      imgparms[n][3] = mid[2];
+      imgparms[n][7] = MathExtra::len3(vec);
+      MathExtra::norm3(vec);
+      imgparms[n][4] = vec[0];
+      imgparms[n][5] = vec[1];
+      imgparms[n][6] = vec[2];
+      imgparms[n][8] = gi.arrow.diameter;
       ++n;
     } else if (gi.style == PROGBAR) {
       ++n;
