@@ -2245,8 +2245,39 @@ void DumpImage::create_image()
               }
             }
           }
-        }
 
+          // draw an additional uncapped cylinder on top for a smoother image
+          if (myreg->axis == 'x') {
+            p1[0] = myreg->lo;
+            p2[0] = myreg->hi;
+            p1[1] = p2[1] = myreg->c1;
+            p1[2] = p2[2] = myreg->c2;
+            myreg->forward_transform(p1[0], p1[1], p1[2]);
+            myreg->forward_transform(p2[0], p2[1], p2[2]);
+            if (!myreg->open_faces[2])
+              image->draw_cylinder(p1, p2, reg.color, 2.0*myreg->radius, 0, opacity);
+
+          } else if (myreg->axis == 'y') {
+            p1[1] = myreg->lo;
+            p2[1] = myreg->hi;
+            p1[0] = p2[0] = myreg->c1;
+            p1[2] = p2[2] = myreg->c2;
+            myreg->forward_transform(p1[0], p1[1], p1[2]);
+            myreg->forward_transform(p2[0], p2[1], p2[2]);
+            if (!myreg->open_faces[2])
+              image->draw_cylinder(p1, p2, reg.color, 2.0*myreg->radius, 0, opacity);
+
+          } else { // if (myreg->axis == 'z')
+            p1[2] = myreg->lo;
+            p2[2] = myreg->hi;
+            p1[0] = p2[0] = myreg->c1;
+            p1[1] = p2[1] = myreg->c2;
+            myreg->forward_transform(p1[0], p1[1], p1[2]);
+            myreg->forward_transform(p2[0], p2[1], p2[2]);
+            if (!myreg->open_faces[2])
+              image->draw_cylinder(p1, p2, reg.color, 2.0*myreg->radius, 0, opacity);
+          }
+        }
       } else if (regstyle == "ellipsoid") {
         auto *myreg = dynamic_cast<RegEllipsoid *>(reg.ptr);
         // inconsistent style. should not happen.
