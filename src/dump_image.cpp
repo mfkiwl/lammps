@@ -224,6 +224,11 @@ void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *co
   vec3 e1, e2, e3;
   const vec3 offs{center[0], center[1], center[2]};
 
+  // optimization: just draw a sphere if a filled surface is requested and the object is a sphere
+  if (dotri && (shape[0] == shape[1]) && (shape[0] == shape[2])) {
+    img->draw_sphere(center, color, 2.0 * shape[0] + (doframe ? diameter : 0.0), opacity);
+    return;
+  }
   // define level 1 octahedron triangle mesh
   std::vector<triangle> trilist = {{OCT5, OCT4, OCT1}, {OCT2, OCT4, OCT5}, {OCT6, OCT4, OCT2},
                                    {OCT1, OCT4, OCT6}, {OCT1, OCT3, OCT5}, {OCT5, OCT3, OCT2},
@@ -284,6 +289,8 @@ void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *co
     }
   }
 }
+
+// construct an arrow from primitives, mostly triangles and a cylinder, and draw them
 
 class ArrowObj {
  public:
