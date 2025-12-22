@@ -201,7 +201,7 @@ void ellipsoid2filled(LAMMPS_NS::Image *img, int level, const double *color, con
 }
 
 void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *color,
-                    const double *center, const double *radius, const double *quat, double diameter,
+                    const double *center, const double *shape, const double *quat, double diameter,
                     double opacity)
 {
   bool doframe = true;
@@ -228,23 +228,48 @@ void draw_ellipsoid(LAMMPS_NS::Image *img, int level, int flag, const double *co
   // draw triangles and edges as requested
   for (auto &tri : trilist) {
 
-    // set shape
-    for (int i = 0; i < 3; ++i) {
-      auto &t = tri[i];
-      t = radscale(radius, t) * t;
+    if (dotri) {
+
+      // set shape
+      for (int i = 0; i < 3; ++i) {
+        auto &t = tri[i];
+        if (doframe && dotri) {
+          double shapeplus[3] = {shape[0] + diameter, shape[1] + diameter,
+                                  shape[1] + diameter};
+          t = radscale(shapeplus, t) * t;
+        } else {
+          t = radscale(shape, t) * t;
+        }
+      }
+
+      // rotate
+      MathExtra::matvec(p, tri[0].data(), e1.data());
+      MathExtra::matvec(p, tri[1].data(), e2.data());
+      MathExtra::matvec(p, tri[2].data(), e3.data());
+
+      // translate
+      e1 = e1 + offs;
+      e2 = e2 + offs;
+      e3 = e3 + offs;
+      img->draw_triangle(e1.data(), e2.data(), e3.data(), color, opacity);
     }
 
-    // rotate
-    MathExtra::matvec(p, tri[0].data(), e1.data());
-    MathExtra::matvec(p, tri[1].data(), e2.data());
-    MathExtra::matvec(p, tri[2].data(), e3.data());
-
-    // translate
-    e1 = e1 + offs;
-    e2 = e2 + offs;
-    e3 = e3 + offs;
-    if (dotri) img->draw_triangle(e1.data(), e2.data(), e3.data(), color, opacity);
     if (doframe) {
+      // set shape
+      for (int i = 0; i < 3; ++i) {
+        auto &t = tri[i];
+        t = radscale(shape, t) * t;
+      }
+
+      // rotate
+      MathExtra::matvec(p, tri[0].data(), e1.data());
+      MathExtra::matvec(p, tri[1].data(), e2.data());
+      MathExtra::matvec(p, tri[2].data(), e3.data());
+
+      // translate
+      e1 = e1 + offs;
+      e2 = e2 + offs;
+      e3 = e3 + offs;
       img->draw_cylinder(e1.data(), e2.data(), color, diameter, 3, opacity);
       img->draw_cylinder(e2.data(), e3.data(), color, diameter, 3, opacity);
       img->draw_cylinder(e3.data(), e1.data(), color, diameter, 3, opacity);
@@ -568,7 +593,7 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
         error->all(FLERR, iarg+2, "Dump image ellipsoid only supports style setting 1, 2, or 3");
       elevel = utils::inumeric(FLERR,arg[iarg+3],false,lmp);
       if (elevel == 0) elevel = 4; // default setting
-      if (elevel > 5)
+      if (elevel > 6)
         error->all(FLERR, iarg+3, "Dump image ellipsoid mesh refinement level is too large");
       ediamvalue = utils::numeric(FLERR,arg[iarg+4],false,lmp);
       iarg += 5;

@@ -53,7 +53,7 @@ Syntax
        *ellipsoid* = color eflag level width
          color = *type*
          eflag = 1 for triangles, 2 for wireframe, 3 for both
-         level = mesh refinement level, value between 1 (low resolution) and 5 (ultra high resolution)
+         level = mesh refinement level, value between 1 (low resolution) and 6 (ultra high resolution)
          width = diameter of wireframe edges (distance units) (ignored for triangles)
        *body* = color bflag1 bflag2
          color = *type*
@@ -526,13 +526,21 @@ ellipsoid.  At level 1 the ellipsoid is represented by an octahedron
 that is stretched according to the ellipsoid's shape parameters.  For
 each higher level, each of the triangles is replaced by four triangles
 and their edges are shifted to be on the surface of the ellipsoid.  The
-maximum allowed level is 5 (corresponding to 2048 triangles).
+maximum allowed level is 6 (corresponding to 8192 triangles).
 
-.. note::
+.. admonition:: Image quality versus rendering speed
+   :class: Hint
 
-   At higher mesh refinement levels some artifacts from the image
-   rendering library can appear due to rounding.  These can be
-   partially suppressed by using the *fsaa yes* setting.
+   Since the rendered ellisoids are constructed from iteratively refined
+   triangle meshes, the image quality increases with each refinement
+   level, but so does the computational effort to render the image.
+   Rendering only triangles is much faster than rendering the wireframe
+   edges, but the image quality for the same refinement level is usually
+   best when using both.  At higher mesh refinement levels (4 and up)
+   some artifacts from the image rendering library can appear due to
+   rounding.  These artifacts can be somewhat hidden by using the *fsaa
+   yes* setting, but are also less visible when rendering both, edges
+   and triangles.
 
 ----------
 
