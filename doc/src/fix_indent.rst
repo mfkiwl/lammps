@@ -215,7 +215,7 @@ a planar indenter rendered as a plane would be invisible and it is thus
 rendered as a cylinder.
 
 The color of the indenter object is by default that of the first atom
-type when using color style "type" or "element".  With color style
+type when using color styles "type" or "element".  With color style
 "const" the default value of "white" can be changed using
 :doc:`dump_modify fcolor <dump_image>`.  Similarly, the transparency
 follows the first atom type or can be changed for color style "const"
