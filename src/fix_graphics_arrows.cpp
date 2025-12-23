@@ -15,6 +15,7 @@
 
 #include "atom.h"
 #include "comm.h"
+#include "compute_chunk_atom.h"
 #include "domain.h"
 #include "dump_image.h"
 #include "error.h"
@@ -36,8 +37,9 @@ enum { NONE, DIPOLE, FORCE, VELOCITY, VARIABLE, CHUNK };
 /* ---------------------------------------------------------------------- */
 
 FixGraphicsArrows::FixGraphicsArrows(LAMMPS *lmp, int narg, char **arg) :
-    Fix(lmp, narg, arg), val{0.0, 0.0, 0.0}, xstr(nullptr), ystr(nullptr), zstr(nullptr),
-    id_chunk(nullptr), id_pos(nullptr), id_vec(nullptr), imgobjs(nullptr), imgparms(nullptr)
+    Fix(lmp, narg, arg), vec{0.0, 0.0, 0.0}, xstr(nullptr), ystr(nullptr), zstr(nullptr),
+    cchunk(nullptr), cpos(nullptr), cvec(nullptr), id_chunk(nullptr), id_pos(nullptr),
+    id_vec(nullptr), imgobjs(nullptr), imgparms(nullptr)
 {
   if (narg < 7) utils::missing_cmd_args(FLERR, "fix graphics/arrows", error);
 
@@ -72,26 +74,42 @@ FixGraphicsArrows::FixGraphicsArrows(LAMMPS *lmp, int narg, char **arg) :
       varflag = 1;
       xstr = utils::strdup(arg[5] + 2);
     } else {
-      val[0] = utils::numeric(FLERR, arg[5], false, lmp);
+      vec[0] = utils::numeric(FLERR, arg[5], false, lmp);
     }
     if (strstr(arg[6], "v_") == arg[6]) {
       varflag = 1;
       ystr = utils::strdup(arg[6] + 2);
     } else {
-      val[1] = utils::numeric(FLERR, arg[6], false, lmp);
+      vec[1] = utils::numeric(FLERR, arg[6], false, lmp);
     }
     if (strstr(arg[7], "v_") == arg[7]) {
       varflag = 1;
       ystr = utils::strdup(arg[7] + 2);
     } else {
-      val[2] = utils::numeric(FLERR, arg[7], false, lmp);
+      vec[2] = utils::numeric(FLERR, arg[7], false, lmp);
     }
     radius = utils::numeric(FLERR, arg[8], false, lmp);
     if (radius <= 0.0) error->all(FLERR, 6, "Arrow radius must be > 0");
   } else if (strcmp(arg[4], "chunk") == 0) {
     mode = CHUNK;
-    if (narg < 11) utils::missing_cmd_args(FLERR, "fix graphics/arrows chunk", error);
-    iarg = 11;
+    if (narg < 10) utils::missing_cmd_args(FLERR, "fix graphics/arrows chunk", error);
+    iarg = 10;
+
+    id_chunk = utils::strdup(arg[5]);
+    cchunk = dynamic_cast<ComputeChunkAtom *>(modify->get_compute_by_id(id_chunk));
+    if (!cchunk)
+      error->all(FLERR, 5, "Chunk/atom compute {} does not exist or is incorrect style for fix {}",
+                 id_chunk, style);
+
+    id_pos = utils::strdup(arg[6]);
+    cpos = modify->get_compute_by_id(id_pos);
+    if (!cpos)
+      error->all(FLERR, 6, "Per-chunk compute {} does not exist for fix graphics/arrows", id_pos);
+
+    id_vec = utils::strdup(arg[7]);
+    cvec = modify->get_compute_by_id(id_vec);
+    if (!cvec)
+      error->all(FLERR, 7, "Per-chunk compute {} does not exist for fix graphics/arrows", id_vec);
 
     scale = utils::numeric(FLERR, arg[8], false, lmp);
     radius = utils::numeric(FLERR, arg[9], false, lmp);
@@ -184,6 +202,30 @@ void FixGraphicsArrows::init()
                  "Fix graphics/arrows variable {} is not atom- or equal-style variable", zstr);
     zvar = ivar;
   }
+
+  // refresh and check per-chunk computes
+  if (mode == CHUNK) {
+    cchunk = dynamic_cast<ComputeChunkAtom *>(modify->get_compute_by_id(id_chunk));
+    if (!cchunk)
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Chunk/atom compute {} does not exist or is incorrect style for fix {}", id_chunk,
+                 style);
+    cpos = modify->get_compute_by_id(id_pos);
+    if (!cpos)
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Per-chunk compute {} does not exist for fix graphics/arrows", id_pos);
+    if (!cpos->array_flag && (cpos->size_array_cols < 3))
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Per-chunk compute {} is not compatible with fix graphics/arrows", id_pos);
+    cvec = modify->get_compute_by_id(id_vec);
+    if (!cvec)
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Per-chunk compute {} does not exist for fix graphics/arrows", id_vec);
+    if (!cvec->array_flag && (cvec->size_array_cols < 3))
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Per-chunk compute {} is not compatible with fix graphics/arrows", id_vec);
+  }
+
   end_of_step();
 }
 
@@ -194,9 +236,9 @@ void FixGraphicsArrows::end_of_step()
   memory->destroy(imgobjs);
   memory->destroy(imgparms);
 
-  // evaluate variable if necessary, wrap with clear/add
+  // evaluate variable or per-chunk computes if necessary, wrap with clear/add
 
-  if (varflag) modify->clearstep_compute();
+  if (varflag || (mode == CHUNK)) modify->clearstep_compute();
 
   const auto *const *const x = atom->x;
   const auto *const *const f = atom->f;
@@ -227,7 +269,7 @@ void FixGraphicsArrows::end_of_step()
           memory->create(xdata, nlocal, "fix_graphics_arrows:xdata");
           input->variable->compute_atom(xvar, igroup, xdata, 1, 0);
         } else {
-          val[0] = input->variable->compute_equal(xvar);
+          vec[0] = input->variable->compute_equal(xvar);
         }
       }
       if (ystr) {
@@ -235,7 +277,7 @@ void FixGraphicsArrows::end_of_step()
           memory->create(ydata, nlocal, "fix_graphics_arrows:ydata");
           input->variable->compute_atom(yvar, igroup, ydata, 1, 0);
         } else {
-          val[1] = input->variable->compute_equal(yvar);
+          vec[1] = input->variable->compute_equal(yvar);
         }
       }
       if (zstr) {
@@ -243,12 +285,12 @@ void FixGraphicsArrows::end_of_step()
           memory->create(zdata, nlocal, "fix_graphics_arrows:zdata");
           input->variable->compute_atom(zvar, igroup, zdata, 1, 0);
         } else {
-          val[2] = input->variable->compute_equal(zvar);
+          vec[2] = input->variable->compute_equal(zvar);
         }
       }
     }
 
-    // determine autovalue for enabled automatic scaling of vectors, if needed
+    // determine automatic scale value for enabled automatic scaling of vectors, if needed
 
     auto num = group->count(igroup);
     if (autoscale && (num > 0)) {
@@ -262,20 +304,20 @@ void FixGraphicsArrows::end_of_step()
           } else if (mode == VELOCITY) {
             mysum += MathExtra::len3(v[i]);
           } else if (mode == VARIABLE) {
-            double myval[3];
+            double myvec[3];
             if (xdata)
-              myval[0] = xdata[i];
+              myvec[0] = xdata[i];
             else
-              myval[0] = val[0];
+              myvec[0] = vec[0];
             if (ydata)
-              myval[1] = ydata[i];
+              myvec[1] = ydata[i];
             else
-              myval[1] = val[1];
+              myvec[1] = vec[1];
             if (zdata)
-              myval[2] = zdata[i];
+              myvec[2] = zdata[i];
             else
-              myval[2] = val[2];
-            mysum += MathExtra::len3(myval);
+              myvec[2] = vec[2];
+            mysum += MathExtra::len3(myvec);
           }
         }
       }
@@ -286,8 +328,6 @@ void FixGraphicsArrows::end_of_step()
         scale = autovalue / (scale / static_cast<double>(num));
       else
         scale = 1.0;
-    } else {
-      autovalue = 1.0;
     }
 
     n = 0;
@@ -314,15 +354,15 @@ void FixGraphicsArrows::end_of_step()
           if (xdata)
             imgparms[n][4] = xdata[i];
           else
-            imgparms[n][4] = val[0];
+            imgparms[n][4] = vec[0];
           if (ydata)
             imgparms[n][5] = ydata[i];
           else
-            imgparms[n][5] = val[1];
+            imgparms[n][5] = vec[1];
           if (zdata)
             imgparms[n][6] = zdata[i];
           else
-            imgparms[n][6] = val[2];
+            imgparms[n][6] = vec[2];
         }
         imgparms[n][7] = scale;
         imgparms[n][8] = 2.0 * radius;
@@ -332,9 +372,53 @@ void FixGraphicsArrows::end_of_step()
     memory->destroy(xdata);
     memory->destroy(ydata);
     memory->destroy(zdata);
+
+  } else {    // mode == CHUNK
+    numobjs = cchunk->setup_chunks();
+    memory->create(imgobjs, numobjs, "fix_graphics_arrows:imgobjs");
+    memory->create(imgparms, numobjs, 9, "fix_graphics_arrows:imgparms");
+
+    // invoke per-chunk computes
+    if (!(cpos->invoked_flag & Compute::INVOKED_ARRAY)) {
+      cpos->compute_array();
+      cpos->invoked_flag |= Compute::INVOKED_ARRAY;
+    }
+    if (!(cvec->invoked_flag & Compute::INVOKED_ARRAY)) {
+      cvec->compute_array();
+      cvec->invoked_flag |= Compute::INVOKED_ARRAY;
+    }
+
+    const double *const *const pdata = cpos->array;
+    const double *const *const vdata = cvec->array;
+
+    // determine automatic scale value for enabled automatic scaling of vectors, if needed
+
+    double mysum = 0.0;
+    if (autoscale) {
+      for (int n = 0; n < numobjs; ++n)
+        mysum += MathExtra::len3(vdata[n]);
+
+      if (mysum != 0.0)
+        scale = autovalue / (mysum / static_cast<double>(numobjs));
+      else
+        scale = 1.0;
+    }
+    for (int n = 0; n < numobjs; ++n) {
+      imgobjs[n] = DumpImage::ARROW;
+      imgparms[n][0] = 1;
+      imgparms[n][1] = pdata[n][0];
+      imgparms[n][2] = pdata[n][1];
+      imgparms[n][3] = pdata[n][2];
+      imgparms[n][4] = vdata[n][0];
+      imgparms[n][5] = vdata[n][1];
+      imgparms[n][6] = vdata[n][2];
+      imgparms[n][7] = scale;
+      imgparms[n][8] = 2.0 * radius;
+    }
   }
 
-  if (varflag) modify->addstep_compute((update->ntimestep / nevery) * nevery + nevery);
+  if (varflag || (mode == CHUNK))
+    modify->addstep_compute((update->ntimestep / nevery) * nevery + nevery);
 }
 
 /* ----------------------------------------------------------------------

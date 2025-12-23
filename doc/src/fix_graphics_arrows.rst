@@ -31,10 +31,11 @@ Syntax
        yval = y value for arrow vector (may be a variable)
        zval = z value for arrow vector (may be a variable)
        radius = radius for arrows (length units)
-     *chunk* args = chunk-ID posval vecval scale radius transparency
+     *chunk* args = chunk-ID pos-ID vec-ID scale radius
        chunk-ID = ID of :doc:`compute chunk/atom <compute_chunk_atom>` command
-       posval = ID of a per-chunk compute or fix that computes the position vector for the chunk
-       vecval = ID of a per-chunk compute or fix that computes the arrow vector for the chunk
+       pos-ID = ID of a per-chunk compute that computes the positions for the arrows
+       vec-ID = ID of a per-chunk compute that computes the arrow vectors
+       scale = scale factor for the per-chunk vector to determine the arrow length
        radius = radius for arrows (length units)
 
 * zero or more keyword/value pairs may be appended
@@ -44,17 +45,14 @@ Syntax
 
        *autoscale* value = automatically scale arrows so they have an average length of "value"
 
-..       *units* value = *lattice* or *box*
-..         lattice = the geometry is defined in lattice units
-..         box = the geometry is defined in simulation box units
-
 Examples
 """"""""
 
 .. code-block:: LAMMPS
 
-   fix vec all graphics/arrows 10 velocity 20.0 0.066 autoscale 1.5
+   fix vec all graphics/arrows 10 velocity 20.0 0.066 autoscale 0.5
    fix vec all graphics/arrows 100 variable v_xnorm v_znorm 0.0 0.066
+   fix vec all graphics/arrows 100 chunk molchunk com dip 1.0 0.05
 
 Description
 """""""""""
@@ -78,7 +76,7 @@ There are five keywords available that determine what is shown: *dipole*
 will show the per-atom dipole vector, *force* the per-atom force,
 *velocity* the per-atom velocity, *variable* a custom vector constructed
 from three constants or atom- or equal-style variables. With the *chunk*
-keyword per-chunk vectors will be shown.
+keyword the arrows shown will represent per-chunk vector data.
 
 The *xval*\ , *yval*\ , and *zval*\ , arguments to the *variable* mode
 define a custom vector that can be composed of numbers or :doc:`atom- or
@@ -90,6 +88,38 @@ variables can reference :doc:`computes <compute>`, :doc:`fixes <fix>`,
 :doc:`custom per-atom properties <fix_property_atom>`, and other
 variables, this can be used to construct arrows for almost any per-atom
 property available in LAMMPS.
+
+The *chunk-ID* is the ID of a :doc:`compute chunk/atom
+<compute_chunk_atom>` command.  In LAMMPS, chunks are collections of
+atoms and there are per-chunk computes that compute properties for them.
+See the :doc:`compute chunk/atom <compute_chunk_atom>` and :doc:`Howto
+chunk <Howto_chunk>` pages for details of how chunks can be defined and
+examples of how they can be used to measure properties of a system.
+
+The *pos-ID* is the ID of a per-chunk :doc:`compute command <compute>`.
+Most commonly this will be either :doc:`compute com/chunk
+<compute_com_chunk>` for "mobile" chunks or compute :doc:`compute
+property/chunk <compute_property_chunk>` for binning based chunks.  The
+*vec-ID* is the ID of a per-chunk :doc:`compute command <compute>`.
+Either per-chunk compute must return a global array with at least 3
+columns and *only* the first three columns are used for the arrows.  For
+computes that compute a tensor only the trace of the tensor is used.
+Currently the following computes are compatible:
+
+   * :doc:`angmom/chunk <compute_angmom_chunk>`
+   * :doc:`com/chunk <compute_com_chunk>`
+   * :doc:`dipole/chunk <compute_dipole_chunk>`
+   * :doc:`dipole/tip4p/chunk <compute_dipole_chunk>`
+   * :doc:`gyration/chunk <compute_gyration_chunk>` (with optional *tensor* keyword)
+   * :doc:`gyration/shape/chunk <compute_gyration_shape_chunk>`
+   * :doc:`inertia/chunk <compute_inertia_chunk>`
+   * :doc:`msd/chunk <compute_msd_chunk>`
+   * :doc:`omega/chunk <compute_omega_chunk>`
+   * :doc:`property/chunk <compute_property_chunk>` (with arguments *coord1* *coord2* *coord3*)
+   * :doc:`reduce/chunk <compute_reduce_chunk>` (with three or more properties)
+   * :doc:`torque/chunk <compute_torque_chunk>`
+   * :doc:`vacf/chunk <compute_vacf_chunk>`
+   * :doc:`vcm/chunk <compute_vcm_chunk>`
 
 The *scale* quantity determines the length of the arrows.  It should be
 chosen so that when multiplied with the per-atom vector quantity the result
