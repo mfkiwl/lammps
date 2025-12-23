@@ -61,7 +61,8 @@ Description
 
 This fix allows to add arrows to images rendered with :doc:`dump image
 <dump_image>` using the *fix* keyword to represent vector properties
-with arrows atoms from all atoms in the fix group.
+with arrows for either all atoms in the fix group or for :doc:`chunks
+<Howto_chunk>`.
 
 The *group-ID* sets the group ID of the atoms selected to have the selected
 property represented.  This may be a dynamic group.
@@ -142,8 +143,8 @@ Dump image info
 .. versionadded:: TBD
 
 Fix graphics/arrows is designed to be used with the *fix* keyword of
-:doc:`dump image <dump_image>`.  The fix will add spheres based on the
-atoms in the fix group across all arrows to *dump image* so that they
+:doc:`dump image <dump_image>`.  The fix will add arrows based on the
+atoms in the fix group or based on chunks to *dump image* so that they
 are included in the rendered image.
 
 The color of the arrows is by default that of the atoms when using color

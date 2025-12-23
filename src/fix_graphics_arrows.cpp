@@ -84,7 +84,7 @@ FixGraphicsArrows::FixGraphicsArrows(LAMMPS *lmp, int narg, char **arg) :
     }
     if (strstr(arg[7], "v_") == arg[7]) {
       varflag = 1;
-      ystr = utils::strdup(arg[7] + 2);
+      zstr = utils::strdup(arg[7] + 2);
     } else {
       vec[2] = utils::numeric(FLERR, arg[7], false, lmp);
     }
@@ -177,7 +177,7 @@ void FixGraphicsArrows::init()
     if (ivar < 0)
       error->all(FLERR, Error::NOLASTLINE,
                  "Variable name {} for fix graphics/arrows x value does not exist", xstr);
-    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->atomstyle(ivar) == 0))
+    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->equalstyle(ivar) == 0))
       error->all(FLERR, Error::NOLASTLINE,
                  "Fix graphics/arrows variable {} is not atom- or equal-style variable", xstr);
     xvar = ivar;
@@ -187,7 +187,7 @@ void FixGraphicsArrows::init()
     if (ivar < 0)
       error->all(FLERR, Error::NOLASTLINE,
                  "Variable name {} for fix graphics/arrows y value does not exist", ystr);
-    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->atomstyle(ivar) == 0))
+    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->equalstyle(ivar) == 0))
       error->all(FLERR, Error::NOLASTLINE,
                  "Fix graphics/arrows variable {} is not atom- or equal-style variable", ystr);
     yvar = ivar;
@@ -196,8 +196,8 @@ void FixGraphicsArrows::init()
     int ivar = input->variable->find(zstr);
     if (ivar < 0)
       error->all(FLERR, Error::NOLASTLINE,
-                 "Variable name {} for fix graphics/arrows z valaue does not exist", zstr);
-    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->atomstyle(ivar) == 0))
+                 "Variable name {} for fix graphics/arrows z value does not exist", zstr);
+    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->equalstyle(ivar) == 0))
       error->all(FLERR, Error::NOLASTLINE,
                  "Fix graphics/arrows variable {} is not atom- or equal-style variable", zstr);
     zvar = ivar;
@@ -214,14 +214,14 @@ void FixGraphicsArrows::init()
     if (!cpos)
       error->all(FLERR, Error::NOLASTLINE,
                  "Per-chunk compute {} does not exist for fix graphics/arrows", id_pos);
-    if (!cpos->array_flag && (cpos->size_array_cols < 3))
+    if (!cpos->array_flag || (cpos->size_array_cols < 3))
       error->all(FLERR, Error::NOLASTLINE,
                  "Per-chunk compute {} is not compatible with fix graphics/arrows", id_pos);
     cvec = modify->get_compute_by_id(id_vec);
     if (!cvec)
       error->all(FLERR, Error::NOLASTLINE,
                  "Per-chunk compute {} does not exist for fix graphics/arrows", id_vec);
-    if (!cvec->array_flag && (cvec->size_array_cols < 3))
+    if (!cvec->array_flag || (cvec->size_array_cols < 3))
       error->all(FLERR, Error::NOLASTLINE,
                  "Per-chunk compute {} is not compatible with fix graphics/arrows", id_vec);
   }
