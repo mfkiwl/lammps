@@ -23,6 +23,8 @@ FixStyle(graphics/arrows,FixGraphicsArrows);
 #include "fix.h"
 
 namespace LAMMPS_NS {
+class Compute;
+class ComputeChunkAtom;
 
 class FixGraphicsArrows : public Fix {
  public:
@@ -40,11 +42,15 @@ class FixGraphicsArrows : public Fix {
   int varflag;
   double scale;
   double radius;
-  double val[3];
+  double vec[3];
   char *xstr;
   char *ystr;
   char *zstr;
   int xvar, yvar, zvar;
+
+  ComputeChunkAtom *cchunk;
+  Compute *cpos;
+  Compute *cvec;
   char *id_chunk;
   char *id_pos;
   char *id_vec;
