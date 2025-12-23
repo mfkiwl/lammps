@@ -19,25 +19,23 @@ Syntax
 
      *dipole* args = scale radius
        scale = scale factor for the dipole moment to determine the arrow length
-       radius = radius for arrows
+       radius = radius for arrows (length units)
      *force* args = scale radius
        scale = scale factor for the force vector to determine the arrow length
-       radius = radius for arrows
+       radius = radius for arrows (length units)
      *velocity* args = scale radius
        scale = scale factor for the velocity vector to determine the arrow length
-       radius = radius for arrows
+       radius = radius for arrows (length units)
      *variable* args = xval yval zval radius
-       xval = xvalue for arrow vector
-       yval = xvalue for arrow vector
-       zval = xvalue for arrow vector
-       radius = radius for arrows
+       xval = x value for arrow vector (may be a variable)
+       yval = y value for arrow vector (may be a variable)
+       zval = z value for arrow vector (may be a variable)
+       radius = radius for arrows (length units)
      *chunk* args = chunk-ID posval vecval scale radius transparency
        chunk-ID = ID of :doc:`compute chunk/atom <compute_chunk_atom>` command
        posval = ID of a per-chunk compute or fix that computes the position vector for the chunk
        vecval = ID of a per-chunk compute or fix that computes the arrow vector for the chunk
-       yval = xvalue for arrow vector
-       zval = xvalue for arrow vector
-       radius = radius for arrows
+       radius = radius for arrows (length units)
 
 Examples
 """"""""
@@ -45,6 +43,7 @@ Examples
 .. code-block:: LAMMPS
 
    fix vec all graphics/arrows 10 velocity 20.0 0.066
+   fix vec all graphics/arrows 100 variable v_xnorm v_znorm 0.0 0.066
 
 Description
 """""""""""
@@ -65,10 +64,21 @@ with an error message if the settings for this fix and the dump command
 are not compatible.
 
 There are five keywords available that determine what is shown: *dipole*
-will show the per-atom dipole vector, *force* the per-atom force, *velocity*
-the per-atom velocity, *variable* a custom vector constructed from three
-constants or atom-style variables. With the *chunk* keyword per-chunk vectors
-will be shown.
+will show the per-atom dipole vector, *force* the per-atom force,
+*velocity* the per-atom velocity, *variable* a custom vector constructed
+from three constants or atom- or equal-style variables. With the *chunk*
+keyword per-chunk vectors will be shown.
+
+The *xval*\ , *yval*\ , and *zval*\ , arguments to the *variable* mode
+define a custom vector that can be composed of numbers or :doc:`atom- or
+equal-style variables <variable>`.  If any of these values is a
+variable, it should be specified as *v_name*\ , where "name" is the
+variable name.  In this case, the variable will be evaluated each
+timestep, and its value used to define the arrow for each atom.  Since
+variables can reference :doc:`computes <compute>`, :doc:`fixes <fix>`,
+:doc:`custom per-atom properties <fix_property_atom>`, and other
+variables, this can be used to construct arrows for almost any per-atom
+property available in LAMMPS.
 
 The *scale* quantity determines the length of the arrows.  It should be
 chosen so that when multiplied with the per-atom vector quantity the result

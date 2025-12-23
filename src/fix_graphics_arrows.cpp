@@ -44,12 +44,13 @@ FixGraphicsArrows::FixGraphicsArrows(LAMMPS *lmp, int narg, char **arg) :
   // parse mandatory arg
 
   nevery = utils::inumeric(FLERR, arg[3], false, lmp);
-  if (nevery <= 0) error->all(FLERR, "Illegal fix graphics/arrows nevery value");
+  if (nevery <= 0) error->all(FLERR, 3, "Illegal fix graphics/arrows nevery value");
   global_freq = nevery;
   dynamic_group_allow = 1;
 
   mode = NONE;
   varflag = 0;
+  scale = 1.0;
 
   if (strcmp(arg[4], "dipole") == 0) {
     mode = DIPOLE;
@@ -59,7 +60,7 @@ FixGraphicsArrows::FixGraphicsArrows(LAMMPS *lmp, int narg, char **arg) :
     mode = VELOCITY;
   } else if (strcmp(arg[4], "variable") == 0) {
     mode = VARIABLE;
-    if (narg < 10) utils::missing_cmd_args(FLERR, "fix graphics/arrows variable", error);
+    if (narg < 9) utils::missing_cmd_args(FLERR, "fix graphics/arrows variable", error);
     if (strstr(arg[5], "v_") == arg[5]) {
       varflag = 1;
       xstr = utils::strdup(arg[5] + 2);
@@ -135,20 +136,20 @@ void FixGraphicsArrows::init()
     int ivar = input->variable->find(xstr);
     if (ivar < 0)
       error->all(FLERR, Error::NOLASTLINE,
-                 "Variable name {} for fix graphics/arrows x valaue does not exist", xstr);
-    if (input->variable->atomstyle(ivar) == 0)
+                 "Variable name {} for fix graphics/arrows x value does not exist", xstr);
+    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->atomstyle(ivar) == 0))
       error->all(FLERR, Error::NOLASTLINE,
-                 "Fix graphics/arrows variable {} is not atom-style variable", xstr);
+                 "Fix graphics/arrows variable {} is not atom- or equal-style variable", xstr);
     xvar = ivar;
   }
   if (ystr) {
     int ivar = input->variable->find(ystr);
     if (ivar < 0)
       error->all(FLERR, Error::NOLASTLINE,
-                 "Variable name {} for fix graphics/arrows y valaue does not exist", ystr);
-    if (input->variable->atomstyle(ivar) == 0)
+                 "Variable name {} for fix graphics/arrows y value does not exist", ystr);
+    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->atomstyle(ivar) == 0))
       error->all(FLERR, Error::NOLASTLINE,
-                 "Fix graphics/arrows variable {} is not atom-style variable", ystr);
+                 "Fix graphics/arrows variable {} is not atom- or equal-style variable", ystr);
     yvar = ivar;
   }
   if (zstr) {
@@ -156,9 +157,9 @@ void FixGraphicsArrows::init()
     if (ivar < 0)
       error->all(FLERR, Error::NOLASTLINE,
                  "Variable name {} for fix graphics/arrows z valaue does not exist", zstr);
-    if (input->variable->atomstyle(ivar) == 0)
+    if ((input->variable->atomstyle(ivar) == 0) && (input->variable->atomstyle(ivar) == 0))
       error->all(FLERR, Error::NOLASTLINE,
-                 "Fix graphics/arrows variable {} is not atom-style variable", zstr);
+                 "Fix graphics/arrows variable {} is not atom- or equal-style variable", zstr);
     zvar = ivar;
   }
   end_of_step();
@@ -193,9 +194,40 @@ void FixGraphicsArrows::end_of_step()
     numobjs = n;
     memory->create(imgobjs, numobjs, "fix_graphics_arrows:imgobjs");
     memory->create(imgparms, numobjs, 9, "fix_graphics_arrows:imgparms");
+    double *xdata = nullptr;
+    double *ydata = nullptr;
+    double *zdata = nullptr;
+
+    // compute variable data
+    if (mode == VARIABLE) {
+      if (xstr) {
+        if (input->variable->atomstyle(xvar)) {
+          memory->create(xdata, nlocal, "fix_graphics_arrows:xdata");
+          input->variable->compute_atom(xvar, igroup, xdata, 1, 0);
+        } else {
+          val[0] = input->variable->compute_equal(xvar);
+        }
+      }
+      if (ystr) {
+        if (input->variable->atomstyle(yvar)) {
+          memory->create(ydata, nlocal, "fix_graphics_arrows:ydata");
+          input->variable->compute_atom(yvar, igroup, ydata, 1, 0);
+        } else {
+          val[1] = input->variable->compute_equal(yvar);
+        }
+      }
+      if (zstr) {
+        if (input->variable->atomstyle(zvar)) {
+          memory->create(zdata, nlocal, "fix_graphics_arrows:zdata");
+          input->variable->compute_atom(zvar, igroup, zdata, 1, 0);
+        } else {
+          val[2] = input->variable->compute_equal(zvar);
+        }
+      }
+    }
 
     n = 0;
-    for (int i = 0; i < nlocal; ++i)
+    for (int i = 0; i < nlocal; ++i) {
       if (mask[i] & groupbit) {
         imgobjs[n] = DumpImage::ARROW;
         imgparms[n][0] = type[i];
@@ -214,11 +246,28 @@ void FixGraphicsArrows::end_of_step()
           imgparms[n][4] = v[i][0];
           imgparms[n][5] = v[i][1];
           imgparms[n][6] = v[i][2];
+        } else if (mode == VARIABLE) {
+          if (xdata)
+            imgparms[n][4] = xdata[i];
+          else
+            imgparms[n][4] = val[0];
+          if (ydata)
+            imgparms[n][5] = ydata[i];
+          else
+            imgparms[n][5] = val[1];
+          if (zdata)
+            imgparms[n][6] = zdata[i];
+          else
+            imgparms[n][6] = val[2];
         }
         imgparms[n][7] = scale;
         imgparms[n][8] = 2.0 * radius;
         ++n;
       }
+    }
+    memory->destroy(xdata);
+    memory->destroy(ydata);
+    memory->destroy(zdata);
   }
 
   if (varflag) modify->addstep_compute((update->ntimestep / nevery) * nevery + nevery);
