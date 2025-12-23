@@ -584,6 +584,7 @@ The *fix* keyword can be used with a :doc:`fix <fix>` that produces
 objects to be drawn.  Below is a list of supported fixes:
 
 * :doc:`fix graphics <fix_graphics>`
+* :doc:`fix graphics/arrows <fix_graphics_arrows>`
 * :doc:`fix indent <fix_indent>`
 * :doc:`fix smd/wall_surface <fix_smd_wall_surface>`
 * :doc:`fix wall/lj93 <fix_wall>`

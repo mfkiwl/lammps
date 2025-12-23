@@ -17,24 +17,20 @@ Syntax
 
   .. parsed-literal::
 
-     *dipole* args = scale radius transparency
+     *dipole* args = scale radius
        scale = scale factor for the dipole moment to determine the arrow length
        radius = radius for arrows
-       transparency = transparency setting for the arrows, a value from 0 (invisible) to 1 (fully opaque)
-     *force* args = scale radius transparency
+     *force* args = scale radius
        scale = scale factor for the force vector to determine the arrow length
        radius = radius for arrows
-       transparency = transparency setting for the arrows, a value from 0 (invisible) to 1 (fully opaque)
-     *velocity* args = scale radius transparency
+     *velocity* args = scale radius
        scale = scale factor for the velocity vector to determine the arrow length
        radius = radius for arrows
-       transparency = transparency setting for the arrow, a value from 0 (invisible) to 1 (fully opaque)
-     *variable* args = xval yval zval radius transparency
+     *variable* args = xval yval zval radius
        xval = xvalue for arrow vector
        yval = xvalue for arrow vector
        zval = xvalue for arrow vector
        radius = radius for arrows
-       transparency = transparency setting for the arrow, a value from 0 (invisible) to 1 (fully opaque)
      *chunk* args = chunk-ID posval vecval scale radius transparency
        chunk-ID = ID of :doc:`compute chunk/atom <compute_chunk_atom>` command
        posval = ID of a per-chunk compute or fix that computes the position vector for the chunk
@@ -42,14 +38,13 @@ Syntax
        yval = xvalue for arrow vector
        zval = xvalue for arrow vector
        radius = radius for arrows
-       transparency = transparency setting for the arrow, a value from 0 (invisible) to 1 (fully opaque)
 
 Examples
 """"""""
 
 .. code-block:: LAMMPS
 
-   fix sf1 water graphics/arrows 200 dipole 100.0 0.1 1.0
+   fix sf1 water graphics/arrows 200 dipole 100.0 0.1
 
 Description
 """""""""""
