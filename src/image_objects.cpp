@@ -41,7 +41,7 @@ inline double vec3dot(const vec3 &a, const vec3 &b)
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-// dot product of two vectors
+// cross product of two vectors
 inline vec3 vec3cross(const vec3 &a, const vec3 &b)
 {
   return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
@@ -273,9 +273,9 @@ void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const
   int n = 0;
   for (auto &tri : cone) {
     // apply region rotation and translation
-    reg->forward_transform(tri[0][1], tri[0][1], tri[0][2]);
-    reg->forward_transform(tri[1][1], tri[1][1], tri[1][2]);
-    reg->forward_transform(tri[2][1], tri[2][1], tri[2][2]);
+    reg->forward_transform(tri[0][0], tri[0][1], tri[0][2]);
+    reg->forward_transform(tri[1][0], tri[1][1], tri[1][2]);
+    reg->forward_transform(tri[2][0], tri[2][1], tri[2][2]);
 
     // draw triangle
     if (flag & 1) img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
