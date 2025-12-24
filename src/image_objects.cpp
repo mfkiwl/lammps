@@ -263,22 +263,30 @@ void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const
   // nothing to draw
   if (!triangles.size()) return;
 
+  // rotate to selected axis and translate from origin to original center
+  // no need of scaling here since length and width was already applied during construction
   auto cone = transform(triangles, dir, mid, 1.0, 1.0);
 
   // nothing to draw
   if (!cone.size()) return;
 
+  int n = 0;
   for (auto &tri : cone) {
+    // apply region rotation and translation
     reg->forward_transform(tri[0][1], tri[0][1], tri[0][2]);
     reg->forward_transform(tri[1][1], tri[1][1], tri[1][2]);
     reg->forward_transform(tri[2][1], tri[2][1], tri[2][2]);
 
+    // draw triangle
     if (flag & 1) img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
 
+    // draw wireframe
     if (flag & 2) {
+      // draw bottom rim and straight lines from bottom to top
       img->draw_cylinder(tri[0].data(), tri[1].data(), color, diameter, 3, opacity);
-      img->draw_cylinder(tri[1].data(), tri[2].data(), color, diameter, 3, opacity);
-      img->draw_cylinder(tri[0].data(), tri[2].data(), color, diameter, 3, opacity);
+      // only draw top rim by picking coordinates from every other triangle
+      ++n;
+      if (n & 1) img->draw_cylinder(tri[0].data(), tri[2].data(), color, diameter, 3, opacity);
     }
   }
 }
