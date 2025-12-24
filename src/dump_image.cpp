@@ -31,6 +31,7 @@
 #include "grid2d.h"
 #include "grid3d.h"
 #include "image.h"
+#include "image_objects.h"
 #include "input.h"
 #include "math_const.h"
 #include "math_extra.h"
@@ -54,410 +55,22 @@
 #include "update.h"
 #include "variable.h"
 
-#include <array>
 #include <cctype>
 #include <cmath>
 #include <cstring>
 
 // clang-format on
 
-// helper functions for generating triangle meshes
+using namespace LAMMPS_NS;
+using MathConst::DEG2RAD;
+using namespace ImageObjects;
 
 namespace {
 
 using LAMMPS_NS::MathConst::MY_2PI;
-constexpr int RESOLUTION = 36;
 constexpr double RADINC = MY_2PI / RESOLUTION;
 constexpr double RADOVERLAP = 0.00001;
 constexpr double SMALL = 1.0e-10;
-
-// custom data types for positions and triangles
-using vec3 = std::array<double, 3>;
-using triangle = std::array<vec3, 3>;
-
-// some basic math operations for positions/vectors
-inline vec3 operator+(const vec3 &a, const vec3 &b)
-{
-  return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
-}
-inline vec3 operator-(const vec3 &a, const vec3 &b)
-{
-  return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
-}
-inline vec3 operator*(double s, const vec3 &v)
-{
-  return {s * v[0], s * v[1], s * v[2]};
-}
-inline vec3 operator*(const vec3 &v, double s)
-{
-  return s * v;
-}
-
-// dot product of two vectors
-inline double vec3dot(const vec3 &a, const vec3 &b)
-{
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-// dot product of two vectors
-inline vec3 vec3cross(const vec3 &a, const vec3 &b)
-{
-  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
-}
-
-// length of vector
-inline double vec3len(const vec3 &v)
-{
-  return std::sqrt(vec3dot(v, v));
-}
-
-// return normalized vector
-inline vec3 vec3norm(const vec3 &v)
-{
-  double n = vec3len(v);
-  return (n > 0.0) ? (1.0 / n) * v : vec3{0.0, 0.0, 0.0};
-}
-
-// scale factor to move a position to the surface of an ellipsoid with given shape parameters
-inline double radscale(const double *shape, const vec3 &pos)
-{
-  return sqrt(1.0 /
-              (pos[0] / shape[0] * pos[0] / shape[0] + pos[1] / shape[1] * pos[1] / shape[1] +
-               pos[2] / shape[2] * pos[2] / shape[2]));
-}
-
-// construct an ellipsoid from primitives, mostly triangles and cylinders, and draw them
-
-class EllipsoidObj {
- public:
-  // construct triangle mesh by refinining the triangles of an octahedron
-  void construct(int level = 3);
-
-  // draw ellipsoid from triangle mesh for ellipsoid particles
-  void draw(LAMMPS_NS::Image *, int, const double *, const double *, const double *, const double *,
-            double, double opacity = 1.0);
-
-  // draw ellipsoid from triangle mesh for regions
-  void draw(LAMMPS_NS::Image *, int, const double *, const double *, const double *,
-            LAMMPS_NS::Region *, double, double opacity = 1.0);
-
- private:
-  std::vector<triangle> triangles;
-
-  // refine triangle mesh
-  void refine();
-};
-
-// refine triangle mesh by replacing each triangle with four triangles
-//
-//    /\            /\
-//   /  \          /__\
-//  /    \   -->  /\  /\
-// /______\      /__\/__\
-
-void EllipsoidObj::refine()
-{
-  std::vector<triangle> newlist;
-  for (const auto &tri : triangles) {
-    vec3 posa = vec3norm(tri[0] + tri[2]);
-    vec3 posb = vec3norm(tri[0] + tri[1]);
-    vec3 posc = vec3norm(tri[1] + tri[2]);
-    newlist.push_back({tri[0], posb, posa});
-    newlist.push_back({posb, tri[1], posc});
-    newlist.push_back({posa, posb, posc});
-    newlist.push_back({posa, posc, tri[2]});
-  }
-  triangles = std::move(newlist);
-}
-
-// build list of triangles by refinining the triangles of an octahedron
-
-void EllipsoidObj::construct(int level)
-{
-  // define edges of an octahedron
-  constexpr vec3 OCT1 = {-1.0, 0.0, 0.0};
-  constexpr vec3 OCT2 = {1.0, 0.0, 0.0};
-  constexpr vec3 OCT3 = {0.0, -1.0, 0.0};
-  constexpr vec3 OCT4 = {0.0, 1.0, 0.0};
-  constexpr vec3 OCT5 = {0.0, 0.0, -1.0};
-  constexpr vec3 OCT6 = {0.0, 0.0, 1.0};
-
-  // define level 1 octahedron triangle mesh
-  triangles = {{OCT5, OCT4, OCT1}, {OCT2, OCT4, OCT5}, {OCT6, OCT4, OCT2}, {OCT1, OCT4, OCT6},
-               {OCT1, OCT3, OCT5}, {OCT5, OCT3, OCT2}, {OCT2, OCT3, OCT6}, {OCT6, OCT3, OCT1}};
-
-  // refine the list of triangles to the desired level
-  for (int i = 1; i < level; ++i) refine();
-}
-
-// draw method for drawing ellipsoids from a region which has its own transformation function
-void EllipsoidObj::draw(LAMMPS_NS::Image *img, int flag, const double *color, const double *center,
-                        const double *shape, LAMMPS_NS::Region *reg, double diameter,
-                        double opacity)
-{
-  // select between triangles or cylinders
-  bool doframe = false;
-  bool dotri = false;
-  if (flag == 1) dotri = true;
-  if (flag == 2) doframe = true;
-  if (diameter <= 0.0) doframe = false;
-  if (!dotri && !doframe) return;    // nothing to do
-
-  // optimization: just draw a sphere if a filled surface is requested and the object is a sphere
-  if (dotri && (shape[0] == shape[1]) && (shape[0] == shape[2])) {
-    img->draw_sphere(center, color, 2.0 * shape[0], opacity);
-    return;
-  }
-
-  // construct ellipsoid template with default settings if not already done
-  if (!triangles.size()) construct();
-
-  // draw triangles
-
-  const vec3 offs{center[0], center[1], center[2]};
-  for (auto tri : triangles) {
-
-    // set shape and move
-    tri[0] = tri[0] * radscale(shape, tri[0]) + offs;
-    reg->forward_transform(tri[0][0], tri[0][1], tri[0][2]);
-    tri[1] = tri[1] * radscale(shape, tri[1]) + offs;
-    reg->forward_transform(tri[1][0], tri[1][1], tri[1][2]);
-    tri[2] = tri[2] * radscale(shape, tri[2]) + offs;
-    reg->forward_transform(tri[2][0], tri[2][1], tri[2][2]);
-
-    if (dotri) img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
-    if (doframe) {
-      img->draw_cylinder(tri[0].data(), tri[1].data(), color, diameter, 3, opacity);
-      img->draw_cylinder(tri[0].data(), tri[2].data(), color, diameter, 3, opacity);
-      img->draw_cylinder(tri[1].data(), tri[2].data(), color, diameter, 3, opacity);
-    }
-  }
-}
-
-// draw method for drawing ellipsoids from per-atom data which has a quaternion
-// and the shape list to define the orientation and stretch
-void EllipsoidObj::draw(LAMMPS_NS::Image *img, int flag, const double *color, const double *center,
-                        const double *shape, const double *quat, double diameter, double opacity)
-{
-  // select between triangles or cylinders or both
-  bool doframe = true;
-  bool dotri = true;
-  if (flag == 1) doframe = false;
-  if (flag == 2) dotri = false;
-  if (diameter <= 0.0) doframe = false;
-  if (!dotri && !doframe) return;    // nothing to do
-
-  double p[3][3];
-  vec3 e1, e2, e3;
-  const vec3 offs{center[0], center[1], center[2]};
-
-  // optimization: just draw a sphere if a filled surface is requested and the object is a sphere
-  if (dotri && (shape[0] == shape[1]) && (shape[0] == shape[2])) {
-    img->draw_sphere(center, color, 2.0 * shape[0] + (doframe ? diameter : 0.0), opacity);
-    return;
-  }
-
-  // construct ellipsoid template with default settings if not already done
-  if (!triangles.size()) construct();
-
-  // get rotation matrix for body frame to box frame
-  MathExtra::quat_to_mat(quat, p);
-
-  // draw triangles and edges as requested, work on copy of triangle since we modify it
-  for (auto tri : triangles) {
-
-    if (dotri) {
-      // set shape by shifting each corner to the surface
-      for (int i = 0; i < 3; ++i) {
-        auto &t = tri[i];
-        if (doframe && dotri) {
-          // add extra shift when using cylinders and triangles for a smoother surface
-          double shapeplus[3] = {shape[0] + diameter, shape[1] + diameter, shape[1] + diameter};
-          t = radscale(shapeplus, t) * t;
-        } else {
-          t = radscale(shape, t) * t;
-        }
-      }
-
-      // rotate
-      MathExtra::matvec(p, tri[0].data(), e1.data());
-      MathExtra::matvec(p, tri[1].data(), e2.data());
-      MathExtra::matvec(p, tri[2].data(), e3.data());
-
-      // translate
-      e1 = e1 + offs;
-      e2 = e2 + offs;
-      e3 = e3 + offs;
-
-      img->draw_triangle(e1.data(), e2.data(), e3.data(), color, opacity);
-    }
-
-    if (doframe) {
-      // set shape
-      for (int i = 0; i < 3; ++i) {
-        auto &t = tri[i];
-        t = radscale(shape, t) * t;
-      }
-
-      // rotate
-      MathExtra::matvec(p, tri[0].data(), e1.data());
-      MathExtra::matvec(p, tri[1].data(), e2.data());
-      MathExtra::matvec(p, tri[2].data(), e3.data());
-
-      // translate
-      e1 = e1 + offs;
-      e2 = e2 + offs;
-      e3 = e3 + offs;
-      img->draw_cylinder(e1.data(), e2.data(), color, diameter, 3, opacity);
-      img->draw_cylinder(e2.data(), e3.data(), color, diameter, 3, opacity);
-      img->draw_cylinder(e3.data(), e1.data(), color, diameter, 3, opacity);
-    }
-  }
-}
-
-// construct a truncated cone object from primitives, mostly triangles and cylinders, and draw them
-
-// construct an arrow from primitives, mostly triangles and a cylinder, and draw them
-
-class ArrowObj {
- public:
-  // build an arrow template with length 1 in (1.0, 0.0, 0.0) direction as list of triangles
-  void construct(double _tipl = 0.2, double _tipw = 0.1, double radius = 0.1, int res = RESOLUTION);
-
-  // construct a custom arrow from the template by scaling, rotating, and translating it.
-  std::vector<triangle> transform(const vec3 &, const vec3 &, double, double);
-
-  // draw custom arrow from unit template
-  void draw(LAMMPS_NS::Image *, const double *, const double *, double, const double *, double,
-            double);
-
- private:
-  double tiplength;
-  double tipwidth;
-  double diameter;
-  std::vector<triangle> triangles;
-  int resolution;
-};
-
-// construct arrow template by placing sets of triangles with two corners on a circle at "mid"
-// and the third corner in the center either at "mid" or at "tip". A third set of triangles
-// it at "bot". The resolution parameter determines how many triangles per set (36 by default)
-// "bot" to "tip" is 1.0, "tiplength is "mid" to "tip". "diameter" is the width at "bot"
-// "tipwidth" is the additional width at "mid".
-//
-//          |\
-// |--------| \
-// |--------| /
-//          |/
-// ^        ^  ^
-// bot    mid tip
-
-void ArrowObj::construct(double _tipl, double _tipw, double radius, int res)
-{
-  triangles.clear();
-
-  // we want at least 2 iterations.
-  if (res < 2) return;
-
-  // store settings for arrow template
-
-  tiplength = _tipl;
-  tipwidth = _tipw;
-  diameter = 2.0 * radius;
-  resolution = res;
-
-  vec3 tip{0.5, 0.0, 0.0};
-  vec3 mid{0.5 - tiplength, 0.0, 0.0};
-  vec3 bot{-0.5, 0.0, 0.0};
-
-  // construct list of triangles for the tip of the arrow. p1, p2 are the points on the "rim".
-
-  const double radinc = MY_2PI / resolution;
-  vec3 p1{0.5 - tiplength, 0.0, 0.0};
-  vec3 p2{0.5 - tiplength, 0.0, 0.0};
-  for (int i = 0; i < resolution; ++i) {
-    p1[1] = (radius + tipwidth) * sin(radinc * i - RADOVERLAP);
-    p1[2] = (radius + tipwidth) * cos(radinc * i - RADOVERLAP);
-    p2[1] = (radius + tipwidth) * sin(radinc * (i + 1));
-    p2[2] = (radius + tipwidth) * cos(radinc * (i + 1));
-    triangles.emplace_back(triangle{p1, tip, p2});
-    triangles.emplace_back(triangle{p1, mid, p2});
-  }
-
-  // construct list of triangles for the cap at the bottom
-
-  p1[0] = -0.5;
-  p2[0] = -0.5;
-  for (int i = 0; i < resolution; ++i) {
-    p1[1] = radius * sin(radinc * i);
-    p1[2] = radius * cos(radinc * i);
-    p2[1] = radius * sin(radinc * (i + 1));
-    p2[2] = radius * cos(radinc * (i + 1));
-    triangles.emplace_back(triangle{p1, bot, p2});
-  }
-}
-
-// construct a custom arrow from the template poistions by scaling it,
-// re-orienting it to point along "dir", and translating it.
-std::vector<triangle> ArrowObj::transform(const vec3 &dir, const vec3 &offs, double len,
-                                          double width)
-{
-  // construct arrow template with default settings if not already done
-  if (!triangles.size()) construct();
-
-  // customized vector
-  std::vector<triangle> newtriangles;
-
-  // normalize direction vector
-  vec3 u = vec3norm(dir);
-
-  // vector is too short. can't draw anything. return empty list
-  if (vec3len(u) < SMALL) return newtriangles;
-
-  // construct orthonormal basis around direction vector
-  vec3 a = (std::fabs(u[0]) < 0.9) ? vec3{1.0, 0.0, 0.0} : vec3{0.0, 1.0, 0.0};
-  vec3 v = vec3norm(vec3cross(u, a));
-  vec3 w = vec3cross(u, v);
-
-  // now process the arrow template triangles
-  newtriangles.reserve(triangles.size());
-  for (const auto &tri : triangles) {
-    vec3 p1 = (len * tri[0][0] * u) + (width * tri[0][1] * v) + (width * tri[0][2] * w) + offs;
-    vec3 p2 = (len * tri[1][0] * u) + (width * tri[1][1] * v) + (width * tri[1][2] * w) + offs;
-    vec3 p3 = (len * tri[2][0] * u) + (width * tri[2][1] * v) + (width * tri[2][2] * w) + offs;
-    newtriangles.push_back({p1, p2, p3});
-  }
-  return newtriangles;
-}
-
-// draw custom arrow from unit template
-void ArrowObj::draw(LAMMPS_NS::Image *img, const double *color, const double *center, double length,
-                    const double *data, double scale, double opacity)
-{
-  // transform the template into the arrow object we want to draw
-
-  vec3 dir{data[0], data[1], data[2]};
-  double lscale = vec3len(dir) * length;
-  double wscale = scale / diameter;
-  auto arrow = transform(dir, {center[0], center[1], center[2]}, lscale, wscale);
-
-  // nothing to draw
-  if (!arrow.size()) return;
-
-  // draw tip and bottom from list of triangles
-  for (const auto &tri : arrow)
-    img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
-
-  // infer cylinder end points for body from list of triangles
-  // (middle corner of all triangles in the the second and last set of triangles)
-  if (arrow.size() > resolution + 2)
-    img->draw_cylinder(arrow[resolution + 1][1].data(), arrow[arrow.size() - 1][1].data(), color,
-                       scale, 0, opacity);
-}
-}    // namespace
-
-using namespace LAMMPS_NS;
-using MathConst::DEG2RAD;
 
 static constexpr double BIG = 1.0e20;
 
@@ -465,6 +78,9 @@ enum { NUMERIC, ATOM, TYPE, ELEMENT, ATTRIBUTE, CONSTANT };
 enum { STATIC, DYNAMIC };
 enum { NO = 0, YES = 1, AUTO = 2 };
 enum { FILLED, FRAME, POINTS, TRANSPARENT };
+
+}    // namespace
+// clang-format off
 
 /* ---------------------------------------------------------------------- */
 
@@ -489,7 +105,6 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
 
   has_id = true;
 
-  // clang-format off
   // set filetype based on filename suffix
 
   if (utils::strmatch(filename, "\\.jpg$") || utils::strmatch(filename, "\\.JPG$")
