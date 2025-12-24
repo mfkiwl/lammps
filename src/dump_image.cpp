@@ -1721,63 +1721,87 @@ void DumpImage::create_image()
     } else {
       std::string regstyle = reg.ptr->style;
 
-      if (regstyle == "block") {
-        auto *myreg = dynamic_cast<RegBlock *>(reg.ptr);
-        // inconsistent style. should not happen.
-        if (!myreg) continue;
+      // prism is just a special case of block so we can handle them together
+      if ((regstyle == "block") || (regstyle == "prism")) {
 
-        double block[8][3];
-        block[0][0] = myreg->xlo; block[0][1] = myreg->ylo; block[0][2] = myreg->zlo;
-        block[1][0] = myreg->xlo; block[1][1] = myreg->ylo; block[1][2] = myreg->zhi;
-        block[2][0] = myreg->xlo; block[2][1] = myreg->yhi; block[2][2] = myreg->zhi;
-        block[3][0] = myreg->xlo; block[3][1] = myreg->yhi; block[3][2] = myreg->zlo;
-        block[4][0] = myreg->xhi; block[4][1] = myreg->ylo; block[4][2] = myreg->zlo;
-        block[5][0] = myreg->xhi; block[5][1] = myreg->ylo; block[5][2] = myreg->zhi;
-        block[6][0] = myreg->xhi; block[6][1] = myreg->yhi; block[6][2] = myreg->zhi;
-        block[7][0] = myreg->xhi; block[7][1] = myreg->yhi; block[7][2] = myreg->zlo;
+        // set the positions of the corners
+        using cornerdata = std::array<vec3, 8>;
+        cornerdata corners;
+
+        if (regstyle == "block") {
+          auto *myreg = dynamic_cast<RegBlock *>(reg.ptr);
+          // inconsistent style. should not happen.
+          if (!myreg) continue;
+
+          corners = cornerdata{
+              vec3{myreg->xlo, myreg->ylo, myreg->zlo}, vec3{myreg->xlo, myreg->ylo, myreg->zhi},
+              vec3{myreg->xlo, myreg->yhi, myreg->zhi}, vec3{myreg->xlo, myreg->yhi, myreg->zlo},
+              vec3{myreg->xhi, myreg->ylo, myreg->zlo}, vec3{myreg->xhi, myreg->ylo, myreg->zhi},
+              vec3{myreg->xhi, myreg->yhi, myreg->zhi}, vec3{myreg->xhi, myreg->yhi, myreg->zlo}};
+        }
+
+        if (regstyle == "prism") {
+          auto *myreg = dynamic_cast<RegPrism *>(reg.ptr);
+          // inconsistent style. should not happen.
+          if (!myreg) continue;
+
+          corners = cornerdata{
+              vec3{myreg->xlo, myreg->ylo, myreg->zlo},
+              vec3{myreg->xlo + myreg->xz, myreg->ylo + myreg->yz, myreg->zhi},
+              vec3{myreg->xlo + myreg->xy + myreg->xz, myreg->yhi + myreg->yz, myreg->zhi},
+              vec3{myreg->xlo + myreg->xy, myreg->yhi, myreg->zlo},
+              vec3{myreg->xhi, myreg->ylo, myreg->zlo},
+              vec3{myreg->xhi + myreg->xz, myreg->ylo + myreg->yz, myreg->zhi},
+              vec3{myreg->xhi + myreg->xy + myreg->xz, myreg->yhi + myreg->yz, myreg->zhi},
+              vec3{myreg->xhi + myreg->xy, myreg->yhi, myreg->zlo}};
+        }
+
         for (int i = 0; i < 8; ++i)
-          reg.ptr->forward_transform(block[i][0], block[i][1], block[i][2]);
+          reg.ptr->forward_transform(corners[i][0], corners[i][1], corners[i][2]);
+
+#define CPTR(idx) corners[idx].data()
 
         if (reg.style == FRAME) {
-          image->draw_cylinder(block[0],block[1],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[1],block[2],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[0],block[3],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[2],block[3],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[0],block[4],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[1],block[5],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[2],block[6],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[3],block[7],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[4],block[5],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[5],block[6],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[4],block[7],reg.color,reg.diameter,3);
-          image->draw_cylinder(block[6],block[7],reg.color,reg.diameter,3);
+          image->draw_cylinder(CPTR(0), CPTR(1), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(1), CPTR(2), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(0), CPTR(3), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(2), CPTR(3), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(0), CPTR(4), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(1), CPTR(5), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(2), CPTR(6), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(3), CPTR(7), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(4), CPTR(5), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(5), CPTR(6), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(4), CPTR(7), reg.color, reg.diameter, 3);
+          image->draw_cylinder(CPTR(6), CPTR(7), reg.color, reg.diameter, 3);
         } else if ((reg.style == FILLED) || (reg.style == TRANSPARENT)) {
           double opacity = (reg.style == TRANSPARENT) ? reg.opacity : 1.0;
-          if (!myreg->open_faces[0]) {
-            image->draw_triangle(block[0], block[1], block[2], reg.color, opacity);
-            image->draw_triangle(block[2], block[3], block[0], reg.color, opacity);
+          if (!reg.ptr->open_faces[0]) {
+            image->draw_triangle(CPTR(0), CPTR(1), CPTR(2), reg.color, opacity);
+            image->draw_triangle(CPTR(2), CPTR(3), CPTR(0), reg.color, opacity);
           }
-          if (!myreg->open_faces[1]) {
-            image->draw_triangle(block[4], block[5], block[6], reg.color, opacity);
-            image->draw_triangle(block[6], block[7], block[4], reg.color, opacity);
+          if (!reg.ptr->open_faces[1]) {
+            image->draw_triangle(CPTR(4), CPTR(5), CPTR(6), reg.color, opacity);
+            image->draw_triangle(CPTR(6), CPTR(7), CPTR(4), reg.color, opacity);
           }
-          if (!myreg->open_faces[2]) {
-            image->draw_triangle(block[0], block[4], block[7], reg.color, opacity);
-            image->draw_triangle(block[7], block[3], block[0], reg.color, opacity);
+          if (!reg.ptr->open_faces[2]) {
+            image->draw_triangle(CPTR(0), CPTR(4), CPTR(7), reg.color, opacity);
+            image->draw_triangle(CPTR(7), CPTR(3), CPTR(0), reg.color, opacity);
           }
-          if (!myreg->open_faces[3]) {
-            image->draw_triangle(block[1], block[2], block[6], reg.color, opacity);
-            image->draw_triangle(block[6], block[5], block[1], reg.color, opacity);
+          if (!reg.ptr->open_faces[3]) {
+            image->draw_triangle(CPTR(1), CPTR(2), CPTR(6), reg.color, opacity);
+            image->draw_triangle(CPTR(6), CPTR(5), CPTR(1), reg.color, opacity);
           }
-          if (!myreg->open_faces[4]) {
-            image->draw_triangle(block[0], block[1], block[5], reg.color, opacity);
-            image->draw_triangle(block[5], block[4], block[0], reg.color, opacity);
+          if (!reg.ptr->open_faces[4]) {
+            image->draw_triangle(CPTR(0), CPTR(1), CPTR(5), reg.color, opacity);
+            image->draw_triangle(CPTR(5), CPTR(4), CPTR(0), reg.color, opacity);
           }
-          if (!myreg->open_faces[5]) {
-            image->draw_triangle(block[3], block[2], block[6], reg.color, opacity);
-            image->draw_triangle(block[6], block[7], block[3], reg.color, opacity);
+          if (!reg.ptr->open_faces[5]) {
+            image->draw_triangle(CPTR(3), CPTR(2), CPTR(6), reg.color, opacity);
+            image->draw_triangle(CPTR(6), CPTR(7), CPTR(3), reg.color, opacity);
           }
         }
+#undef CPTR
 
         // cylinder is just a special case of cone so we can handle them together
       } else if ((regstyle == "cone") || (regstyle == "cylinder")) {
