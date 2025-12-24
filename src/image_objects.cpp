@@ -68,6 +68,28 @@ inline double radscale(const double *shape, const vec3 &pos)
                pos[2] / shape[2] * pos[2] / shape[2]));
 }
 
+// refine triangle mesh by replacing each triangle with four triangles
+//
+//    /\            /\
+//   /  \          /__\
+//  /    \   -->  /\  /\
+// /______\      /__\/__\
+
+std::vector<triangle> refine(const std::vector<triangle> &triangles)
+{
+  std::vector<triangle> newlist;
+  for (const auto &tri : triangles) {
+    vec3 posa = vec3norm(tri[0] + tri[2]);
+    vec3 posb = vec3norm(tri[0] + tri[1]);
+    vec3 posc = vec3norm(tri[1] + tri[2]);
+    newlist.push_back({tri[0], posb, posa});
+    newlist.push_back({posb, tri[1], posc});
+    newlist.push_back({posa, posb, posc});
+    newlist.push_back({posa, posc, tri[2]});
+  }
+  return newlist;
+}
+
 // re-orient list of triangles to point along "dir", then scale and translate it.
 std::vector<triangle> transform(const std::vector<triangle> &triangles, const vec3 &dir,
                                 const vec3 &offs, double len, double width)
@@ -293,28 +315,6 @@ void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const
 
 // construct an ellipsoid from primitives, mostly triangles and cylinders, and draw them
 
-// refine triangle mesh by replacing each triangle with four triangles
-//
-//    /\            /\
-//   /  \          /__\
-//  /    \   -->  /\  /\
-// /______\      /__\/__\
-
-void EllipsoidObj::refine()
-{
-  std::vector<triangle> newlist;
-  for (const auto &tri : triangles) {
-    vec3 posa = vec3norm(tri[0] + tri[2]);
-    vec3 posb = vec3norm(tri[0] + tri[1]);
-    vec3 posc = vec3norm(tri[1] + tri[2]);
-    newlist.push_back({tri[0], posb, posa});
-    newlist.push_back({posb, tri[1], posc});
-    newlist.push_back({posa, posb, posc});
-    newlist.push_back({posa, posc, tri[2]});
-  }
-  triangles = std::move(newlist);
-}
-
 // build list of triangles by refinining the triangles of an octahedron
 
 EllipsoidObj::EllipsoidObj(int level)
@@ -332,7 +332,7 @@ EllipsoidObj::EllipsoidObj(int level)
                {OCT1, OCT3, OCT5}, {OCT5, OCT3, OCT2}, {OCT2, OCT3, OCT6}, {OCT6, OCT3, OCT1}};
 
   // refine the list of triangles to the desired level
-  for (int i = 1; i < level; ++i) refine();
+  for (int i = 1; i < level; ++i) triangles = std::move(refine(triangles));
 }
 
 // draw method for drawing ellipsoids from a region which has its own transformation function
