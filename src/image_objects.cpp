@@ -19,6 +19,8 @@
 #include "region.h"
 
 #include <array>
+#include <cmath>
+#include <utility>
 #include <vector>
 
 using namespace LAMMPS_NS;
@@ -32,24 +34,6 @@ constexpr double RADOVERLAP = 0.00001;
 constexpr double SMALL = 1.0e-10;
 
 // helper functions for generating and transforming triangle meshes
-
-// some basic math operations for positions/vectors
-inline vec3 operator+(const vec3 &a, const vec3 &b)
-{
-  return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
-}
-inline vec3 operator-(const vec3 &a, const vec3 &b)
-{
-  return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
-}
-inline vec3 operator*(double s, const vec3 &v)
-{
-  return {s * v[0], s * v[1], s * v[2]};
-}
-inline vec3 operator*(const vec3 &v, double s)
-{
-  return s * v;
-}
 
 // dot product of two vectors
 inline double vec3dot(const vec3 &a, const vec3 &b)
@@ -66,7 +50,7 @@ inline vec3 vec3cross(const vec3 &a, const vec3 &b)
 // length of vector
 inline double vec3len(const vec3 &v)
 {
-  return std::sqrt(vec3dot(v, v));
+  return sqrt(vec3dot(v, v));
 }
 
 // return normalized vector
@@ -82,6 +66,35 @@ inline double radscale(const double *shape, const vec3 &pos)
   return sqrt(1.0 /
               (pos[0] / shape[0] * pos[0] / shape[0] + pos[1] / shape[1] * pos[1] / shape[1] +
                pos[2] / shape[2] * pos[2] / shape[2]));
+}
+
+// re-orient list of triangles to point along "dir", then scale and translate it.
+std::vector<triangle> transform(const std::vector<triangle> &triangles, const vec3 &dir,
+                                const vec3 &offs, double len, double width)
+{
+  // customized vector
+  std::vector<triangle> newtriangles;
+
+  // normalize direction vector
+  vec3 u = vec3norm(dir);
+
+  // vector is too short. can't draw anything. return empty list
+  if (vec3len(u) < SMALL) return newtriangles;
+
+  // construct orthonormal basis around direction vector
+  vec3 a = (std::fabs(u[0]) < 0.9) ? vec3{1.0, 0.0, 0.0} : vec3{0.0, 1.0, 0.0};
+  vec3 v = vec3norm(vec3cross(u, a));
+  vec3 w = vec3cross(u, v);
+
+  // now process the template triangles and return the transformed list
+  newtriangles.reserve(triangles.size());
+  for (const auto &tri : triangles) {
+    vec3 p1 = (len * tri[0][0] * u) + (width * tri[0][1] * v) + (width * tri[0][2] * w) + offs;
+    vec3 p2 = (len * tri[1][0] * u) + (width * tri[1][1] * v) + (width * tri[1][2] * w) + offs;
+    vec3 p3 = (len * tri[2][0] * u) + (width * tri[2][1] * v) + (width * tri[2][2] * w) + offs;
+    newtriangles.push_back({p1, p2, p3});
+  }
+  return newtriangles;
 }
 }    // namespace
 
@@ -145,49 +158,21 @@ void ArrowObj::construct(double _tipl, double _tipw, double radius, int res)
   }
 }
 
-// construct a custom arrow from the template poistions by scaling it,
-// re-orienting it to point along "dir", and translating it.
-std::vector<triangle> ArrowObj::transform(const vec3 &dir, const vec3 &offs, double len,
-                                          double width)
-{
-  // construct arrow template with default settings if not already done
-  if (!triangles.size()) construct();
-
-  // customized vector
-  std::vector<triangle> newtriangles;
-
-  // normalize direction vector
-  vec3 u = vec3norm(dir);
-
-  // vector is too short. can't draw anything. return empty list
-  if (vec3len(u) < SMALL) return newtriangles;
-
-  // construct orthonormal basis around direction vector
-  vec3 a = (std::fabs(u[0]) < 0.9) ? vec3{1.0, 0.0, 0.0} : vec3{0.0, 1.0, 0.0};
-  vec3 v = vec3norm(vec3cross(u, a));
-  vec3 w = vec3cross(u, v);
-
-  // now process the arrow template triangles
-  newtriangles.reserve(triangles.size());
-  for (const auto &tri : triangles) {
-    vec3 p1 = (len * tri[0][0] * u) + (width * tri[0][1] * v) + (width * tri[0][2] * w) + offs;
-    vec3 p2 = (len * tri[1][0] * u) + (width * tri[1][1] * v) + (width * tri[1][2] * w) + offs;
-    vec3 p3 = (len * tri[2][0] * u) + (width * tri[2][1] * v) + (width * tri[2][2] * w) + offs;
-    newtriangles.push_back({p1, p2, p3});
-  }
-  return newtriangles;
-}
-
 // draw custom arrow from unit template
 void ArrowObj::draw(Image *img, const double *color, const double *center, double length,
                     const double *data, double scale, double opacity)
 {
+  // construct arrow template with default settings if not already done
+  if (!triangles.size()) construct();
+
   // transform the template into the arrow object we want to draw
 
   vec3 dir{data[0], data[1], data[2]};
   double lscale = vec3len(dir) * length;
   double wscale = scale / diameter;
-  auto arrow = transform(dir, {center[0], center[1], center[2]}, lscale, wscale);
+
+  auto arrow =
+      std::move(transform(triangles, dir, {center[0], center[1], center[2]}, lscale, wscale));
 
   // nothing to draw
   if (!arrow.size()) return;
@@ -201,6 +186,101 @@ void ArrowObj::draw(Image *img, const double *color, const double *center, doubl
   if (arrow.size() > resolution + 2)
     img->draw_cylinder(arrow[resolution + 1][1].data(), arrow[arrow.size() - 1][1].data(), color,
                        scale, 0, opacity);
+}
+
+// construct a truncated cone from triangles and draw them
+
+// we have two circles and place triangles that connect from bottom to top and back
+// where the top of the triangle alternates direction. the caps on either end use the
+// same circle coordinates but the tip is the center of the object.
+// as an optimization we skip triangles where the bottom is on the circle when the
+// diameter on either side of the cone is zero.
+// a cylinder is just a special case of a cone with both radii of the same value.
+//
+// |\
+// | \
+// |  |  _ center
+// |  |
+// | /
+// |/
+// ^  ^
+//bot top
+
+void ConeObj::construct(double length, double topwidth, double botwidth, int flag, int resolution)
+{
+  triangles.clear();
+
+  // we want at least 2 iterations.
+  if (resolution < 2) return;
+
+  // store settings for cone
+
+  bool dotop = (flag & 1) > 0;
+  bool dobot = (flag & 2) > 0;
+  bool doside = (flag & 4) > 0;
+
+  vec3 top{0.5 * length, 0.0, 0.0};
+  vec3 bot{-0.5 * length, 0.0, 0.0};
+
+  // construct list of triangles
+
+  const double radinc = MY_2PI / resolution;
+  vec3 p1top{top};
+  vec3 p2top{top};
+  vec3 p1bot{bot};
+  vec3 p2bot{bot};
+
+  for (int i = 0; i < resolution; ++i) {
+    if (topwidth > 0.0) {
+      p1top[1] = topwidth * sin(radinc * i - RADOVERLAP);
+      p1top[2] = topwidth * cos(radinc * i - RADOVERLAP);
+      p2top[1] = topwidth * sin(radinc * (i + 1));
+      p2top[2] = topwidth * cos(radinc * (i + 1));
+      // cap on top
+      if (dotop) triangles.emplace_back(triangle{p1top, top, p2top});
+    }
+    if (botwidth > 0.0) {
+      p1bot[1] = botwidth * sin(radinc * i - RADOVERLAP);
+      p1bot[2] = botwidth * cos(radinc * i - RADOVERLAP);
+      p2bot[1] = botwidth * sin(radinc * (i + 1));
+      p2bot[2] = botwidth * cos(radinc * (i + 1));
+      // cap at bottom
+      if (dobot) triangles.emplace_back(triangle{p1bot, bot, p2bot});
+    }
+    // side
+    if (doside) {
+      if (topwidth > 0) triangles.emplace_back(triangle{p1top, p1bot, p2top});
+      if (botwidth > 0) triangles.emplace_back(triangle{p1bot, p2bot, p2top});
+    }
+  }
+}
+
+// draw triangle mesh for region. flag 1 is triangles, flag 2 is wireframe, flag 3 both
+
+void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const double *color,
+                   Region *reg, double diameter, double opacity)
+{
+  // nothing to draw
+  if (!triangles.size()) return;
+
+  auto cone = transform(triangles, dir, mid, 1.0, 1.0);
+
+  // nothing to draw
+  if (!cone.size()) return;
+
+  for (auto &tri : cone) {
+    reg->forward_transform(tri[0][1], tri[0][1], tri[0][2]);
+    reg->forward_transform(tri[1][1], tri[1][1], tri[1][2]);
+    reg->forward_transform(tri[2][1], tri[2][1], tri[2][2]);
+
+    if (flag & 1) img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
+
+    if (flag & 2) {
+      img->draw_cylinder(tri[0].data(), tri[1].data(), color, diameter, 3, opacity);
+      img->draw_cylinder(tri[1].data(), tri[2].data(), color, diameter, 3, opacity);
+      img->draw_cylinder(tri[0].data(), tri[2].data(), color, diameter, 3, opacity);
+    }
+  }
 }
 
 // construct an ellipsoid from primitives, mostly triangles and cylinders, and draw them

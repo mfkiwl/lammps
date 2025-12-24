@@ -24,18 +24,33 @@ namespace ImageObjects {
   constexpr int RESOLUTION = 36;    // default resolution for cylindrical objects
   constexpr int DEFLEVEL = 3;       // default refinement level for ellipsoids
 
-  // custom data types for positions and triangles
+  // custom data types for positions and triangles based on std::array
   using vec3 = std::array<double, 3>;
   using triangle = std::array<vec3, 3>;
+
+  // some basic math operations for positions/vectors
+  inline vec3 operator+(const vec3 &a, const vec3 &b)
+  {
+    return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
+  }
+  inline vec3 operator-(const vec3 &a, const vec3 &b)
+  {
+    return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
+  }
+  inline vec3 operator*(double s, const vec3 &v)
+  {
+    return {s * v[0], s * v[1], s * v[2]};
+  }
+  inline vec3 operator*(const vec3 &v, double s)
+  {
+    return s * v;
+  }
 
   class ArrowObj {
    public:
     // build an arrow template with length 1 in (1.0, 0.0, 0.0) direction as list of triangles
     void construct(double _tipl = 0.2, double _tipw = 0.1, double radius = 0.1,
                    int res = RESOLUTION);
-
-    // construct a custom arrow from the template by scaling, rotating, and translating it.
-    std::vector<triangle> transform(const vec3 &, const vec3 &, double, double);
 
     // draw custom arrow from unit template
     void draw(Image *, const double *, const double *, double, const double *, double, double);
@@ -46,6 +61,20 @@ namespace ImageObjects {
     double diameter;
     std::vector<triangle> triangles;
     int resolution;
+  };
+
+  class ConeObj {
+   public:
+    // build a truncated cone in (1.0, 0.0, 0.0) direction centered at (0.0, 0.0, 0.0)
+    // with given length and top / bottom diameter as list of triangles.
+    // flag is bitmap deciding of  top / bottom or side is shown: 1 is top, 2 is bottom, 4 is side
+    void construct(double, double, double, int flag = 7, int res = RESOLUTION);
+
+    // draw triangle mesh for region. flag 1 is triangles, flag 2 is wireframe, flag 3 both
+    void draw(Image *, int, const vec3 &, const vec3 &, const double *, Region *, double, double);
+
+   private:
+    std::vector<triangle> triangles;
   };
 
   class EllipsoidObj {
