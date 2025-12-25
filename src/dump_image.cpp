@@ -1909,9 +1909,12 @@ void DumpImage::create_image()
         }
         double center[3] = {myreg->xp, myreg->yp, myreg->zp};
         double scale = MathExtra::len3(domain->prd);
-        PlaneObj p(6);
-        p.draw(image, flag, reg.color, center, myreg->normal, domain->boxlo, domain->boxhi, scale,
-               myreg, reg.diameter, opacity);
+        if (domain->triclinic)
+          PlaneObj(6).draw(image, flag, reg.color, center, myreg->normal, domain->boxlo_bound,
+                           domain->boxhi_bound, scale, myreg, reg.diameter, opacity);
+        else
+          PlaneObj(6).draw(image, flag, reg.color, center, myreg->normal, domain->boxlo,
+                           domain->boxhi, scale, myreg, reg.diameter, opacity);
 
       } else if (regstyle == "sphere") {
         auto *myreg = dynamic_cast<RegSphere *>(reg.ptr);
