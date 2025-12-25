@@ -215,9 +215,9 @@ ConeObj::ConeObj(double length, double topwidth, double botwidth, int flag, int 
 
   // store settings for cone
 
-  bool dotop = (flag & 1) > 0;
-  bool dobot = (flag & 2) > 0;
-  bool doside = (flag & 4) > 0;
+  bool dotop = (flag & CONE_TOP) > 0;
+  bool dobot = (flag & CONE_BOT) > 0;
+  bool doside = (flag & CONE_SIDE) > 0;
 
   vec3 top{0.5 * length, 0.0, 0.0};
   vec3 bot{-0.5 * length, 0.0, 0.0};
@@ -249,8 +249,8 @@ ConeObj::ConeObj(double length, double topwidth, double botwidth, int flag, int 
     }
     // side
     if (doside) {
-      if (topwidth > 0) triangles.emplace_back(triangle{p1top, p1bot, p2top});
-      if (botwidth > 0) triangles.emplace_back(triangle{p1bot, p2bot, p2top});
+      if (topwidth > 0.0) triangles.emplace_back(triangle{p1top, p1bot, p2top});
+      if (botwidth > 0.0) triangles.emplace_back(triangle{p1bot, p2bot, p2top});
     }
   }
 }
@@ -265,7 +265,7 @@ void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const
 
   // rotate to selected axis and translate from origin to original center
   // no need of scaling here since length and width was already applied during construction
-  auto cone = transform(triangles, dir, mid, 1.0, 1.0);
+  auto cone = std::move(transform(triangles, dir, mid, 1.0, 1.0));
 
   // nothing to draw
   if (!cone.size()) return;
@@ -291,9 +291,8 @@ void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const
   }
 }
 
-// construct an ellipsoid from primitives, mostly triangles and cylinders, and draw them
-
-// refine triangle mesh by replacing each triangle with four triangles
+// Refine triangle mesh by replacing each triangle with four triangles.
+// Compute the new positions so they are located on a sphere with radius 1.
 //
 //    /\            /\
 //   /  \          /__\
@@ -315,11 +314,12 @@ void EllipsoidObj::refine()
   triangles = std::move(newlist);
 }
 
-// build list of triangles by refinining the triangles of an octahedron
+// Construct and draw an ellipsoid from primitives, triangles and cylinders.
+// Build a triangle mesh by refinining the triangles of an octahedron
 
 EllipsoidObj::EllipsoidObj(int level)
 {
-  // define edges of an octahedron
+  // Define edges of an octahedron to approximate a sphere of radius 1 around the origin.
   constexpr vec3 OCT1 = {-1.0, 0.0, 0.0};
   constexpr vec3 OCT2 = {1.0, 0.0, 0.0};
   constexpr vec3 OCT3 = {0.0, -1.0, 0.0};
@@ -327,7 +327,7 @@ EllipsoidObj::EllipsoidObj(int level)
   constexpr vec3 OCT5 = {0.0, 0.0, -1.0};
   constexpr vec3 OCT6 = {0.0, 0.0, 1.0};
 
-  // define level 1 octahedron triangle mesh
+  // define level 1 octahedron triangle mesh, normals pointing away from the center.
   triangles = {{OCT5, OCT4, OCT1}, {OCT2, OCT4, OCT5}, {OCT6, OCT4, OCT2}, {OCT1, OCT4, OCT6},
                {OCT1, OCT3, OCT5}, {OCT5, OCT3, OCT2}, {OCT2, OCT3, OCT6}, {OCT6, OCT3, OCT1}};
 
@@ -500,6 +500,7 @@ PlaneObj::PlaneObj(int level)
 }
 
 // draw method for drawing planes from a region which has its own transformation function
+
 void PlaneObj::draw(Image *img, int flag, const double *color, const double *center,
                     const double *norm, const double *boxlo, const double *boxhi, double scale,
                     Region *reg, double diameter, double opacity)
@@ -513,9 +514,10 @@ void PlaneObj::draw(Image *img, int flag, const double *color, const double *cen
   if (!dotri && !doframe) return;    // nothing to do
 
   // nothing to draw
+
   if (!triangles.size()) return;
 
-  // draw triangles
+  // draw triangles after scaling and shifting the mesh
 
   const vec3 dir{norm[0], norm[1], norm[2]};
   const vec3 offs{center[0], center[1], center[2]};
@@ -523,12 +525,14 @@ void PlaneObj::draw(Image *img, int flag, const double *color, const double *cen
 
   for (auto tri : plane) {
 
-    // set size and move
+    // rotate and translate
+
     reg->forward_transform(tri[0][0], tri[0][1], tri[0][2]);
     reg->forward_transform(tri[1][0], tri[1][1], tri[1][2]);
     reg->forward_transform(tri[2][0], tri[2][1], tri[2][2]);
 
     // skip drawing triangle if all corners are outside the box in one direction
+
     int n = 0;
     for (int i = 0; i < 3; ++i) {
       if (((tri[0][i] < boxlo[i]) || (tri[0][i] > boxhi[i])) &&

@@ -21,8 +21,13 @@ namespace LAMMPS_NS {
 class Image;
 class Region;
 namespace ImageObjects {
-  constexpr int RESOLUTION = 36;    // default resolution for cylindrical objects
-  constexpr int DEFLEVEL = 3;       // default refinement level for ellipsoids
+  constexpr int RESOLUTION = 36;       // default resolution for cylindrical objects
+  constexpr int DEF_ELEVEL = 3;        // default refinement level for ellipsoids
+  constexpr int DEF_PLEVEL = 6;        // default refinement lavel for planes
+  constexpr int CONE_TOP = 1 << 0;     // draw top cap of cone/cylinder
+  constexpr int CONE_BOT = 1 << 1;     // draw bottom cap of cone/cylinder
+  constexpr int CONE_SIDE = 1 << 2;    // draw side of cone/cylinder
+  constexpr int CONE_ALL = CONE_TOP | CONE_BOT | CONE_SIDE;
 
   // custom data types for positions and triangles based on std::array
   using vec3 = std::array<double, 3>;
@@ -33,14 +38,17 @@ namespace ImageObjects {
   {
     return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
   }
+
   inline vec3 operator-(const vec3 &a, const vec3 &b)
   {
     return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
   }
+
   inline vec3 operator*(double s, const vec3 &v)
   {
     return {s * v[0], s * v[1], s * v[2]};
   }
+
   inline vec3 operator*(const vec3 &v, double s)
   {
     return s * v;
@@ -66,8 +74,8 @@ namespace ImageObjects {
    public:
     // build a truncated cone in (1.0, 0.0, 0.0) direction centered at (0.0, 0.0, 0.0)
     // with given length and top / bottom diameter as list of triangles.
-    // flag is bitmap deciding of  top / bottom or side is shown: 1 is top, 2 is bottom, 4 is side
-    ConeObj(double, double, double, int flag = 7, int res = RESOLUTION);
+    // flag is bitmap deciding whether top / bottom or side is shown.
+    ConeObj(double, double, double, int flag = CONE_ALL, int res = RESOLUTION);
 
     // draw triangle mesh for region. flag 1 is triangles, flag 2 is wireframe, flag 3 both
     void draw(Image *, int, const vec3 &, const vec3 &, const double *, Region *, double, double);
@@ -79,7 +87,7 @@ namespace ImageObjects {
   class EllipsoidObj {
    public:
     // construct (spherical) triangle mesh by refinining the triangles of an octahedron
-    EllipsoidObj(int level = DEFLEVEL);
+    EllipsoidObj(int level = DEF_ELEVEL);
 
     // draw ellipsoid from triangle mesh for ellipsoid particles
     void draw(Image *, int, const double *, const double *, const double *, const double *, double,
@@ -97,7 +105,7 @@ namespace ImageObjects {
   class PlaneObj {
    public:
     // build a plane template with four triangles extending well outside the box
-    PlaneObj(int level);
+    PlaneObj(int level = DEF_PLEVEL);
 
     // draw plane for region after transforming it.
     void draw(Image *, int, const double *, const double *, const double *, const double *,
