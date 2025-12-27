@@ -1332,13 +1332,6 @@ void FixPIMDLangevin::inter_replica_comm(double **ptr)
   int i, m;
   nmiss = 0;
 
-  // copy local values
-  for (i = 0; i < nlocal; i++) {
-    bufbeads[ireplica][3 * i + 0] = ptr[i][0];
-    bufbeads[ireplica][3 * i + 1] = ptr[i][1];
-    bufbeads[ireplica][3 * i + 2] = ptr[i][2];
-  }
-
   // communicate values from the other beads
   if (cmode == SINGLE_PROC) {
     m = 0;
@@ -1354,6 +1347,13 @@ void FixPIMDLangevin::inter_replica_comm(double **ptr)
     MPI_Allgatherv(bufsorted[0], 3 * m, MPI_DOUBLE, bufsortedall[0], counts, displacements,
                    MPI_DOUBLE, universe->uworld);
   } else if (cmode == MULTI_PROC) {
+    // copy local values
+    for (i = 0; i < nlocal; i++) {
+      bufbeads[ireplica][3 * i + 0] = ptr[i][0];
+      bufbeads[ireplica][3 * i + 1] = ptr[i][1];
+      bufbeads[ireplica][3 * i + 2] = ptr[i][2];
+    }
+
     int nmiss_bead;
     const int nlocal = atom->nlocal;
 
