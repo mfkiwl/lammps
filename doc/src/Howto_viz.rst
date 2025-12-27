@@ -23,7 +23,7 @@ a :doc:`dump image <dump_image>` command, the resulting images will be
 noted by LAMMPS-GUI and can be viewed and animated directly in the
 ``Slide Show`` dialog. The images can be transformed (i.e. scaled,
 mirrored, or rotated) and exported into a video, too.  The ``Image
-Viewer`` diaglog in LAMMPS-GUI can be used to visualize the *current*
+Viewer`` dialog in LAMMPS-GUI can be used to visualize the *current*
 system, adjust a variety of visualization settings interactively from
 the GUI, and then one can export the corresponding LAMMPS commands to
 the clipboard to be inserted into an input file.
@@ -42,7 +42,7 @@ Advanced graphics features in *dump image*
 The following paragraphs discuss some of the more advanced features in
 the :doc:`dump image <dump_image>` command in LAMMPS with the help of
 some simple input file examples.  For exact details of keywords and
-arguments, please refer to the detailed documentation of the comand.
+arguments, please refer to the detailed documentation of the command.
 
 Please note that many of these features were added or significantly
 updated after LAMMPS version 10 Sep 2025 and well into the 2026
@@ -54,7 +54,6 @@ of LAMMPS, these examples will cause errors or may look differently.
    :backlinks: top
 
 ------------
-
 
 Image quality and resolution
 ----------------------------
@@ -76,6 +75,47 @@ keywords added.
 
 |imagequality1|  |imagequality2|  |imagequality3|  |imagequality4|
 
+The computational cost to create the images with :doc:`dump image
+<dump_image>` depends on the image size, the number of objects to be
+rendered (this number can grow quickly when using fine triangle meshes),
+and the choice of the *fsaa* and *ssao* settings.  For high resolution
+images, a correspondingly large image size has to be chosen.  Same as it
+is done implicitly when enabling FSAA, one can improve image quality by
+rendering images at a large size and then processing and scaling them to
+the desired size in a image processing software.  Since the simulation
+has to wait for dump image to complete its image rendering, creating
+high resolution and high quality images can slow down as simulation
+significantly.  On the other hand, the image rasterizer in LAMMPS is
+fairly simple and thus fast compared to more advanced image generation
+tools like ray tracers.  At the moment there is no GPU acceleration or
+multi-threading parallelization available, except for the
+multi-threading support for SSAO processing.
+
+--------------------
+
+Transparency
+------------
+
+.. versionadded:: TBD
+
+It is now possible to create approximately transparent graphics objects
+using an `ordered dithering algorithm
+<https://en.wikipedia.org/wiki/Ordered_dithering>`_ which results in a
+so-called *screen-door transparency* effect.  In essence, for a
+transparent object only a part of the pixels are drawn and thus exposing
+any object behind the transparent object where drawing the pixels is
+skipped.  LAMMPS employs a 16x16 Bayer matrix pattern that leads to
+rather regular patterns.  A benefit of this approach is that it does not
+at extra cost to the rendering and for a 25%, 50%, and 75% transparency
+setting, there are no visible pixel patterns when also FSAA is enabled.
+In this case each pixel is the average of a 2x2 block and thus the
+transparent object will contribute 3, 2, or 1, pixels to each pixel.
+
+Transparency is typically associated with an atom type and is enabled
+through :doc:`dump_modify atrans <dump_image>` command.  But other choice
+are available and listed in the documentation page.
+
+-----------------------
 
 Creating and viewing animated GIFs and movie files
 --------------------------------------------------
@@ -144,10 +184,9 @@ Play the movie:
    <https://videolan.org>`_ or `FFMpeg player tool (ffplay)
    <https://ffmpeg.org/>`_ to view a movie.
 
-   Both are available for
-   multiple operating systems and support a large variety of file formats
-   and decoders.  There are plenty more media player packages available
-   and some forma
+   Both are available for multiple operating systems and support a large
+   variety of file formats and decoders.  There are plenty more media
+   player packages available on the different operating systems.
 
    .. code-block:: bash
 
@@ -172,14 +211,11 @@ Play the movie:
 Visualizing bonds for potentials with implicit bonds
 ----------------------------------------------------
 
-Transparency
-------------
-   
 Visualizing body particles
 --------------------------
 
-Visualizaing ellipsoids
------------------------
+Visualizing ellipsoids particles
+--------------------------------
 
 Visualizing regions
 -------------------
