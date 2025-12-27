@@ -49,9 +49,8 @@ updated after LAMMPS version 10 Sep 2025 and well into the 2026
 stable version development cycle.  If you are using an older version
 of LAMMPS, these examples will cause errors or may look differently.
 
-.. contents::
+.. contents:: Available topics
    :local:
-   :backlinks: top
 
 ------------
 
@@ -61,8 +60,8 @@ Image quality and resolution
 The two keywords *fsaa* and *ssao* can be used to improve the image
 quality at the expense of additional computational cost to render the
 images. The images below show from left to right the same render with
-default settings, with *fsaa* added, with *ssao* added, and with both
-keywords added.
+the default settings, with *fsaa* enabled, with *ssao* enabled, and with
+both features enabled.
 
 .. |imagequality1| image:: JPG/image.default.png
    :width: 24%
