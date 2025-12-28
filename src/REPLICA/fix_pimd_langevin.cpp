@@ -1248,7 +1248,10 @@ void FixPIMDLangevin::comm_init()
   int nlocal = atom->nlocal;
   if (cmode == SINGLE_PROC) {
     memory->create(counts, nreplica, "FixPIMDLangevin:counts");
+    memory->create(displacements, nreplica, "FixPIMDLangevin:displacements");
     for (int i = 0; i < nreplica; i++) counts[i] = 3*nlocal;
+    displacements[0] = 0;
+    for (int i = 0; i < nreplica - 1; i++) displacements[i + 1] = displacements[i] + counts[i];
   }
   if (sizeplan) {
     delete[] plansend;
@@ -1303,10 +1306,10 @@ void FixPIMDLangevin::reallocate()
   maxlocal = atom->nmax;
   ntotal = atom->natoms;
   if (cmode == SINGLE_PROC) {
+    memory->destroy(bufsorted);
+    memory->destroy(bufsortedall);
     memory->create(bufsorted, ntotal, 3, "FixPIMDLangevin:bufsorted");
     memory->create(bufsortedall, nreplica * ntotal, 3, "FixPIMDLangevin:bufsortedall");
-    memory->create(counts, nreplica, "FixPIMDLangevin:counts");
-    memory->create(displacements, nreplica, "FixPIMDLangevin:displacements");
   }
   else if (cmode == MULTI_PROC) {
     memory->destroy(bufsend);
@@ -1342,8 +1345,6 @@ void FixPIMDLangevin::inter_replica_comm(double **ptr)
       bufsorted[tagtmp - 1][2] = ptr[i][2];
       m++;
     }
-    displacements[0] = 0;
-    for (i = 0; i < nreplica - 1; i++) displacements[i + 1] = displacements[i] + counts[i];
     MPI_Allgatherv(bufsorted[0], 3 * m, MPI_DOUBLE, bufsortedall[0], counts, displacements,
                    MPI_DOUBLE, universe->uworld);
   } else if (cmode == MULTI_PROC) {
