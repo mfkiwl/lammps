@@ -337,15 +337,16 @@ color and transparency settings can be changed by settings those
 properties for the corresponding atom types.  It is also possible to
 represent the ellipsoids via generating a triangle mesh and visualizing
 it as either wireframes (*eflag* value 2), planar faces (*eflag* value
-1), or both (*eflag* value 3).  The use of a triangle mesh is currently
-required since the rasterizer built into LAMMPS does not offer a
-suitable graphics primitive for ellipsoids.  The mesh is constructed by
-iteratively refining a triangle mesh representing an octahedron where
-each triangle is replaced by four triangles.  For a smooth
-representation a refinement level of 5 or 6 is required, which will
-cause a significant slowdown of the rendering of the image.  Also, some
-artifacts can happen due to rounding which can be somewhat minimized
-using FSAA (which causes further slowdown of the rendering).
+1), or both (*eflag* value 3), same as demonstrated for body particles
+above.  The use of a triangle mesh is currently required since the
+rasterizer built into LAMMPS does not offer a suitable graphics
+primitive for ellipsoids.  The mesh is constructed by iteratively
+refining a triangle mesh representing an octahedron where each triangle
+is replaced by four triangles.  For a smooth representation a refinement
+level of 5 or 6 is required, which will cause a significant slowdown of
+the rendering of the image.  Also, some artifacts can happen due to
+rounding which can be somewhat minimized using FSAA (which causes
+further slowdown of the rendering).
 
 .. |ellipsoid1| image:: img/ellipsoid-level2.png
    :width: 33%
