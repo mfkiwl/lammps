@@ -224,33 +224,50 @@ Play the movie:
 
 --------------
 
-Visualizing bonds for potentials with implicit bonds
-----------------------------------------------------
+Visualizing systems using potentials with implicit bonds
+--------------------------------------------------------
 
 There are several pair styles available in LAMMPS where the bond
-information is not taken from from a bond topology in a data file but
+information is not taken from from the bond topology in a data file but
 the potentials first determine a "bond-order" parameter for pairs of
-atoms and depending on the value of that parameter apply forces for
+atoms and - depending on the value of that parameter - apply forces for
 bonded interactions.  This applies to :doc:`ReaxFF <pair_reaxff>`,
 :doc:`REBO and AIREBO <pair_airebo>`, :doc:`BOP <pair_bop>`, and several
-others pair styles.  By defaults these implicit bonds will not be
-shown by :doc:`dump image <dump_image>`.  There are currently three
-approaches to make those bonds visible.
+others pair styles.  These implicit bonds will not be shown by
+:doc:`dump image <dump_image>` since its mechanism for displaying bonds
+relies on explicit bonds being present in the bond topology.
 
-1. Access the (internal) bond order information from the pair style
+One can hide the fact that there are no bonds by setting the atom radii
+to the covalent radii of the corresponding elements (see leftmost
+example image below).  This will result in a representation often
+labeled as "VDW" in popular visualization tools.  Otherwise, there are
+currently three approaches to make those bonds visible.
+
+#. Access the (internal) bond order information from the pair style
    through a custom fix and then use the *fix* keyword of the :doc:`dump
    image <dump_image>` command to use the graphics objects information
    provided by the fix to visualize the bonds (see below for more
-   information). That includes bonds that are broken and formed.  This
-   is currently only available for ReaxFF by using :doc:`fix
-   reaxff/bonds <fix_reaxff_bonds>`.
+   information).  That includes bonds that are broken and formed.  This
+   is the most accurate option since it uses the data that is used by
+   the computation of the model.  This is currently only available for
+   ReaxFF by using :doc:`fix reaxff/bonds <fix_reaxff_bonds>`.
 
-2. Use the *autobonds* keyword of :doc:`dump image <dump_image>` to
+   #. Use the *autobonds* keyword of :doc:`dump image <dump_image>` to
    approximate the bonds based on a simple distance heuristic.  This is
    similar to the *Dynamic Bonds* representation in `VMD
-   <https://www.ks.uiuc.edu/Research/vmd/>`_.
+   <https://www.ks.uiuc.edu/Research/vmd/>`_.  How accurate this option
+   will be depends on the complexity of the system and how many
+   different bond lengths there are.  For the simple water system shown
+   below, there are no significant differences, since there is only one
+   type of bond (between oxygen and hydrogen).  The *autobond* keyword
+   uses on top of the distance cutoff between atoms, the heuristic that
+   no bonds will be drawn between two hydrogen atoms and thus bogus
+   bonds are avoided when using a larger bond cutoff (e.g. suitable for
+   carbon-carbon bonds) which is larger than the typical
+   hydrogen-hydrogen distance for hydrogen atoms bound to the same atom
+   (e.g. in water, methane or hydrocarbon chains).
 
-3. Use use a combination of :doc:`fix bond/break <fix_bond_break>`
+#. Use use a combination of :doc:`fix bond/break <fix_bond_break>`
    and :doc:`fix bond/create/angle <fix_bond_create>` with :doc:`bond
    style zero <bond_zero>` to dynamically create and remove bonds that
    do not add any forces.  This also requires to tell the neighbor list
@@ -258,9 +275,10 @@ approaches to make those bonds visible.
    the corresponding pairs of atoms could be excluded from the neighbor
    list and thus the forces computed by the pair style incorrect)
    through using the :doc:`special_bonds <special_bonds>` command.
-   Unlike the two other options, This method also works with older
-   LAMMPS versions.  Here is an example of the necessary commands for a
-   carbon nanotube (that is modeled with AIREBO):
+   Unlike the two other options which were recently added when this
+   document when was written, this method also works with older versions
+   of LAMMPS.  Here is an example of the necessary commands for a carbon
+   nanotube (that is modeled with AIREBO):
 
    .. code-block:: LAMMPS
 
@@ -273,6 +291,24 @@ approaches to make those bonds visible.
    This "graphics hack" was originally posted as part of the LAMMPS
    tutorial at
    https://lammpstutorials.github.io/sphinx/build/html/tutorial2/breaking-a-carbon-nanotube.html
+
+.. |bonds0| image:: img/bonds-vdw.png
+   :width: 18%
+.. |bonds1| image:: img/bonds-fix.png
+   :width: 18%
+.. |bonds2| image:: img/bonds-auto.png
+   :width: 18%
+.. |bonds3| image:: img/bonds-create.png
+   :width: 45%
+
+|bonds0|  |bonds1|  |bonds2|  |bonds3|
+
+.. raw:: html
+
+   <center>(Visualizing systens with implicit bonds. Left to right:
+   using covalent radii, using fix reaxff/bonds, using <i>autobond</i>,
+   using fix bond/create/angle. Click to see the full-size
+   images)</center>
 
 -------------
 
