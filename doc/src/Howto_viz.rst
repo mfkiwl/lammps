@@ -95,8 +95,6 @@ multi-threading support for SSAO processing.
 Transparency
 ------------
 
-.. versionadded:: TBD
-
 It is now possible to create approximately transparent graphics objects
 using an `ordered dithering algorithm
 <https://en.wikipedia.org/wiki/Ordered_dithering>`_ which results in a
@@ -105,10 +103,11 @@ transparent object only a part of the pixels are drawn and thus exposing
 any object behind the transparent object where drawing the pixels is
 skipped.  LAMMPS employs a 16x16 Bayer matrix pattern that leads to
 rather regular patterns.  A benefit of this approach is that it does not
-at extra cost to the rendering and for a 25%, 50%, and 75% transparency
+add extra cost to the rendering and for a 25%, 50%, and 75% transparency
 setting, there are no visible pixel patterns when also FSAA is enabled.
-In this case each pixel is the average of a 2x2 block and thus the
-transparent object will contribute 3, 2, or 1, pixels to each pixel.
+In this case each pixel is the average of a 2x2 block of pixels in an
+image of double the width and height, and thus the transparent object
+will contribute 3, 2, or 1 pixels to the 2x2 block which is averaged.
 
 Transparency is typically - like the color of objects - associated with
 an atom type and can be modified through the :doc:`dump_modify atrans
@@ -349,8 +348,9 @@ faces (*bflag1* value 1), or both (*bflag1* value 3).
 
 .. raw:: html
 
-   <center>(Body particle visualization examples for the *rounded/polyhedron* body style
-   left: frames, center: faces, right: both. Click to see the full-size images)</center>
+   <center>(Body particle visualization examples for the
+   <i>rounded/polyhedron</i> body style left: frames, center: faces,
+   right: both. Click to see the full-size images)</center>
 
 -------------
 
@@ -480,6 +480,32 @@ Notes on the visualization of individual region styles:
    <center>(Region visualization examples. Click to see the full-size images)</center><br>
 
 
+Below is an example input deck for visualizing *cone* and *cylinder* regions:
+
+.. code-block:: LAMMPS
+
+   region      box block -2 2 -2 2 -2 2
+   create_box 0 box
+
+   variable rot equal PI*step/1000.0
+
+   region c1 cylinder x -1.0 0.0 0.5 -1.5 1.5 open 1 open 2
+   region c2 cone y  1.0 -1.0 0.25 0.75 -1.5 1.5 open 3
+   region c3 cylinder z  0.0 1.0 0.66 -0.1 1.5 open 1 open 2 rotate v_rot 0.3 0.0 0.3 0.0 1.0 1.0
+   region c4 cone x -1.0 1.5 0.5 0.0 -1.0 2.0
+
+   dump viz all image 100 image-*.png type type size 600 600 zoom 1.4 shiny 0.1 view 70 20 &
+                box yes 0.025 axes no 0.0 0.0 fsaa yes ssao yes 314123 0.7 &
+                region c1 forestgreen transparent 0.5 &
+                region c2 goldenrod frame 0.05 &
+                region c2 cadetblue points 10000 0.15 &
+                region c2 goldenrod transparent 0.5 &
+                region c3 firebrick filled &
+                region c4 skyblue filled
+   dump_modify viz pad 4 boxcolor silver backcolor darkgray
+
+   run 500
+
 -------------
 
 Visualizing graphics provided by fix commands
@@ -511,4 +537,4 @@ styles:
 There is no support for :doc:`fix wall/region <fix_wall_region>` and
 :doc:`fix wall/gran/region <fix_wall_gran_region>`, since regions can be
 visualized with the *region* keyword of :doc:`dump image <dump_image>`
-already.
+already (see discussion above).
