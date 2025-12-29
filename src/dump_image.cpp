@@ -1703,10 +1703,8 @@ void DumpImage::create_image()
         pos[0] = rand.uniform() * xlen + xoff;
         pos[1] = rand.uniform() * ylen + yoff;
         pos[2] = rand.uniform() * zlen + zoff;
-        if (reg.ptr->inside(pos[0], pos[1], pos[2])) {
-          reg.ptr->forward_transform(pos[0], pos[1], pos[2]);
+        if (reg.ptr->match(pos[0], pos[1], pos[2]))
           image->draw_sphere(pos, reg.color, reg.diameter);
-        }
       }
 
     } else {
@@ -1855,7 +1853,7 @@ void DumpImage::create_image()
         // determine which faces to draw
         int faceflag = 0;
         if (reg.style == FRAME) {
-          faceflag = 4;         // no caps
+          faceflag = 4;    // no caps
         } else {
           if (!reg.ptr->open_faces[0]) faceflag |= 1;
           if (!reg.ptr->open_faces[1]) faceflag |= 2;
