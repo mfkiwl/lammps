@@ -555,10 +555,12 @@ already (see discussion above).
    :width: 24%
 .. |fix2| image:: img/fix-arrows.png
    :width: 24%
-.. |fix3| image:: img/fix-graphics.png
+.. |fix3| image:: img/fix-mesh.png
+   :width: 24%
+.. |fix4| image:: img/fix-indent.png
    :width: 24%
 
-|fix1|  |fix2|  |fix3|
+|fix1|  |fix2|  |fix3|  |fix4|
 
 .. raw:: html
 
@@ -570,9 +572,9 @@ Fix graphics
 ^^^^^^^^^^^^
 
 Fix :doc:`graphics <fix_graphics>` adds some graphics primitives and
-more complex objects to the visualization where properties of the
-object(s) are controlled by :doc:`equal-style or compatible variables
-<variable>`.
+more complex objects like a progress bar to the visualization where
+properties of the object(s) are controlled by :doc:`equal-style or
+compatible variables <variable>`.
 
 Fix graphics/arrows
 ^^^^^^^^^^^^^^^^^^^
@@ -580,14 +582,42 @@ Fix graphics/arrows
 Fix :doc:`graphics/arrows <fix_graphics_arrows>` adds per-atom or
 per-chunk arrows to the visualization.  The arrows represent some
 per-atom property or per-chunk 3-vector property.  For atoms, there are
-the pre-defined properties *force*, *velocity*, and *dipole*.  Everything
-else would have to be computed in :doc:`atom-style or compatible
-variables <variable>`.  For per-chunk properties, one needs to provide
-the IDs of three computes: a :doc:`chunk/atom compute
+the pre-defined properties *force*, *velocity*, and *dipole*.
+Everything else would have to be computed in :doc:`atom-style or
+compatible variables <variable>`.  For per-chunk properties, one needs
+to provide the IDs of three computes: a :doc:`chunk/atom compute
 <compute_chunk_atom>` and two per-chunk computes where the first defines
 the position of the (middle of the) arrow and the second the direction
 and length of the arrow.  Popular choices would create per-molecule or
-per-bin chunks.
+per-bin chunks.  Below is an example input section that computes and
+displays both, the total dipole moment (using :doc:`fix graphics
+<fix_graphics>` and the per-molecule dipole moment as arrows in addition
+to the per-atom velocities:
+
+.. code-block:: LAMMPS
+
+   compute molchunk all chunk/atom molecule
+   compute cpos all com/chunk molchunk wrap yes
+   compute cdip all dipole/chunk molchunk
+   fix vel all graphics/arrows 10 velocity 50.0 0.066 autoscale 0.25
+   fix vec all graphics/arrows 10 chunk molchunk cpos cdip 3 0.1
+
+   compute dip all dipole
+   variable scale equal 0.75
+   variable dip1x equal -v_scale*c_dip[1]
+   variable dip1y equal -v_scale*c_dip[2]
+   variable dip1z equal -v_scale*c_dip[3]
+   variable dip2x equal v_scale*c_dip[1]
+   variable dip2y equal v_scale*c_dip[2]
+   variable dip2z equal v_scale*c_dip[3]
+   fix dipole all graphics 1 arrow 1  v_dip1x v_dip1y v_dip1z v_dip2x v_dip2y v_dip2z 0.3 0.2
+
+   dump viz all image 100 image-*.png element type size 600 600 zoom 1.3 view 70 20 shiny 0.1 &
+                bond atom 0.2box yes 0.025 axes no 0.0 0.0 center s 0.5 0.5 0.5 fsaa yes &
+                fix dipole const 0 0 fix vec const 0 0 fix vel const 0 0 ssao yes 315465 0.8
+   dump_modify viz pad 6 boxcolor white backcolor gray element O H  bdiam 1 0.2 &
+                adiam 1 0.5 adiam 2 0.3 acolor 1 silver acolor 2 red fcolor vec goldenrod &
+                fcolor dipole forestgreen ftrans dipole 0.75 fcolor vel cyan ftrans vel 0.5
 
 Fix reaxff/bonds
 ^^^^^^^^^^^^^^^^
