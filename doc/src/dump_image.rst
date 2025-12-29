@@ -632,12 +632,14 @@ in the range of 0.0 to 1.0 that defines the opacity and thus allows to
 see what is inside the region.  Draw style *frame* represents the region
 with a mesh of "wires".  The diameter of these "wires" can be set.
 Unlike with the *filled* style and similar to the *transparent* style,
-you can see what is *inside* the region with this draw style.  The third
-draw style, *points*\, generates a random point cloud inside the
+you can see what is *inside* the region with this draw style.  The
+fourth draw style, *points*\, generates a random point cloud inside the
 simulation box and draws only those points that are within the region.
-Draw styles *filled*\, *transparent*\, and *frame* support only
-"primitive" region styles (no unions or intersections), but the *points*
-draw style supports *all* region styles.
+This uses the same test than what is used to determine if an atom is
+inside the region.  Draw styles *filled*\, *transparent*\, and *frame*
+support only "primitive" region styles (no unions or intersections of
+multiple regions), but the *points* draw style supports *all* region
+styles.
 
 Recommended transparency values are 0.25, 0.5, or 0.75 when used in
 combination with *fsaa on*.
