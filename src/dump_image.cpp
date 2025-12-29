@@ -1841,6 +1841,7 @@ void DumpImage::create_image()
           // inconsistent style. should not happen.
           if (!myreg) continue;
 
+          length = myreg->hi - myreg->lo;
           radiuslo = myreg->radius;
           radiushi = myreg->radius;
           if (myreg->axis == 'x') {
