@@ -533,23 +533,22 @@ The *level* setting determines the number of triangles in the mesh of
 triangles and thus the resolution of the representation of the
 ellipsoid.  At level 1 the ellipsoid is represented by an octahedron
 that is stretched according to the ellipsoid's shape parameters.  For
-each higher level, each of the triangles is replaced by four triangles
+each higher level, any of the triangles is replaced by four triangles
 and their edges are shifted to be on the surface of the ellipsoid.  The
 maximum allowed level is 6 (corresponding to 8192 triangles).
 
 .. admonition:: Image quality versus rendering speed
    :class: Hint
 
-   Since the rendered ellipsoids are constructed from iteratively refined
-   triangle meshes, the image quality increases with each refinement
-   level, but so does the computational effort to render the image.
-   Rendering only triangles is much faster than rendering the wireframe
-   edges, but the image quality for the same refinement level is usually
-   best when using both.  At higher mesh refinement levels (4 and up)
-   some artifacts from the image rendering library can appear due to
-   rounding.  These artifacts can be somewhat hidden by using the *fsaa
-   yes* setting, but are also less visible when rendering both, edges
-   and triangles.
+   Since the rendered ellipsoids are constructed from iteratively
+   refined triangle meshes, the image quality increases with each
+   refinement level, but so does the computational effort to render the
+   image.  Rendering only triangles is much faster than rendering the
+   wireframe edges.  However, at mesh refinement levels of 4 and up,
+   artifacts from the image rendering library are more common where
+   triangles meet.  These artifacts can be somewhat hidden by using the
+   *fsaa yes* setting, but are also less visible when rendering both
+   edges and triangles.
 
 ----------
 
