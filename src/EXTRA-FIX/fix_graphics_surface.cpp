@@ -819,7 +819,7 @@ void FixGraphicsSurface::end_of_step()
         if (EDGETABLE[idx] & 4) get_vertex(g, 2, 3, vertices[2]);
         if (EDGETABLE[idx] & 8) get_vertex(g, 3, 0, vertices[3]);
         if (EDGETABLE[idx] & 16) get_vertex(g, 4, 5, vertices[4]);
-        if (EDGETABLE[idx] & 32) get_vertex(g, 6, 6, vertices[5]);
+        if (EDGETABLE[idx] & 32) get_vertex(g, 5, 6, vertices[5]);
         if (EDGETABLE[idx] & 64) get_vertex(g, 6, 7, vertices[6]);
         if (EDGETABLE[idx] & 128) get_vertex(g, 7, 4, vertices[7]);
         if (EDGETABLE[idx] & 256) get_vertex(g, 0, 4, vertices[8]);
