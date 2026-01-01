@@ -39,7 +39,7 @@ constexpr double BIG = 1.0e200;
 
 // for choosing the mesh resolution
 enum { NONE, SURFMIN, SURFLOW, SURFMED, SURFHIGH, SURFMAX };
-constexpr double GRIDPOINTS[] = {0, 16.0, 32.0, 64.0, 256.0, 512.0};
+constexpr double GRIDPOINTS[] = {0, 8.0, 16.0, 32.0, 128.0, 256.0};
 
 // for choosing property
 enum { NUMBER, MASS, CHARGE, VARIABLE, COMPUTE, FIX, CUSTOM };
@@ -47,7 +47,7 @@ enum { NUMBER, MASS, CHARGE, VARIABLE, COMPUTE, FIX, CUSTOM };
 // for truncating gaussian spreading
 constexpr double CUTVAL = -std::log(0.0001);
 // extra grid points at the sides of the subbox grid
-constexpr int GRIDEXTRA = 3;
+constexpr int GRIDEXTRA = 4;
 
 // custom data types for positions and triangles based on std::array
 using vec3 = std::array<double, 3>;
@@ -104,10 +104,10 @@ void distribute(double ***pgrid, double ***dgrid, int ***tgrid, const double *po
         // skip if outside the local grid
         if ((kz < 0) || (kz >= nz)) continue;
 
-        // compute squared distance to grid point and apply cutoff and set value
-        double xpos = jx * delta + dx;
-        double ypos = jy * delta + dy;
-        double zpos = jz * delta + dz;
+        // compute squared distance of grid point to atom and apply cutoff and set value
+        double xpos = jx * delta - dx;
+        double ypos = jy * delta - dy;
+        double zpos = jz * delta - dz;
         double distsq = xpos * xpos + ypos * ypos + zpos * zpos;
         if (distsq < rcutsq) {
           pgrid[kx][ky][kz] += val * exp(-distsq / sigma);
@@ -437,7 +437,7 @@ FixGraphicsSurface::FixGraphicsSurface(LAMMPS *lmp, int narg, char **arg) :
   nevery = utils::inumeric(FLERR, arg[3], false, lmp);
   if (nevery <= 0) error->all(FLERR, 3, "Illegal fix graphics/surface nevery value {}", nevery);
   iso = utils::numeric(FLERR, arg[4], false, lmp);
-  rad = 2.0*utils::numeric(FLERR, arg[5], false, lmp);
+  rad = 2.0 * utils::numeric(FLERR, arg[5], false, lmp);
   if (rad <= 0.0) error->all(FLERR, 5, "Illegal fix graphics/surface radius value {}", rad);
 
   // parse optional args
@@ -848,12 +848,11 @@ void FixGraphicsSurface::end_of_step()
 
   int n = 0;
   for (const auto &tri : triangles) {
-    // skip if any part of the triangle is more than half a grid spacing outside the subdomain
+    // skip if any part of the triangle is outside the subdomain
     bool addme = true;
     for (int i = 0; i < 3; ++i)
       for (int j = 0; j < 3; ++j)
-        if ((tri.triangle[i][j] <= (sublo[j] - 0.001 * delta)) || (tri.triangle[i][j] >= (subhi[j] + 0.001 * delta)))
-          addme = false;
+        if ((tri.triangle[i][j] < sublo[j]) || (tri.triangle[i][j] > subhi[j])) addme = false;
     if (addme) {
       imgobjs[n] = DumpImage::TRI;
       imgparms[n][0] = tri.type;
