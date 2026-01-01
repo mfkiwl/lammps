@@ -103,6 +103,29 @@ fix must produce a per-atom vector or array, not a global or local
 quantity.  In case the property is a per-atom array, the column must be
 selected.
 
+The optional *filename* keyword controls whether the computed triangle
+mesh is exported to an `STL format file
+<https://en.wikipedia.org/wiki/STL_(file_format)>`_ for use with
+external visualization programs or 3d-printers.  The filename must
+contain a star character (\*) which will be replaced by the timestep
+number.  There is a new file created for every timestep.
+
+If LAMMPS has been compiled with the :doc:`corresponding setting
+<Build_settings>` and if the filename ends with ".gz" or some other
+:ref:`supported compression format suffix <gzip>`, the STL file is
+written in compressed format.  A compressed STL file can be
+:math:`5-10\times` smaller than the text version, but may need to be
+uncompressed before it can be read into a graphics program.
+
+The optional *binary* keyword controls whether the STL format output
+file is in ASCII text mode (the default when the keyword is not used or
+when using "no" or "off" as argument) or in binary mode.  Binary STL
+files are about :math:`4-5\times` smaller than the ASCII text version,
+and can be written and read *much* faster.  Not all programs that handle
+STL files can read binary files and thus they may be converted to ASCII
+format.  LAMMPS includes the :ref:`stl_bin2text <stlconvert>` program
+for that purpose.
+
 -----------
 
 Dump image info
@@ -148,4 +171,4 @@ Related commands
 Defaults
 """"""""
 
-quality = medium, property = none, binary = no, pad = 0, filename = none
+quality = low, property = none, binary = no, pad = 0, filename = none

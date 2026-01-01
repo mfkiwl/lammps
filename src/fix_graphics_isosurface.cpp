@@ -22,6 +22,7 @@
 #include "error.h"
 #include "fix.h"
 #include "input.h"
+#include "math_extra.h"
 #include "memory.h"
 #include "modify.h"
 #include "respa.h"
@@ -30,6 +31,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 
 using namespace LAMMPS_NS;
@@ -59,6 +61,11 @@ using gridcell = struct {
   vec3 pos[8];
   double iso[8];
 };
+
+inline vec3 operator-(const vec3 &a, const vec3 &b)
+{
+  return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
+}
 
 // get vertex position for a grid cell edge by interpolating between
 // the two corners based on their iso values
@@ -427,7 +434,7 @@ FixGraphicsIsosurface::FixGraphicsIsosurface(LAMMPS *lmp, int narg, char **arg) 
 
   // defaults
   numobjs = 0;
-  quality = SURFMED;
+  quality = SURFLOW;
   pflag = NUMBER;
   binary = 0;
   pad = 0;
@@ -539,6 +546,8 @@ FixGraphicsIsosurface::FixGraphicsIsosurface(LAMMPS *lmp, int narg, char **arg) 
       if (iarg + 2 > narg)
         utils::missing_cmd_args(FLERR, "fix graphics/isosurface filename", error);
       filename = arg[iarg + 1];
+      if (filename.find('*') == std::string::npos)
+        error->all(FLERR, iarg + 1, "Output to STL file requires file name with '*'");
       iarg += 2;
     } else if (strcmp(arg[iarg], "binary") == 0) {
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/isosurface binary", error);
@@ -874,6 +883,127 @@ void FixGraphicsIsosurface::end_of_step()
     }
   }
   numobjs = n;
+
+  // write grid to STL format file, if requested
+  if (filename.size() > 0) {
+    int maxobjs = 0;
+    uint32_t allobjs = 0U;
+    MPI_Allreduce(&numobjs, &maxobjs, 1, MPI_INT, MPI_SUM, world);
+    allobjs = maxobjs;
+    MPI_Allreduce(&numobjs, &maxobjs, 1, MPI_INT, MPI_MAX, world);
+
+    // convert to single precision data (for binary output) and compute normals
+    auto *stldata = new float[12 * maxobjs];    // 3 floats for normal and 9 floats for corners
+    double normal[3];
+    vec3 d1, d2;
+    int n = 0;
+    for (const auto &tri : triangles) {
+      // skip if any part of the triangle is outside the subdomain
+      bool addme = true;
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+          if ((tri.triangle[i][j] < sublo[j]) || (tri.triangle[i][j] > subhi[j])) addme = false;
+      if (addme) {
+        d1 = tri.triangle[1] - tri.triangle[0];
+        d2 = tri.triangle[2] - tri.triangle[0];
+        MathExtra::cross3(d1.data(), d2.data(), normal);
+        MathExtra::norm3(normal);
+        stldata[12 * n] = normal[0];
+        stldata[12 * n + 1] = normal[1];
+        stldata[12 * n + 2] = normal[2];
+        stldata[12 * n + 3] = tri.triangle[0][0];
+        stldata[12 * n + 4] = tri.triangle[0][1];
+        stldata[12 * n + 5] = tri.triangle[0][2];
+        stldata[12 * n + 6] = tri.triangle[1][0];
+        stldata[12 * n + 7] = tri.triangle[1][1];
+        stldata[12 * n + 8] = tri.triangle[1][2];
+        stldata[12 * n + 9] = tri.triangle[2][0];
+        stldata[12 * n + 10] = tri.triangle[2][1];
+        stldata[12 * n + 11] = tri.triangle[2][2];
+        ++n;
+      }
+    }
+
+    FILE *fp = nullptr;
+    if (comm->me == 0) {    // only MPI rank 0 writes to the file
+      auto *filecurrent = utils::strdup(utils::star_subst(filename, update->ntimestep, pad));
+      if (platform::has_compress_extension(filename)) {
+        fp = platform::compressed_write(filecurrent);
+      } else if (binary) {
+        fp = fopen(filecurrent, "wb");
+      } else {
+        fp = fopen(filecurrent, "w");
+      }
+      if (fp == nullptr)
+        error->one(FLERR, Error::NOLASTLINE, "Cannot open dump file {}:{}", filecurrent,
+                   utils::getsyserror());
+
+      auto title = fmt::format("STL isosurface from fix {} graphics/isosurface on step {}", id,
+                               update->ntimestep);
+      title.resize(80, '\0');
+
+      // write out data from rank 0
+      if (binary) {
+        uint16_t attributes = 0;
+        fwrite(title.c_str(), 1, 80, fp);
+        fwrite(&allobjs, sizeof(uint32_t), 1, fp);
+        for (int i = 0; i < numobjs; ++i) {
+          fwrite(stldata + 12 * i, sizeof(float), 12, fp);
+          fwrite(&attributes, sizeof(uint16_t), 1, fp);
+        }
+      } else {
+        fprintf(fp, "solid %s\n", title.c_str());
+        for (int i = 0; i < numobjs; ++i) {
+          utils::print(fp, "  facet normal {:e} {:e} {:e}\n", stldata[12 * i], stldata[12 * i + 1],
+                       stldata[12 * i + 2]);
+          fputs("    outer loop\n", fp);
+          utils::print(fp, "      vertex {:e} {:e} {:e}\n", stldata[12 * i + 3],
+                       stldata[12 * i + 4], stldata[12 * i + 5]);
+          utils::print(fp, "      vertex {:e} {:e} {:e}\n", stldata[12 * i + 6],
+                       stldata[12 * i + 7], stldata[12 * i + 8]);
+          utils::print(fp, "      vertex {:e} {:e} {:e}\n", stldata[12 * i + 9],
+                       stldata[12 * i + 10], stldata[12 * i + 11]);
+          fputs("    endloop\n  endfacet\n", fp);
+        }
+      }
+
+      // receive data from other processes
+      MPI_Status status;
+      for (int j = 1; j < comm->nprocs; ++j) {
+        MPI_Recv(stldata, 12 * maxobjs, MPI_FLOAT, MPI_ANY_SOURCE, 0, world, &status);
+        int numtriangles = 0;
+        MPI_Get_count(&status, MPI_FLOAT, &numtriangles);
+        numtriangles /= 12;
+
+        // write out received data
+        if (binary) {
+          uint16_t attributes = 0;
+          for (int i = 0; i < numtriangles; ++i) {
+            fwrite(stldata + 12 * i, sizeof(float), 12, fp);
+            fwrite(&attributes, sizeof(uint16_t), 1, fp);
+          }
+        } else {
+          for (int i = 0; i < numtriangles; ++i) {
+            utils::print(fp, "  facet normal {:e} {:e} {:e}\n", stldata[12 * i],
+                         stldata[12 * i + 1], stldata[12 * i + 2]);
+            fputs("    outer loop\n", fp);
+            utils::print(fp, "    vertex {:e} {:e} {:e}\n", stldata[12 * i + 3],
+                         stldata[12 * i + 4], stldata[12 * i + 5]);
+            utils::print(fp, "    vertex {:e} {:e} {:e}\n", stldata[12 * i + 6],
+                         stldata[12 * i + 7], stldata[12 * i + 8]);
+            utils::print(fp, "    vertex {:e} {:e} {:e}\n", stldata[12 * i + 9],
+                         stldata[12 * i + 10], stldata[12 * i + 11]);
+            fputs("    endloop\n  endfacet\n", fp);
+          }
+        }
+      }
+      if (!binary) fprintf(fp, "endsolid %s\n", title.c_str());
+      fclose(fp);
+      delete[] filecurrent;
+    } else {
+      MPI_Send(stldata, 12 * numobjs, MPI_FLOAT, 0, 0, world);
+    }
+  }
 }
 
 /* ----------------------------------------------------------------------
