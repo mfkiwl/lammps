@@ -566,22 +566,21 @@ int LabelMap::infer_impropertype(std::vector<std::string> mytypes)
 }
 
 /* ----------------------------------------------------------------------
-   return 'ntypes' number of strings between hyphen delimiters
+   return -1 if number of parsed strings is not equal to ntypes input
 ------------------------------------------------------------------------- */
 
 int LabelMap::parse_typelabel(int ntypes, std::string label, std::vector<std::string> &types)
 {
-  // TODO: more robust parser. e.g., there could be two dashes in a row
-  int delimloc,len;
-  size_t npos = std::string::npos;
+  std::vector<std::string> out;
+  size_t start = label.find_first_not_of('-');
 
-  for (int i = 0; i < ntypes-1; i++) {
-    delimloc = label.find("-");
-    if (delimloc == npos) return -1;
-    types[i] = label.substr(0,delimloc);
-    label = label.substr(delimloc+1);
+  while (start != std::string::npos) {
+      size_t end = label.find('-', start);
+      out.emplace_back(label.substr(start, end - start));
+      start = label.find_first_not_of('-', end);
   }
-  types[ntypes-1] = label;
+  if (out.size() != ntypes) return -1;
+  types = out;
   return 1;
 }
 
