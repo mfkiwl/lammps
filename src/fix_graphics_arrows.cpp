@@ -431,7 +431,7 @@ double FixGraphicsArrows::compute_scalar()
 }
 
 /* ----------------------------------------------------------------------
-   provide graphics information to dump image on universe root only
+   provide graphics information to dump image
 ------------------------------------------------------------------------- */
 
 int FixGraphicsArrows::image(int *&objs, double **&parms)
