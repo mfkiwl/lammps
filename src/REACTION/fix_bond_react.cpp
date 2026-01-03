@@ -357,7 +357,7 @@ FixBondReact::FixBondReact(LAMMPS *lmp, int narg, char **arg) :
                                       "'prob' keyword has too few arguments");
         // check if probability is a variable
         if (strncmp(arg[iarg+1],"v_",2) == 0) {
-          rxn.v_prob = input->variable->find(&arg[iarg][2]);
+          rxn.v_prob = input->variable->find(&arg[iarg+1][2]);
           validate_variable_keyword(&arg[iarg+1][2], rxn.v_prob);
           rxn.fraction = input->variable->compute_equal(rxn.v_prob);
         } else {
