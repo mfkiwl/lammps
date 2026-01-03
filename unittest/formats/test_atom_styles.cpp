@@ -1325,10 +1325,10 @@ TEST_F(AtomStyleTest, ellipsoid)
     EXPECT_NEAR(radius[GETIDX(2)], 0.5, EPSILON);
     EXPECT_NEAR(radius[GETIDX(3)], 1.5, EPSILON);
     EXPECT_NEAR(radius[GETIDX(4)], 1.5, EPSILON);
-    ASSERT_FALSE(bonus[0].flag_super);
-    ASSERT_FALSE(bonus[1].flag_super);
-    ASSERT_FALSE(bonus[2].flag_super);
-    ASSERT_FALSE(bonus[3].flag_super);
+    ASSERT_FALSE(bonus[0].type);
+    ASSERT_FALSE(bonus[1].type);
+    ASSERT_FALSE(bonus[2].type);
+    ASSERT_FALSE(bonus[3].type);
 
     BEGIN_HIDE_OUTPUT();
     command("set atom 5 block 8.0 8.0");
@@ -1348,8 +1348,8 @@ TEST_F(AtomStyleTest, ellipsoid)
     EXPECT_NEAR(bonus[5].block[1], 2.0, EPSILON);
     EXPECT_NEAR(radius[GETIDX(5)], 0.5*sqrt(3.0), EPSILON);
     EXPECT_NEAR(radius[GETIDX(6)], sqrt(4.64), EPSILON);
-    ASSERT_TRUE(bonus[4].flag_super);
-    ASSERT_TRUE(bonus[5].flag_super);
+    ASSERT_TRUE(bonus[4].type);
+    ASSERT_TRUE(bonus[5].type);
     BEGIN_HIDE_OUTPUT();
     command("set atom 5*6 shape 0.0 0.0 0.0");
     END_HIDE_OUTPUT();

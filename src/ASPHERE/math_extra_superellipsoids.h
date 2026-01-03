@@ -21,6 +21,7 @@
 #include <cmath>
 #include "math_extra.h"
 
+
 namespace MathExtraSuperellipsoids {
   inline constexpr double TIKHONOV_SCALE = 1e-14; // TODO: inline constexpr are C++17, which is Okay as of 10Sep2025 version of LAMMPS!
   void volume_superellipsoid(const double *blockiness, const double *shape, double volume); // duplicated from math_extra might remove
@@ -79,7 +80,6 @@ namespace MathExtraSuperellipsoids {
   int determine_contact_point(const double* xci, const double Ri[3][3], const double* shapei, const double* blocki, const int flagi,
                               const double* xcj, const double Rj[3][3], const double* shapej, const double* blockj, const int flagj,
                               double* X0, double* nij);
-  int determine_flag(const double* block);
  
   // functions to compute shape function and gradient only when called for newton method
   double stable_shape_and_gradient_local_superquad(const double* xlocal, const double* shape, const double* block, double* grad);

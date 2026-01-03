@@ -115,7 +115,7 @@ TEST(ContactPointAndNormal, supersphere_mono)
   std::vector<double> blocks = {2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0};
   for (auto n : blocks) {
     double block[2] = {n, n};
-    int flag = MathExtraSuperellipsoids::determine_flag(block);
+    int flag =  (n < 2.01) ? 0 : 1;
 
     // Contact detection
     // Some starting point away from (0,0,0). Possibly bad initial guess so test is demanding

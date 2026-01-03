@@ -475,41 +475,6 @@ void quat_to_mat_trans(const double *quat, double mat[3][3])
   mat[2][2] = w2-i2-j2+k2;
 }
 
-/* ----------------------------------------------------------------------
-   compute principal moments of inertia of an ellipsoid
-   shape = 3 radii of ellipsoid
-   quat = orientiation quaternion of ellipsoid
-   block = blockiness exponents of super-ellipsoid
-   return principal moments of inertia as 3-vector
-------------------------------------------------------------------------- */
-
-void inertia_ellipsoid_principal(double *shape, double mass, double *idiag,
-                                 double *block, bool flag_super)
-{
-  double rsq0 = shape[0] * shape[0];
-  double rsq1 = shape[1] * shape[1];
-  double rsq2 = shape[2] * shape[2];
-  if (flag_super) {
-    // super-ellipsoid, Eq. (12) of Jaklic and Solina, 2003
-    double e1 = 2.0 / block[0], e2 = 2.0 / block[1];
-    double beta_tmp1 = std::beta(0.5 * e1, 1 + 2 * e1);
-    double beta_tmp2 = std::beta(0.5 * e2, 0.5 * e2);
-    double beta_tmp3 = std::beta(0.5 * e2, 1.5 * e2);
-    double dens = mass / (std::beta(0.5 * e1, 1.0 + e1) * beta_tmp2);
-    double m0 = 0.5 * rsq0 * beta_tmp1 * beta_tmp3;
-    double m1 = 0.5 * rsq1 * beta_tmp1 * beta_tmp3;
-    double m2 = rsq2 * std::beta(1.5 * e1, 1 + e1) * beta_tmp2;
-    idiag[0] = dens * (m1 + m2);
-    idiag[1] = dens * (m0 + m2);
-    idiag[2] = dens * (m0 + m1);
-  }
-  else {
-    double dens = 0.2 * mass;
-    idiag[0] = dens * (rsq1 + rsq2);
-    idiag[1] = dens * (rsq0 + rsq2);
-    idiag[2] = dens * (rsq0 + rsq1);
-  }
-}
 
 /* ----------------------------------------------------------------------
    compute space-frame inertia tensor of an ellipsoid
@@ -649,7 +614,7 @@ void inertia_triangle(double *idiag, double *quat, double /*mass*/,
    return volume of the ellipsoid
 ------------------------------------------------------------------------- */
 
-double volume_ellipsoid(double *shape, double *block, bool flag_super)
+double volume_ellipsoid(double *shape, double *block, int flag_super)
 {
   double unitvol = MY_4PI3;
 
@@ -664,52 +629,6 @@ double volume_ellipsoid(double *shape, double *block, bool flag_super)
 }
 
 
-/* ----------------------------------------------------------------------
-   compute the circumscribed radius to the ellipsoid
-   shape = 3 radii of ellipsoid
-   block = blockiness exponents of super-ellipsoid
-   return circumscribed radius of the ellipsoid
-------------------------------------------------------------------------- */
-
-double radius_ellipsoid(double *shape, double *block, bool flag_super)
-{
-  if (!flag_super) return std::max(std::max(shape[0], shape[1]), shape[2]);
-
-  // Super ellipsoid
-  double a = shape[0], b = shape[1], c = shape[2];
-  double n1 = block[0], n2 = block[1];
-  if (shape[0] < shape[1]) {a = shape[1]; b = shape[0];}
-
-  // Cylinder approximation for n2=2
-
-  if (n2 < 2.01) return sqrt(a * a + c * c);
-
-  // Ellipsoid approximation for n1=2
-
-  if (n1 < 2.01) return std::max(c, sqrt(a * a + b * b));
-
-  // Bounding box approximation when n1>2 and n2>2
-
-  return sqrt(a * a + b * b + c * c);
-
-  // General super-ellipsoid, Eq. (12) of Podlozhnyuk et al. 2017
-  // Not sure if exact solution worth it compared to boundig box diagonal
-  // If both blockiness exponents are greater than 2, the exact radius does not
-  // seem significantly smaller than the bounding box diagonal. At most sqrt(3)~ 70% too large
-  /*
-  double x, y, z, alpha, beta, gamma, xtilde;
-  double small = 0.1; // TO AVOID OVERFLOW IN POW
-
-  alpha = std::fabs(n2 - 2.0) > small ? std::pow(b / a, 2.0 / (n2 - 2.0)) : 0.0;
-  gamma = std::fabs(n1divn2 - 1.0) > small ? std::pow((1.0 + std::pow(alpha, n2)), n1divn2 - 1.0) : 1.0;
-  beta = std::pow(gamma * c * c / (a * a), 1.0 / std::max(n1 - 2.0, small));
-  xtilde = 1.0 / std::pow(std::pow(1.0 + std::pow(alpha, n2), n1divn2) + std::pow(beta, n1), 1.0 / n1);
-  x = a * xtilde;
-  y = alpha * b * xtilde;
-  z = beta * c * xtilde;
-  return sqrt(x * x + y * y + z * z);
-  */
-}
 
 /* ----------------------------------------------------------------------
    build rotation matrix for a small angle rotation around the X axis

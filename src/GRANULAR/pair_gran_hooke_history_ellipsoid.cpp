@@ -121,8 +121,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
   double block1, block2;
 
   double X0[4], nij[3], shapei[3], blocki[3], shapej[3], blockj[3], Ri[3][3], Rj[3][3], overlap1, overlap2, omegai[3], omegaj[3];
-  // TODO: Maybe we can make flag_super of the grain an int instead, to cimplify when n1 = n2 ?
-  int flagi, flagj; // 0 : ellipsoid, 1 : equal exponents n1=n2, 2: general super-ellipsoid n1 >2, n2>2, n1!=n2
+  AtomVecEllipsoid::BlockType flagi, flagj;
 
   ev_init(eflag, vflag);
 
@@ -226,8 +225,8 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
           touching = false;
         else {
           // Super-ellipsoid contact detection between atoms i and j
-          flagi = MathExtraSuperellipsoids::determine_flag(blocki);
-          flagj = MathExtraSuperellipsoids::determine_flag(blockj);
+          flagi = bonus[ellipsoid[i]].type;
+          flagj = bonus[ellipsoid[j]].type;
           if (touch[jj] == 1) {
             // Continued contact: use grain true shape and last contact point
             // TODO: implement neigh history!
@@ -267,14 +266,11 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
               shapej[0] = shapej[1] = shapej[2] = reqj;
               MathExtra::scaleadd3(1.0-frac, shapei, frac, bonus[ellipsoid[i]].shape, shapei);
               MathExtra::scaleadd3(1.0-frac, shapej, frac, bonus[ellipsoid[j]].shape, shapej);
-              if (bonus[ellipsoid[i]].flag_super) { // not a big time save
-                blocki[0] = 2.0 + frac * (bonus[ellipsoid[i]].block[0] - 2.0);
-                blocki[1] = 2.0 + frac * (bonus[ellipsoid[i]].block[1] - 2.0);
-              }
-              if (bonus[ellipsoid[j]].flag_super) {
-                blockj[0] = 2.0 + frac * (bonus[ellipsoid[j]].block[0] - 2.0);
-                blockj[1] = 2.0 + frac * (bonus[ellipsoid[j]].block[1] - 2.0);
-              }
+              blocki[0] = 2.0 + frac * (bonus[ellipsoid[i]].block[0] - 2.0);
+              blocki[1] = 2.0 + frac * (bonus[ellipsoid[i]].block[1] - 2.0);
+              blockj[0] = 2.0 + frac * (bonus[ellipsoid[j]].block[0] - 2.0);
+              blockj[1] = 2.0 + frac * (bonus[ellipsoid[j]].block[1] - 2.0);
+
               // force ellipsoid flag for first initial guess iteration.
               // Avoid incorrect values of n1/n2 -1 in derivatives.
               int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? 0 : flagi,

@@ -30,7 +30,7 @@
 
 using namespace LAMMPS_NS;
 
-#define EPSBLOCK2 1.0e-3
+static constexpr double EPSILON_BLOCK = 1.0e-3;
 
 /* ---------------------------------------------------------------------- */
 
@@ -235,7 +235,6 @@ int AtomVecEllipsoid::unpack_border_bonus(int n, int first, double *buf)
 {
   int i, j, m, last;
   double *shape, *quat, *block, *inertia;
-  bool flag_super;
 
   m = 0;
   last = first + n;
@@ -261,8 +260,10 @@ int AtomVecEllipsoid::unpack_border_bonus(int n, int first, double *buf)
       inertia[0] = buf[m++];
       inertia[1] = buf[m++];
       inertia[2] = buf[m++];
-      flag_super = ((std::fabs(block[0] - 2) > EPSBLOCK2) || (std::fabs(block[1] - 2) > EPSBLOCK2));
-      bonus[j].flag_super = flag_super;
+      // Particle type inferred from block to reduce comm
+      // TODO: is this a good idea or is that not saving much compared to
+      //       passing the flag in the buffer?
+      bonus[j].type = determine_type(block);
       bonus[j].ilocal = i;
       ellipsoid[i] = j;
       nghost_bonus++;
@@ -321,7 +322,7 @@ int AtomVecEllipsoid::unpack_exchange_bonus(int ilocal, double *buf)
     double *quat = bonus[nlocal_bonus].quat;
     double *block = bonus[nlocal_bonus].block;
     double *inertia = bonus[nlocal_bonus].inertia;
-    bool &flag_super = bonus[nlocal_bonus].flag_super;
+    BlockType &type = bonus[nlocal_bonus].type;
     shape[0] = buf[m++];
     shape[1] = buf[m++];
     shape[2] = buf[m++];
@@ -334,7 +335,7 @@ int AtomVecEllipsoid::unpack_exchange_bonus(int ilocal, double *buf)
     inertia[0] = buf[m++];
     inertia[1] = buf[m++];
     inertia[2] = buf[m++];
-    flag_super = ((std::fabs(block[0] - 2) > EPSBLOCK2) || (std::fabs(block[1] - 2) > EPSBLOCK2));
+    type = determine_type(block);
     bonus[nlocal_bonus].ilocal = ilocal;
     ellipsoid[ilocal] = nlocal_bonus++;
   }
@@ -412,7 +413,7 @@ int AtomVecEllipsoid::unpack_restart_bonus(int ilocal, double *buf)
     double *quat = bonus[nlocal_bonus].quat;
     double *block = bonus[nlocal_bonus].block;
     double *inertia = bonus[nlocal_bonus].inertia;
-    bool &flag_super = bonus[nlocal_bonus].flag_super;
+    BlockType &type = bonus[nlocal_bonus].type;
     shape[0] = buf[m++];
     shape[1] = buf[m++];
     shape[2] = buf[m++];
@@ -425,7 +426,7 @@ int AtomVecEllipsoid::unpack_restart_bonus(int ilocal, double *buf)
     inertia[0] = buf[m++];
     inertia[1] = buf[m++];
     inertia[2] = buf[m++];
-    flag_super = ((std::fabs(block[0] - 2) > EPSBLOCK2) || (std::fabs(block[1] - 2) > EPSBLOCK2));
+    type = determine_type(block);
     bonus[nlocal_bonus].ilocal = ilocal;
     ellipsoid[ilocal] = nlocal_bonus++;
   }
@@ -461,27 +462,27 @@ void AtomVecEllipsoid::data_atom_bonus(int m, const std::vector<std::string> &va
   // Blockiness exponents can be given optionally for superellipsoids
 
   double *block = bonus[nlocal_bonus].block;
-  bool &flag_super = bonus[nlocal_bonus].flag_super;
+  BlockType &type = bonus[nlocal_bonus].type;
   if (ivalue == values.size()) {
     block[0] = block[1] = 2.0;
-    flag_super = false;
+    type = BlockType::ELLIPSOID;
   }
   else {
     block[0] = utils::numeric(FLERR, values[ivalue++], true, lmp);
     block[1] = utils::numeric(FLERR, values[ivalue++], true, lmp);
-    flag_super = ((std::fabs(block[0] - 2) > EPSBLOCK2) || (std::fabs(block[1] - 2) > EPSBLOCK2));
+    type = determine_type(block);
   }
 
   // reset ellipsoid mass
   // previously stored density in rmass
 
-  rmass[m] *= MathExtra::volume_ellipsoid(shape, block, flag_super);
+  rmass[m] *= MathExtra::volume_ellipsoid(shape, block, type);
 
   // Principal moments of inertia
 
-  MathExtra::inertia_ellipsoid_principal(shape, rmass[m], bonus[nlocal_bonus].inertia, block, flag_super);
+  inertia_ellipsoid_principal(shape, rmass[m], bonus[nlocal_bonus].inertia, block, type);
 
-  radius[m] = MathExtra::radius_ellipsoid(shape, block, flag_super);
+  radius[m] = radius_ellipsoid(shape, block, type);
   bonus[nlocal_bonus].ilocal = m;
   ellipsoid[m] = nlocal_bonus++;
 }
@@ -538,7 +539,7 @@ void AtomVecEllipsoid::data_atom_post(int ilocal)
 void AtomVecEllipsoid::pack_data_pre(int ilocal)
 {
   double *shape, *block;
-  bool flag_super;
+  BlockType type;
 
   ellipsoid_flag = atom->ellipsoid[ilocal];
   rmass_one = atom->rmass[ilocal];
@@ -551,8 +552,8 @@ void AtomVecEllipsoid::pack_data_pre(int ilocal)
   if (ellipsoid_flag >= 0) {
     shape = bonus[ellipsoid_flag].shape;
     block = bonus[ellipsoid_flag].block;
-    flag_super = bonus[ellipsoid_flag].flag_super;
-    rmass[ilocal] /= MathExtra::volume_ellipsoid(shape, block, flag_super);
+    type = bonus[ellipsoid_flag].type;
+    rmass[ilocal] /= MathExtra::volume_ellipsoid(shape, block, type);
   }
 }
 
@@ -707,7 +708,7 @@ void AtomVecEllipsoid::set_shape(int i, double shapex, double shapey, double sha
     double *quat = bonus[nlocal_bonus].quat;
     double *block = bonus[nlocal_bonus].block;
     double *inertia = bonus[nlocal_bonus].inertia;
-    bool &flag_super = bonus[nlocal_bonus].flag_super;
+    BlockType &type = bonus[nlocal_bonus].type;
     shape[0] = shapex;
     shape[1] = shapey;
     shape[2] = shapez;
@@ -717,9 +718,9 @@ void AtomVecEllipsoid::set_shape(int i, double shapex, double shapey, double sha
     quat[3] = 0.0;
     block[0] = 2;
     block[1] = 2;
-    flag_super = false;
-    MathExtra::inertia_ellipsoid_principal(shape, rmass[i], inertia);
-    radius[i] = MathExtra::radius_ellipsoid(shape, block, flag_super);
+    type = BlockType::ELLIPSOID;
+    inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
+    radius[i] = radius_ellipsoid(shape, block, type);
     bonus[nlocal_bonus].ilocal = i;
     ellipsoid[i] = nlocal_bonus++;
   } else if (shapex == 0.0 && shapey == 0.0 && shapez == 0.0) {
@@ -731,12 +732,12 @@ void AtomVecEllipsoid::set_shape(int i, double shapex, double shapey, double sha
     double *shape = bonus[ellipsoid[i]].shape;
     double *block = bonus[ellipsoid[i]].block;
     double *inertia = bonus[nlocal_bonus].inertia;
-    bool flag_super = bonus[ellipsoid[i]].flag_super;
+    BlockType type = bonus[ellipsoid[i]].type;
     shape[0] = shapex;
     shape[1] = shapey;
     shape[2] = shapez;
-    MathExtra::inertia_ellipsoid_principal(shape, rmass[i], inertia, block, flag_super);
-    radius[i] = MathExtra::radius_ellipsoid(shape, block, flag_super);
+    inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
+    radius[i] = radius_ellipsoid(shape, block, type);
   }
 }
 
@@ -754,7 +755,7 @@ void AtomVecEllipsoid::set_block(int i, double blockn1, double blockn2)
     double *quat = bonus[nlocal_bonus].quat;
     double *block = bonus[nlocal_bonus].block;
     double *inertia = bonus[nlocal_bonus].inertia;
-    bool &flag_super = bonus[nlocal_bonus].flag_super;
+    BlockType &type = bonus[nlocal_bonus].type;
     shape[0] = 0.5;
     shape[1] = 0.5;
     shape[2] = 0.5;
@@ -765,19 +766,96 @@ void AtomVecEllipsoid::set_block(int i, double blockn1, double blockn2)
     quat[2] = 0.0;
     quat[3] = 0.0;
     bonus[nlocal_bonus].ilocal = i;
-    flag_super = ((std::fabs(blockn1 - 2) > EPSBLOCK2) || (std::fabs(blockn2 - 2) > EPSBLOCK2));
-    MathExtra::inertia_ellipsoid_principal(shape, rmass[i], inertia, block, flag_super);
-    radius[i] = MathExtra::radius_ellipsoid(shape, block, flag_super);
+    type = determine_type(block);
+    inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
+    radius[i] = radius_ellipsoid(shape, block, type);
     ellipsoid[i] = nlocal_bonus++;
   } else {
     double *shape = bonus[ellipsoid[i]].shape;
     double *block = bonus[ellipsoid[i]].block;
     double *inertia = bonus[nlocal_bonus].inertia;
-    bool &flag_super = bonus[ellipsoid[i]].flag_super;
+    BlockType &type = bonus[ellipsoid[i]].type;
     block[0] = blockn1;
     block[1] = blockn2;
-    flag_super = ((std::fabs(blockn1 - 2) > EPSBLOCK2) || (std::fabs(blockn2 - 2) > EPSBLOCK2));
-    MathExtra::inertia_ellipsoid_principal(shape, rmass[i], inertia, block, flag_super);
-    radius[i] = MathExtra::radius_ellipsoid(shape, block, flag_super);
+    type = determine_type(block);
+    inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
+    radius[i] = radius_ellipsoid(shape, block, type);
+  }
+}
+
+AtomVecEllipsoid::BlockType AtomVecEllipsoid::determine_type(double* block) {
+ BlockType flag(BlockType::GENERAL);
+  if ((std::fabs(block[0] - 2) <= EPSILON_BLOCK) && (std::fabs(block[1] - 2) <= EPSILON_BLOCK))
+    flag = BlockType::ELLIPSOID;
+  else if (std::fabs(block[0] - block[1]) <= EPSILON_BLOCK)
+    flag = BlockType::N1_EQUAL_N2;
+  return flag;
+}
+
+double AtomVecEllipsoid::radius_ellipsoid(double *shape, double *block, BlockType flag_type)
+{
+  if (flag_type == BlockType::ELLIPSOID)
+    return std::max(std::max(shape[0], shape[1]), shape[2]);
+
+  // Super ellipsoid
+  double a = shape[0], b = shape[1], c = shape[2];
+  double n1 = block[0], n2 = block[1];
+  if (shape[0] < shape[1]) {a = shape[1]; b = shape[0];}
+
+  // Cylinder approximation for n2=2
+
+  if (n2 < 2.0 + EPSILON_BLOCK) return sqrt(a * a + c * c);
+
+  // Ellipsoid approximation for n1=2
+
+  if (n1 < 2.0 + EPSILON_BLOCK) return std::max(c, sqrt(a * a + b * b));
+
+  // Bounding box approximation when n1>2 and n2>2
+
+  return sqrt(a * a + b * b + c * c);
+
+  // General super-ellipsoid, Eq. (12) of Podlozhnyuk et al. 2017
+  // Not sure if exact solution worth it compared to boundig box diagonal
+  // If both blockiness exponents are greater than 2, the exact radius does not
+  // seem significantly smaller than the bounding box diagonal. At most sqrt(3)~ 70% too large
+  /*
+  double x, y, z, alpha, beta, gamma, xtilde;
+  double small = 0.1; // TO AVOID OVERFLOW IN POW
+
+  alpha = std::fabs(n2 - 2.0) > small ? std::pow(b / a, 2.0 / (n2 - 2.0)) : 0.0;
+  gamma = std::fabs(n1divn2 - 1.0) > small ? std::pow((1.0 + std::pow(alpha, n2)), n1divn2 - 1.0) : 1.0;
+  beta = std::pow(gamma * c * c / (a * a), 1.0 / std::max(n1 - 2.0, small));
+  xtilde = 1.0 / std::pow(std::pow(1.0 + std::pow(alpha, n2), n1divn2) + std::pow(beta, n1), 1.0 / n1);
+  x = a * xtilde;
+  y = alpha * b * xtilde;
+  z = beta * c * xtilde;
+  return sqrt(x * x + y * y + z * z);
+  */
+}
+
+void AtomVecEllipsoid::inertia_ellipsoid_principal(double *shape, double mass, double *idiag,
+                                                   double *block, BlockType flag_type)
+{
+  double rsq0 = shape[0] * shape[0];
+  double rsq1 = shape[1] * shape[1];
+  double rsq2 = shape[2] * shape[2];
+  if (flag_type == BlockType::ELLIPSOID) {
+    double dens = 0.2 * mass;
+    idiag[0] = dens * (rsq1 + rsq2);
+    idiag[1] = dens * (rsq0 + rsq2);
+    idiag[2] = dens * (rsq0 + rsq1);
+  } else {
+    // super-ellipsoid, Eq. (12) of Jaklic and Solina, 2003
+    double e1 = 2.0 / block[0], e2 = 2.0 / block[1];
+    double beta_tmp1 = std::beta(0.5 * e1, 1 + 2 * e1);
+    double beta_tmp2 = std::beta(0.5 * e2, 0.5 * e2);
+    double beta_tmp3 = std::beta(0.5 * e2, 1.5 * e2);
+    double dens = mass / (std::beta(0.5 * e1, 1.0 + e1) * beta_tmp2);
+    double m0 = 0.5 * rsq0 * beta_tmp1 * beta_tmp3;
+    double m1 = 0.5 * rsq1 * beta_tmp1 * beta_tmp3;
+    double m2 = rsq2 * std::beta(1.5 * e1, 1 + e1) * beta_tmp2;
+    idiag[0] = dens * (m1 + m2);
+    idiag[1] = dens * (m0 + m2);
+    idiag[2] = dens * (m0 + m1);
   }
 }

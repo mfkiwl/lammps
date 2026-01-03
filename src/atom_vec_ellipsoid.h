@@ -26,12 +26,17 @@ namespace LAMMPS_NS {
 
 class AtomVecEllipsoid : virtual public AtomVec {
  public:
+  enum BlockType {
+    ELLIPSOID = 0, // n1 = n2 = 2
+    N1_EQUAL_N2 = 1, // n1 = n2 > 2
+    GENERAL = 2, // n2 != n2 > 2
+  };
   struct Bonus {
     double shape[3];
     double quat[4];
     double block[2];
     double inertia[3];
-    bool flag_super;
+    BlockType type;
     int ilocal;
   };
   struct Bonus *bonus;
@@ -70,7 +75,6 @@ class AtomVecEllipsoid : virtual public AtomVec {
 
   void set_shape(int, double, double, double);
   void set_block(int, double, double);
-  double compute_radcirc(double *, double *, bool);
 
   int nlocal_bonus;
 
@@ -86,6 +90,11 @@ class AtomVecEllipsoid : virtual public AtomVec {
 
   virtual void grow_bonus();
   void copy_bonus_all(int, int);
+
+  static BlockType determine_type(double *);
+  static double radius_ellipsoid(double *, double *, BlockType);
+  static void inertia_ellipsoid_principal(double *, double, double *,
+                                   double *block, BlockType);
 };
 
 }    // namespace LAMMPS_NS

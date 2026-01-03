@@ -302,7 +302,16 @@ double regularized_shape_and_derivatives_local(const double* xlocal, const doubl
 
 double shape_and_derivatives_local(const double* xlocal, const double* shape, const double* block, const int flag, double* grad, double hess[3][3]) {
   double shapefunc;
-  switch (flag) {
+  // TODO: Not sure how to make flag values more clear
+  // Cannot forward declare the enum AtomVecEllipsoid::BlockType
+  // Could use scoped (enum class) but no implicit conversion:
+  //    must pass type `LAMMPS_NS::AtomVecEllipsoid::BlockType` instead of int,
+  //    and/or static_cast the enum class to int, which is similar to current
+  // Could define the enum in a dedicated header
+  //    seems overkill just for one enum
+  // I think the comment below making reference to the BlockType should be enough
+  // Feel free to change to a better design
+  switch (flag) { // LAMMPS_NS::AtomVecEllipsoid::BlockType
     case 0: {
       shapefunc = shape_and_derivatives_local_ellipsoid(xlocal, shape, grad, hess);
       break;
@@ -635,15 +644,7 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
 }
 
 
-int determine_flag(const double* block) {
-  const double EPSBLOCK(1e-3);
-  int flag(2);
-  if ((std::fabs(block[0] - 2) <= EPSBLOCK) && (std::fabs(block[1] - 2) <= EPSBLOCK))
-    flag = 0;
-  else if (std::fabs(block[0] - block[1]) <= EPSBLOCK)
-    flag = 1;
-  return flag;
-}
+
 
 // Functions to compute shape function and gradient only when called for newton method
 // to avoid computing hessian when not needed and having smoother landscape for the line search
