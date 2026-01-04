@@ -749,8 +749,11 @@ void Image::draw_axes(double (*axes)[3], double diameter, double opacity)
 ------------------------------------------------------------------------- */
 
 void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsigned char *pixmap,
-                        double *background, double scale, double opacity)
+                        double *transcolor, double scale, double opacity)
 {
+  // nothing to do
+  if (!pixmap || (pixwidth == 0) || (pixheight == 0) || (scale <= 0.0)) return;
+
   double xlocal[3] = {x[0] - xctr, x[1] - yctr, x[2] - zctr};
   double xmap = MathExtra::dot3(camRight,xlocal);
   double ymap = MathExtra::dot3(camUp,xlocal);
@@ -802,12 +805,13 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
       pixelcolor[1] = (double)mypixmap[offs + 1] / 255.0;
       pixelcolor[2] = (double)mypixmap[offs + 2] / 255.0;
 
-      // check for transparent background color and skip if it matches
-      // we allow one step difference for each channel to account for rounding errors
+      // check for transparency color and skip if it matches
+      // we allow a few steps difference for each channel to account
+      // for rounding errors and reduce "bleeding" from interpolation
 
-      if ((fabs(pixelcolor[0] - background[0]) < 0.005) &&
-          (fabs(pixelcolor[1] - background[1]) < 0.005) &&
-          (fabs(pixelcolor[2] - background[2]) < 0.005)) continue;
+      if ((fabs(pixelcolor[0] - transcolor[0]) < 0.01) &&
+          (fabs(pixelcolor[1] - transcolor[1]) < 0.01) &&
+          (fabs(pixelcolor[2] - transcolor[2]) < 0.01)) continue;
 
       draw_pixel(ix, iy, dist, normal, pixelcolor);
     }
@@ -1548,8 +1552,7 @@ void Image::write_PPM(FILE *fp)
 
   fprintf(fp,"P6\n%d %d\n255\n",ppmwidth,ppmheight);
 
-  int y;
-  for (y = ppmheight-1; y >= 0; y--)
+  for (int y = ppmheight-1; y >= 0; y--)
     fwrite(&writeBuffer[y*ppmwidth*3],3,ppmwidth,fp);
 }
 
