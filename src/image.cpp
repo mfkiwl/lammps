@@ -687,8 +687,16 @@ void Image::draw_box(double (*corners)[3], double diameter, double opacity)
 }
 
 /* ----------------------------------------------------------------------
-   draw XYZ axes in red/green/blue
+   draw XYZ axes with X, Y, and Z labels in red/green/blue
    axes = 4 end points
+
+   labels are created from 32x32 size bitmaps stored as string in an XPM-like format
+   convert the bitmap into an RGB pixmap with foreground and background color
+   where the background color is used as transparent color
+   choose text and background color to be somewhat similar to minimize artifacts from scaling
+   we switch from white/silver to black/darkgray depending on the luminance of the background
+   offset labels by a diameter in every direction to avoid them being obscured by the cylinders
+   scale pixmaps based on the smaller of image width or height
 ------------------------------------------------------------------------- */
 
 void Image::draw_axes(double (*axes)[3], double diameter, double opacity)
@@ -697,61 +705,53 @@ void Image::draw_axes(double (*axes)[3], double diameter, double opacity)
   draw_cylinder(axes[0],axes[2],color2rgb("green"),diameter,3,opacity);
   draw_cylinder(axes[0],axes[3],color2rgb("blue"),diameter,3,opacity);
 
-  // draw axis labels from 32x32 size bitmaps stored as string list in an XPM-like format
-  // convert the bitmap into an RGB pixmap and use "green" as the transparent color
-  // offset labels by a diameter in every direction to avoid them being obscured by the cylinders
-  // scale pixmaps based on the smaller of image width or height. scaling down to 16x16 for default
+  // adjust size of labels based on image size,
+  // with FSAA active, width and height are doubled; adjust the scale factor accordingly
   double scale = static_cast<double>(MIN(width,height)) / 1440.0;
+  if (fsaa) scale *= 0.5;
 
-  unsigned char rgbbuffer[32*32*3];
-  double shiftedpos[3];
-
-  // set font color for axis label to white, but when the
-  // luminance of the background is too large, switch to black
-
+  // select color of labels
   double *fontcolor = color2rgb("white");
   double *backcolor = color2rgb("silver");
-
   int bgyuv[3];
   rgb2yuv(background, bgyuv);
-  if (bgyuv[0] > 192){
+  if (bgyuv[0] > 192) { // switch to black text only for very bright backgrounds
     fontcolor = color2rgb("black");
     backcolor = color2rgb("darkgray");
   }
 
+  // convert bitmap of letters to pixmap and scale/draw.
+
+  unsigned char rgbbuffer[32*32*3];
+  double shiftedpos[3];
+  xpm2pix(32,32,letter_x,rgbbuffer,fontcolor,backcolor);
   shiftedpos[0] = axes[1][0] + diameter;
   shiftedpos[1] = axes[1][1] + diameter;
-  shiftedpos[2] = axes[1][2] - diameter;
-  xpm2pix(32,32,letter_x,rgbbuffer,fontcolor,backcolor);
+  shiftedpos[2] = axes[1][2] - diameter; // moving in lower z-direction reduces overlap for X
   draw_pixmap(shiftedpos,32,32,rgbbuffer,backcolor,scale,opacity);
 
+  xpm2pix(32,32,letter_y,rgbbuffer,fontcolor,backcolor);
   shiftedpos[0] = axes[2][0] + diameter;
   shiftedpos[1] = axes[2][1] + diameter;
   shiftedpos[2] = axes[2][2] + diameter;
-  xpm2pix(32,32,letter_y,rgbbuffer,fontcolor,backcolor);
   draw_pixmap(shiftedpos,32,32,rgbbuffer,backcolor,scale,opacity);
 
+  xpm2pix(32,32,letter_z,rgbbuffer,fontcolor,backcolor);
   shiftedpos[0] = axes[3][0] + diameter;
   shiftedpos[1] = axes[3][1] + diameter;
   shiftedpos[2] = axes[3][2] + diameter;
-  xpm2pix(32,32,letter_z,rgbbuffer,fontcolor,backcolor);
   draw_pixmap(shiftedpos,32,32,rgbbuffer,backcolor,scale,opacity);
 }
 
 /* ----------------------------------------------------------------------
-   copy pixmap centered at location x into image with depth buffering
-   color is used for transparency and pixels in that color skipped
+   scale and add pixmap centered at location x into image with depth buffering
+   background color indicates transparency and pixels in that color are skipped
 ------------------------------------------------------------------------- */
 
 void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsigned char *pixmap,
                         double *background, double scale, double opacity)
 {
-  double xlocal[3];
-
-  xlocal[0] = x[0] - xctr;
-  xlocal[1] = x[1] - yctr;
-  xlocal[2] = x[2] - zctr;
-
+  double xlocal[3] = {x[0] - xctr, x[1] - yctr, x[2] - zctr};
   double xmap = MathExtra::dot3(camRight,xlocal);
   double ymap = MathExtra::dot3(camUp,xlocal);
   double dist = MathExtra::dot3(camPos,camDir) - MathExtra::dot3(xlocal,camDir);
@@ -770,7 +770,8 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
   const unsigned char *mypixmap = pixmap;
   unsigned char *npixmap = nullptr;
 
-  // scale factor already accounts for FSAA
+  // adjust scale factor for FSAA and only scale as much as needed.
+  if (fsaa) scale *= 2.0;
   if (scale != 1.0) {
     int nwidth = scale * pixwidth + 0.5;
     int nheight = scale * pixheight + 0.5;
@@ -787,11 +788,13 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
 
   for (int j = 0; j < pixheight; ++j) {
     for (int i = 0; i < pixwidth; ++i) {
-      int iy = ylo + j;
-      int ix = xlo + i;
+      int iy = ylo + j - pixheight/2;
+      int ix = xlo + i - pixwidth/2;
       if (iy < 0 || iy >= height || ix < 0 || ix >= width) continue;
       if (((opacity < 1.0) && (transthresh[ix % TRANK][iy % TRANK] > opacity)) || (opacity <= 0.0))
         continue;
+
+      // get color of pixel at x/y position of pixmap
 
       double pixelcolor[3];
       int offs = 3*j*pixwidth + 3*i;
@@ -799,8 +802,8 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
       pixelcolor[1] = (double)mypixmap[offs + 1] / 255.0;
       pixelcolor[2] = (double)mypixmap[offs + 2] / 255.0;
 
-      // check for transparent background color and skip if matches
-      // we allow for one step variance for each channel to account for rounding errors
+      // check for transparent background color and skip if it matches
+      // we allow one step difference for each channel to account for rounding errors
 
       if ((fabs(pixelcolor[0] - background[0]) < 0.005) &&
           (fabs(pixelcolor[1] - background[1]) < 0.005) &&
