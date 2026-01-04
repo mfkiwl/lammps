@@ -8,10 +8,10 @@ Syntax
 
 .. code-block:: LAMMPS
 
-   fix ID group-ID graphics/label Nevery mode keyword args ...
+   fix ID group-ID graphics/labels Nevery mode keyword args ...
 
 * ID, group-ID are documented in :doc:`fix <fix>` command
-* graphics/label = style name of this fix command
+* graphics/labels = style name of this fix command
 * Nevery = update graphics information every this many time steps
 * zero or more keyword/args groups may be appended
 * keyword = *image* or *text*
@@ -29,7 +29,7 @@ Syntax
              *auto* = uses the color in the lower left corner of the image for transparency
              *none* = disables transparency
              *r/g/b* = provide three integers in the range 0 to 255 to select transparancy color in RGB color space
-        
+
      *text* labeltext x y z keyword args = display text in visualization
         labeltext = text for the label, must be quoted if it contains whitespace
         x, y, z  = position where the center of the text is located in the visualization
@@ -40,8 +40,9 @@ Examples
 
 .. code-block:: LAMMPS
 
-   fix pix all graphics/label 100 image teapot.ppm 5.0 -1.0 -2.0 transcolor auto scale 0.75
-   fix lbl all graphics/label 1000 text "LAMMPS Graphics Demo" 5.0 -1.0 -2.0
+   fix pix all graphics/labels 100 image teapot.png 5.0 -1.0 -2.0 transcolor auto
+   fix pot all graphics/labels 100 image teapot.ppm 1.0 v_ypos v_zpos scale v_prog transcolor 19/92/192
+   fix lbl all graphics/labels 1000 text "LAMMPS Graphics Demo" 5.0 -1.0 -2.0
 
 Description
 """""""""""
@@ -98,7 +99,7 @@ Dump image info
 
 .. versionadded:: TBD
 
-Fix graphics/label is designed to be used with the *fix* keyword of
+Fix graphics/labels is designed to be used with the *fix* keyword of
 :doc:`dump image <dump_image>`.  The fix adds images or text to the
 visualization.
 
@@ -134,5 +135,4 @@ Related commands
 Default
 """""""
 
-radius = auto, atoms = yes, bonds = yes, if supported by atom style otherwise no,
-no label graphics
+transcolor = "none" for *image* and "auto" for *text*, scale = 1.0
