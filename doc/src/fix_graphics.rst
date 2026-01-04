@@ -62,6 +62,8 @@ Description
 This fix allows to add arbitrary objects to images rendered with
 :doc:`dump image <dump_image>` using the *fix* keyword.
 
+The *group-ID* is ignored by this fix.
+
 The *Nevery* keyword determines how often the graphics object data is
 updated.  This should be the same value as the corresponding *N*
 parameter of the :doc:`dump <dump>` image command.  LAMMPS will stop
