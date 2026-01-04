@@ -20,6 +20,7 @@
 #include "memory.h"
 #include "modify.h"
 #include "respa.h"
+#include "text_file_reader.h"
 #include "tokenizer.h"
 #include "update.h"
 
@@ -56,9 +57,18 @@ unsigned char *read_image(FILE *fp, int &width, int &height)
 #else
   return nullptr;
 #endif
+
+  // read file in NetPBM binary format
   char buffer[128];
   char *ptr = fgets(buffer, 128, fp);
-  if (!ptr || (strlen(buffer) < 3) || (buffer[0] != 'P') || (buffer[1] != '6')) return nullptr;
+  if (!ptr || (strlen(buffer) < 3) || (buffer[0] != 'P')) return nullptr;
+
+  // detect binary versus ASCII variant
+  bool binary = true;
+  if (buffer[1] == '3')
+    binary = false;
+  else if (buffer[1] != '6')
+    return nullptr;
 
   // skip over optional comments
   do {
@@ -74,9 +84,40 @@ unsigned char *read_image(FILE *fp, int &width, int &height)
   if ((rv != 1) || (tmp != 255)) return nullptr;
 
   pixmap = new unsigned char[3 * width * height];
-  for (int y = height - 1; y >= 0; --y) {
-    rv = fread(&pixmap[y * width * 3], 3, width, fp);
-    if (rv != width) {
+  if (binary) {
+    // read raw data directly into buffer in the expected order of lines
+    // this is the inverse of what Image::write_PPM() does
+    for (int y = height - 1; y >= 0; --y) {
+      rv = fread(&pixmap[y * width * 3], 3, width, fp);
+      if (rv != width) {
+        delete[] pixmap;
+        return nullptr;
+      }
+    }
+  } else {
+    // read file line-by-line and store three RGB values at a time
+    auto reader = TextFileReader(fp, "NetPBM ASCII pixmap");
+    try {
+      int y = height -1;
+      int x = 0;
+      auto *line = reader.next_line();
+      while (line) {
+        auto values = ValueTokenizer(line);
+
+        while (values.has_next()) {
+          pixmap[y * width * 3 + 3 * x] = values.next_int();
+          pixmap[y * width * 3 + 3 * x + 1] = values.next_int();
+          pixmap[y * width * 3 + 3 * x + 2] = values.next_int();
+          ++x;
+          // next line of pixels
+          if (x >= width) {
+            --y;
+            x = 0;
+          }
+        }
+        line = reader.next_line();
+      }
+    } catch (std::exception &e) {
       delete[] pixmap;
       return nullptr;
     }
