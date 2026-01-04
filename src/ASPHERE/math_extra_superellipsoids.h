@@ -12,7 +12,7 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-    Contributing author: Jacopo Bilotto (EPFL), Jibril Coulibaly (??)
+    Contributing author: Jacopo Bilotto (EPFL), Jibril B. Coulibaly
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_MATH_EXTRA_SUPERELLIPOIDS_H
@@ -24,18 +24,13 @@
 
 namespace MathExtraSuperellipsoids {
   inline constexpr double TIKHONOV_SCALE = 1e-14; // TODO: inline constexpr are C++17, which is Okay as of 10Sep2025 version of LAMMPS!
-  void volume_superellipsoid(const double *blockiness, const double *shape, double volume); // duplicated from math_extra might remove
-  void inertia_superellipsoid(const double *shape, const double *blockiness, double density, double *inertia); // duplicated from math_extra might remove
 
   // needed for shape functions grad and matrix 
-  void local2global_vector(const double v[3], const double *quat, double global_v[3]);
-  void global2local_vector(const double v[3], const double *quat, double local_v[3]);
-  void local2global_matrix(const double m[3][3], const double *quat, double global_m[3][3]);
-  void global2local_matrix(const double m[3][3], const double *quat, double local_m[3][3]);
+  void global2local_vector(const double v[3], const double *quat, double local_v[3]); // TODO: TBD if still useful once we implement Hertz. There might be a cheaper way with the rotation matrix that we need for contact detection anyway
 
   // shape function computations
+  // TODO Jacopo: Let's make sure we only have one set of such functions and that they are optimized. Deleted some but cannot do all without messing with your code.
   void shape_function_local(const double *shape, const double *block, const double *quat, const double *point, double local_f);
-  void shape_function_global(const double *shape, const double *block, const double *quat, const double *point, double global_f);
   void shape_function_local_grad(const double *shape, const double *block, const double *quat, const double *point, double *local_grad);
   void shape_function_local_hessian(const double *shape, const double *block, const double *quat, const double *point, double local_hessian[3][3]);
 
@@ -63,14 +58,12 @@ namespace MathExtraSuperellipsoids {
                                         const double* x_wall, const double* n_wall, double* X0, double* nij, double* overlap);
 
   // Jibril's versions of the functions for contact detection
+  // TODO @Jacopo: you might need to add a function that only computed the shape, or shape+grad if still needed in overlap / curvature calculation after answering the other TODOs I left
   double shape_and_derivatives_local(const double* xlocal, const double* shape, const double* block, const int flag, double* grad, double hess[3][3]);
   double shape_and_derivatives_local_superquad(const double* xlocal, const double* shape, const double* block, double* grad, double hess[3][3]);
   double shape_and_derivatives_local_n1equaln2(const double* xlocal, const double* shape, const double n, double* grad, double hess[3][3]);
   double shape_and_derivatives_local_ellipsoid(const double* xlocal, const double* shape, double* grad, double hess[3][3]);
   double shape_and_derivatives_global(const double* xc, const double R[3][3], const double* shape, const double* block, const int flag, const double* X0, double* grad, double hess[3][3]);
-  
-  double regularized_shape_and_derivatives_local(const double* xlocal, const double* shape, const double* block, const int flag, double* grad, double hess[3][3]);
-  double regularized_shape_and_derivatives_global(const double* xc, const double R[3][3], const double* shape, const double* block, const int flag, const double* X0, double* grad, double hess[3][3]);
 
   double compute_residual(const double shapefunci, const double* gradi_global, const double shapefuncj, const double* gradj_global, const double mu2, double* residual);
   void compute_jacobian(const double* gradi_global, const double hessi_global[3][3], const double* gradj_global, const double hessj_global[3][3], const double mu2, double* jacobian);
@@ -80,14 +73,17 @@ namespace MathExtraSuperellipsoids {
   int determine_contact_point(const double* xci, const double Ri[3][3], const double* shapei, const double* blocki, const int flagi,
                               const double* xcj, const double Rj[3][3], const double* shapej, const double* blockj, const int flagj,
                               double* X0, double* nij);
- 
+
+  // TODO: Jacopo the global function is never used. Can we delete? Is this duplicating the `stable_shape_and_gradient` methods?
+  double regularized_shape_and_derivatives_global(const double* xc, const double R[3][3], const double* shape, const double* block, const int flag, const double* X0, double* grad, double hess[3][3]);
+  void apply_regularization_shape_function(double n1, double *value, double *grad, double hess[3][3]);
   // functions to compute shape function and gradient only when called for newton method
+  // TODO: rename those. I don't think `stable` is a good terminolgy here. Maybe "..._local_superquad_surfacesearch", or "modified_shape_..."" TBD
   double stable_shape_and_gradient_local_superquad(const double* xlocal, const double* shape, const double* block, double* grad);
   double stable_shape_and_gradient_local_n1equaln2(const double* xlocal, const double* shape, const double n, double* grad);
   double stable_shape_and_gradient_local_ellipsoid(const double* xlocal, const double* shape, double* grad);
-  double compute_overlap_distance(const double* shape, const double* block, const double Rot[3][3], const int flag, const double* global_point, const double* global_normal, const double* center);
 
-  void apply_regularization_shape_function(double n1, double *value, double *grad, double hess[3][3]);
+  double compute_overlap_distance(const double* shape, const double* block, const double Rot[3][3], const int flag, const double* global_point, const double* global_normal, const double* center);
   
 };
 

@@ -13,7 +13,7 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   Contributing author: Jacopo Bilotto (EPFL), Jibril Coulibaly (??)
+   Contributing author: Jacopo Bilotto (EPFL), Jibril B. Coulibaly
 ------------------------------------------------------------------------- */
 
 #include "math_extra_superellipsoids.h"
@@ -47,60 +47,26 @@ static constexpr unsigned int ITERMAX_OVERLAP = 20;
 static constexpr double MINSLOPE_OVERLAP = 1e-12;
 
 
-void volume_superellipsoid(const double *blockiness, const double *shape, double volume)
-{
-  const double eps1 = 2.0 / blockiness[0]; // shape exponent in latitude direction
-  const double eps2 = 2.0 / blockiness[1]; // shape exponent in longitude direction
-  volume = 2.0*shape[0]*shape[1]*shape[2]*eps1*eps2*
-      std::beta(0.5*eps1, eps1 + 1.0)*
-      std::beta(0.5*eps2, 0.5*eps2 + 1.0);
-}
-
-/* ----------------------------------------------------------------------
-   inertia tensor of superellipsoid
-   source https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
-------------------------------------------------------------------------- */
-void inertia_superellipsoid(const double *shape, const double *blockiness, double density, double *inertia)
-
-{
-
-  const double eps1 = 2.0 / blockiness[0]; // shape exponent in latitude direction
-  const double eps2 = 2.0 / blockiness[1]; // shape exponent in longitude direction
-
-  const double a1 = shape[0];
-  const double a2 = shape[1];
-  const double a3 = shape[2];
-  const double I_xx = 0.5*a1*a2*a3*eps1*eps2*(a2*a2*std::beta(1.5*eps2, 0.5*eps2)*std::beta(0.5*eps1, 2.0*eps1+1.0)+
-      4.0*a3*a3*std::beta(0.5*eps2, 0.5*eps2+1.0)*std::beta(1.5*eps1, eps1+1.0)) * density;
-  const double I_yy = 0.5*a1*a2*a3*eps1*eps2*(a1*a1*std::beta(1.5*eps2, 0.5*eps2)*std::beta(0.5*eps1, 2.0*eps1+1.0)+
-      4.0*a3*a3*std::beta(0.5*eps2, 0.5*eps2+1.0)*std::beta(1.5*eps1, eps1+1.0)) * density;
-  const double I_zz = 0.5*a1*a2*a3*eps1*eps2*(a1*a1 + a2*a2)*
-      std::beta(1.5*eps2, 0.5*eps2)*std::beta(0.5*eps1, 2.0*eps1+1.0) * density;
-
-  inertia[0] = I_xx;
-  inertia[1] = I_yy;
-  inertia[2] = I_zz;
-}
-
-
 /* ----------------------------------------------------------------------
    curvature of superellipsoid
    source https://en.wikipedia.org/wiki/Mean_curvature
 ------------------------------------------------------------------------- */
-
+// TODO Jacopo: please refactor using the high-performance functions.
+//              This recomputes a lot of expensive things twice or more
 void mean_curvature_superellipsoid(const double *shape, const double *blockiness, const double* quat, const double *global_point, double curvature)
 {
   // this code computes the mean curvature on the superellipsoid surface
   // for the given global point
   double local_point[3],hessian[3][3], nablaF[3], f, normal[3];
-  global2local_vector(global_point, quat, local_point); 
-  shape_function_local(shape, blockiness, quat, local_point, f);
+  global2local_vector(global_point, quat, local_point);
+  shape_function_local(shape, blockiness, quat, local_point, f);  
   double koef = pow(fabs(0.5), std::max(blockiness[0], blockiness[1])-2.0);
   double alpha = 1.0 / pow(fabs(f/koef + 1.0), 1.0/blockiness[0]);
   for(int i = 0; i < 3; i++)
-    local_point[i] *= alpha;
-  shape_function_local_grad(shape, blockiness, quat, local_point, nablaF);
-  shape_function_local_hessian(shape, blockiness, quat, local_point, hessian);
+    local_point[i] *= alpha; // TODO: why is the local point moved after the shape function is computed? This does not seem to appear in Eq (39) of Podlozhnyuk
+                             //       If not, we may directly use the function that computes shape func, grad and hess for cheaper
+  shape_function_local_grad(shape, blockiness, quat, local_point, nablaF);  
+  shape_function_local_hessian(shape, blockiness, quat, local_point, hessian);  
   MathExtra::normalize3(nablaF, normal);
   double temp[3];
   MathExtra::matvec(hessian, normal, temp);
@@ -118,7 +84,8 @@ void gaussian_curvature_superellipsoid(const double *shape, const double *blocki
   double koef = pow(fabs(0.5), std::max(blockiness[0], blockiness[1])-2.0);
   double alpha = 1.0 / pow(fabs(f/koef + 1.0), 1.0/blockiness[0]);
   for(int i = 0; i < 3; i++)
-    local_point[i] *= alpha;
+    local_point[i] *= alpha; // TODO: why is the local point moved after the shape function is computed? This does not seem to appear in Eq (39) of Podlozhnyuk
+                             //       If not, we may directly use the function that computes shape func, grad and hess for cheaper
   shape_function_local_grad(shape, blockiness, quat, local_point, nablaF);
   shape_function_local_hessian(shape, blockiness, quat, local_point, hessian);
   MathExtra::normalize3(nablaF, normal);
@@ -150,23 +117,6 @@ void gaussian_curvature_superellipsoid(const double *shape, const double *blocki
     curvature =  sqrt(fabs(K));
 }
 
-
-/* ----------------------------------------------------------------------
-   express local (particle level) to global (system level) coordinates
-------------------------------------------------------------------------- */
-
-void local2global_vector(const double v[3], const double *quat, double global_v[3]){
-
-   MathExtra::quatrotvec(const_cast<double*>(quat) , const_cast<double*>(v), global_v);
-};
-
-void local2global_matrix(const double m[3][3], const double *quat, double global_m[3][3]){
-    double rot[3][3],  temp[3][3];
-    MathExtra::quat_to_mat(const_cast<double*>(quat), rot);
-    MathExtra::times3(rot, m, temp);
-    MathExtra::transpose_times3(rot, temp, global_m);
-};
-
   
 /* ----------------------------------------------------------------------
    express global (system level) to local (particle level) coordinates
@@ -181,27 +131,16 @@ void global2local_vector(const double *v, const double *quat, double *local_v){
 };
 
 
-void global2local_matrix(const double m[3][3], const double *quat, double local_m[3][3]){
-    double rot[3][3], temp[3][3];
-    MathExtra::quat_to_mat(quat, rot);
-    MathExtra::transpose_times3(rot, m, temp);
-    MathExtra::times3(temp, rot, local_m);
-}
-
 /* ----------------------------------------------------------------------
    shape function computations for superellipsoids
 ------------------------------------------------------------------------- */
-
+// TODO Jacopo: this function does nothing (f is passed by value), return double instead
+//              Please refactor using ideas from the high-performance functions and distinguish between cases
+//              Also, this function only seems to be used in curvature calculation. After we discuss why the local_point is moved, we may not even need a function that only computes the shape function without cumputing its derivatives
 void shape_function_local(const double *shape, const double *block, const double *quat, const double *point, double local_f){
   const double n1 = block[0], n2 = block[1];
   
   local_f = pow( pow(abs(point[0]/shape[0]), n2) + pow(abs(point[1]/shape[1]), n2) , n1/ n2) + pow(abs(point[2]/shape[2]), n1)  - 1.0;
-};
-
-void shape_function_global(const double *shape, const double *block, const double *quat, const double *point, double global_f){
-  double local_point[3];
-  global2local_vector(const_cast<double*>(point), const_cast<double*>(quat), local_point);
-  shape_function_local(shape, block, quat, local_point, global_f);
 };
 
 void shape_function_local_grad(const double *shape, const double *block, const double *quat, const double *point, double *local_grad){
@@ -278,27 +217,6 @@ void apply_regularization_shape_function(double n1, double *value, double *grad,
   }
 };
 
-double regularized_shape_and_derivatives_local(const double* xlocal, const double* shape, const double* block, const int flag, double* grad, double hess[3][3]) {
-  double shapefunc;
-  double n1 = block[0];
-  switch (flag) {
-    case 0: {
-      shapefunc = shape_and_derivatives_local_ellipsoid(xlocal, shape, grad, hess);
-      break;
-    }
-    case 1: {
-      shapefunc = shape_and_derivatives_local_n1equaln2(xlocal, shape, block[0], grad, hess);
-      break;
-    }
-    case 2: {
-      shapefunc = shape_and_derivatives_local_superquad(xlocal, shape, block, grad, hess);
-      break;
-    }
-  }
-
-  apply_regularization_shape_function(n1, &shapefunc, grad, hess);
-  return shapefunc;
-}
 
 double shape_and_derivatives_local(const double* xlocal, const double* shape, const double* block, const int flag, double* grad, double hess[3][3]) {
   double shapefunc;
@@ -429,7 +347,8 @@ double regularized_shape_and_derivatives_global(const double* xc, const double R
   double shapefunc, xlocal[3], tmp_v[3], tmp_m[3][3];
   MathExtra::sub3(X0, xc, tmp_v);
   MathExtra::transpose_matvec(R, tmp_v, xlocal);
-  shapefunc = regularized_shape_and_derivatives_local(xlocal, shape, block, flag, tmp_v, hess);
+  shapefunc = shape_and_derivatives_local(xlocal, shape, block, flag, tmp_v, hess);
+  apply_regularization_shape_function(block[0], &shapefunc, tmp_v, hess);
   MathExtra::matvec(R, tmp_v, grad);
   MathExtra::times3_transpose(hess, R, tmp_m);
   MathExtra::times3(R, tmp_m, hess);
@@ -456,7 +375,6 @@ double compute_residual(const double shapefunci, const double* gradi_global, con
   // Gradient equality F1' + mu2 * F2' evaluated relative to magnitude of gradient ||F1'|| = ||mu2 * F2'||
   // Shape function equality F1 - F2 evaluated relative to magnitude of shape function + 1
   //    the shift f = polynomial - 1 is not necessary and cancels out in F1 - F2
-  // TODO: based on line above, consider removing the -1 in definition of shape function, and compare inside outside to 1 instead of 0.
   // Last component homogeneous to shape function
   return MathExtra::lensq3(residual) / MathExtra::lensq3(gradi_global) +
          residual[3] * residual[3] / ((shapefunci + 1) * (shapefunci + 1));
@@ -506,8 +424,8 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
   double blockmax = std::fmax(std::fmax(blocki[0],blocki[1]), std::fmax(blockj[0], blockj[1]));
 
   norm = compute_residual_and_jacobian(xci, Ri, shapei, blocki, flagi, xcj, Rj, shapej, blockj, flagj, X0, shapefunc, residual, jacobian);
-  // TODO: would it be wise or crazy to test for convergence before even attempting Newton's method?
-  //       the initial guess is the old X0, so with temporal coherence, it might still pass deformation is slow!
+  // TODO: consider testing for convergence before attempting Newton's method.
+  //       the initial guess is the old X0, so with temporal coherence, it might still pass tolerance if deformation is slow!
 
   for (int iter = 0 ; iter < ITERMAX_NR ; iter++) {
     norm_old = norm;
@@ -593,9 +511,10 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
           (MathExtra::lensq3(rhs) * a * a <= TOL_NR_POS * lsq)) {
         converged = true;
         // TODO: consider testing picking the normal with the least error
-        //       i.e., likely the grain with the smallest curvature (Hessian norm)
+        //       i.e., likely the grain with the smallest curvature (Hessian norm?)
+        //       or with the largest gradient?
         //       or some other measure like average gradients.
-        //       right now we use the gradient on grain i for simplicity and performance. When testing, we could see if using  is just as good
+        //       right now we use the gradient on grain i for simplicity and performance
         MathExtra::normalize3(gradi, nij);
         break;
       } else if (norm > norm_old - PARAMETER_LS * a * norm_old) { // Armijo - Goldstein condition not met
@@ -637,7 +556,7 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
   // 1 = converged but grains not touching
   // 0 = converged and grains touching
   if (!converged)
-    return 2;
+    return 2; // TODO: consider not failing if not converged but shapefuncs positive (i.e., no contact)
   if (shapefunc[0] > 0.0 || shapefunc[1] > 0.0)
     return 1;
   return 0;

@@ -126,10 +126,6 @@ TEST(ContactPointAndNormal, supersphere_mono)
     // Analytical solution
     double X0_analytical[4] = {0.0, 0.0, 0.0, 1.0};
     double nij_analytical[3] = {1.0, 0.0, 0.0};
-    // TODO / WIP:
-    // Gradients can be smaller in different directions, hard to naviguate canyon on high blockiness
-    // Little progress made along the flat faces. Maybe use Levenberg-Marquardt or Newton with momentum (previous step memory) or other methods.
-    // I think this might be an intrinsic problem with the solution having a Hessian of zero, leading to slow convergence + bad conditioning in Newton's method.
 
     std::cout<<n<<" "<<status<<" "<<X0[0]<<" "<<X0[1]<<" "<<X0[2]<<" "<<X0[3]<<std::endl;
     ASSERT_NEAR(X0[0], X0_analytical[0], EPSILON);
@@ -143,5 +139,7 @@ TEST(ContactPointAndNormal, supersphere_mono)
   }
 }
 
-
+// TODO: supersphere_mono with grains overlapping
+// TODO: supersphere_poly with grains overlapping
+// TODO: more
 // for polydisperse solution should be at the radii ratio
