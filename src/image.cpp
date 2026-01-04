@@ -23,6 +23,7 @@
 #include "math_extra.h"
 #include "memory.h"
 #include "random_mars.h"
+#include "version.h"
 
 #include <cctype>
 #include <cmath>
@@ -36,7 +37,6 @@
 #include <png.h>
 #include <zlib.h>
 #include <csetjmp>
-#include "version.h"
 #endif
 
 using namespace LAMMPS_NS;
@@ -1550,7 +1550,8 @@ void Image::write_PPM(FILE *fp)
   const int ppmheight = height/aafactor;
   const int ppmwidth = width/aafactor;
 
-  fprintf(fp,"P6\n%d %d\n255\n",ppmwidth,ppmheight);
+  fprintf(fp,"P6\n%d %d\n",ppmwidth,ppmheight);
+  fprintf(fp,"# CREATOR: dump image\n# SOFTWARE: LAMMPS version %s\n255\n", LAMMPS_VERSION);
 
   for (int y = ppmheight-1; y >= 0; y--)
     fwrite(&writeBuffer[y*ppmwidth*3],3,ppmwidth,fp);
