@@ -79,7 +79,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
     pixmap = new unsigned char[3 * width * height];
     JSAMPARRAY scanline = new unsigned char *[1];
     for (int i = 0; i < height; ++i) {
-      scanline[0] = &pixmap[(height - 1 - i) * 3*width];
+      scanline[0] = &pixmap[(height - 1 - i) * 3 * width];
       jpeg_read_scanlines(&cinfo, scanline, 1);
     }
     delete[] scanline;
@@ -90,15 +90,84 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
 #else
     return nullptr;
 #endif
+
   } else if (utils::strmatch(fileinfo, "\\.png$") || utils::strmatch(fileinfo, "\\.PNG$")) {
 
 #if defined(LAMMPS_PNG)
+    png_structp png_ptr = nullptr;
+    png_infop info_ptr = nullptr;
+    unsigned char sig[8];
+
+    // read and check PNG file signature
+    fread(sig, sizeof(unsigned char), 8, fp);
+    if (!png_check_sig(sig, 8)) return nullptr;
+
+    // set up reading from file
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) return nullptr;
+
+    info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+      png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+      return nullptr;
+    }
+
+    // set up error handling
+    if (setjmp(png_jmpbuf(png_ptr))) {
+      png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+      delete[] pixmap;
+      return nullptr;
+    }
+
+    png_uint_32 pngwidth, pngheight;
+    int bit_depth, color_type, interlace_type;
+
+    png_init_io(png_ptr, fp);
+    png_set_sig_bytes(png_ptr, 8);    /* we already read the 8 signature bytes */
+    png_read_info(png_ptr, info_ptr); /* read all PNG info up to image data */
+    png_get_IHDR(png_ptr, info_ptr, &pngwidth, &pngheight, &bit_depth, &color_type, &interlace_type,
+                 nullptr, nullptr);
+    width = pngwidth;
+    height = pngheight;
+
+    fileinfo = fmt::format("{}x{} PNG file, 8-bit RGB", width, height);
+
+    // convert data to compatible RGB data while reading
+    if (color_type == PNG_COLOR_TYPE_PALETTE) png_set_expand(png_ptr);
+    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) png_set_expand(png_ptr);
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) png_set_expand(png_ptr);
+    if (bit_depth == 16) png_set_strip_16(png_ptr);
+    if ((color_type == PNG_COLOR_TYPE_GRAY) || (color_type == PNG_COLOR_TYPE_GRAY_ALPHA))
+      png_set_gray_to_rgb(png_ptr);
+    png_set_strip_alpha(png_ptr);
+    png_set_interlace_handling(png_ptr);
+
+    png_read_update_info(png_ptr, info_ptr);
+
+    int rowbytes = png_get_rowbytes(png_ptr, info_ptr);
+    int channels = (int) png_get_channels(png_ptr, info_ptr);
+    // sanity check
+    if ((channels != 3) || (rowbytes != 3 * width)) return nullptr;
+
+    pixmap = new unsigned char[height * width * 3];
+    png_bytepp row_pointers = new png_bytep[height];
+    for (int i = 0; i < height; ++i) row_pointers[i] = pixmap + (height - 1 - i) * rowbytes;
+
+    png_read_image(png_ptr, row_pointers);
+    png_read_end(png_ptr, nullptr);
+
+    // cleanup
+    delete[] row_pointers;
+    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+
+    return pixmap;
 #else
     return nullptr;
 #endif
+
   } else {
 
-    // read file in NetPBM binary format
+    // read file in NetPBM binary or ASCII format
     char buffer[128];
     char *ptr = fgets(buffer, 128, fp);
     if (!ptr || (strlen(buffer) < 3) || (buffer[0] != 'P')) return nullptr;
