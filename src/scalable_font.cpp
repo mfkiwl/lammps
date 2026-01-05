@@ -12,8 +12,9 @@
 ------------------------------------------------------------------------- */
 
 // adapted from ssfn.h
-
+//
 // Copyright (C) 2019 bzt (bztsrc@gitlab)
+// https://gitlab.com/bztsrc/scalable-font
 
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
@@ -35,7 +36,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// @brief Scalable Screen Font renderer in a single ANSI C/C++ file
+// Scalable Screen Font renderer in a single ANSI C/C++ file
 
 #include <cstddef>
 #include <cstdint>

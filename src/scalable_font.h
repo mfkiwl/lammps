@@ -11,7 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#ifndef LMP_SCALABLE_FORN_H
+#ifndef LMP_SCALABLE_FONT_H
 #define LMP_SCALABLE_FONT_H
 
 #define SSFN_NUMVARIANTS 7
