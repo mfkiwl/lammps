@@ -466,9 +466,9 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
           if (iarg + 2 > narg)
             utils::missing_cmd_args(FLERR, "fix graphics/labels text transcolor", error);
           if (strcmp(arg[iarg + 1], "none") == 0) {
-            txt.transcolor[0] = 255.0;
-            txt.transcolor[1] = 255.0;
-            txt.transcolor[2] = 255.0;
+            txt.transcolor[0] = -255.0;
+            txt.transcolor[1] = -255.0;
+            txt.transcolor[2] = -255.0;
           } else {
             try {
               get_color(arg[iarg + 1], txt.transcolor);
@@ -481,8 +481,8 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
         } else {
           error->all(FLERR, iarg, "Unknown fix graphics/labels text keyword: {}", arg[iarg]);
         }
-        texts.emplace_back(txt);
       }
+      texts.emplace_back(txt);
     } else {
       error->all(FLERR, iarg, "Unknown fix graphics/labels keyword: {}", arg[iarg]);
     }
