@@ -271,9 +271,9 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
               blockj[1] = 2.0 + frac * (bonus[ellipsoid[j]].block[1] - 2.0);
 
               // force ellipsoid flag for first initial guess iteration.
-              // Avoid incorrect values of n1/n2 -1 in derivatives.
-              int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? 0 : flagi,
-                                                                             x[j], Rj, shapej, blockj, iter_ig == 1 ? 0 : flagj,
+              // Avoid incorrect values of n1/n2 - 2 in second derivatives.
+              int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi,
+                                                                             x[j], Rj, shapej, blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj,
                                                                              X0, nij);
               if (status == 0)
                 touching = true;
@@ -303,11 +303,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
         // compute overlap depth along normal direction for each grain
         // overlap is positive for both grains
         overlap1 = MathExtraSuperellipsoids::compute_overlap_distance(shapei, blocki, Ri, flagi, X0, nij, x[i]);
-        overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]); // TODO: Jibril: I wonder if we'd get the correct, but negative overlap if we picked nji, which might be cheaper than computing nji
-
-        // TODO: for the hertzian contact pass the surface points directly to the 
-        // curvature calculations. Need to add the normal scaled by the overlap to the contact point
-
+        overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]);
 
         // branch vectors 
         double cr1[3], cr2[3];
@@ -367,7 +363,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
         // if I or J part of rigid body, use body mass
         // if I or J is frozen, meff is other particle
 
-        mi = rmass[i]; // JB I assume this is the mass of particle i, need to check
+        mi = rmass[i];
         mj = rmass[j];
         if (fix_rigid) {
           if (mass_rigid[i] > 0.0) mi = mass_rigid[i];
@@ -434,9 +430,9 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
 
         // forces & torques
 
-        fx = -nij[0] * ccel + fs1;
-        fy = -nij[1] * ccel + fs2;
-        fz = -nij[2] * ccel + fs3;
+        fx = nji[0] * ccel + fs1;
+        fy = nji[1] * ccel + fs2;
+        fz = nji[2] * ccel + fs3;
         fx *= factor_lj; // I think factor lj is just 1 except for special bonds
         fy *= factor_lj;
         fz *= factor_lj;

@@ -215,9 +215,9 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
               blockj[1] = 2.0 + frac * (bonus[ellipsoid[j]].block[1] - 2.0);
 
               // force ellipsoid flag for first initial guess iteration.
-              // Avoid incorrect values of n1/n2 -1 in derivatives.
-              int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? 0 : flagi,
-                                                                             x[j], Rj, shapej, blockj, iter_ig == 1 ? 0 : flagj,
+              // Avoid incorrect values of n1/n2 - 2 in second derivatives.
+              int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi,
+                                                                             x[j], Rj, shapej, blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj,
                                                                              X0, nij);
               if (status == 0)
                 touching = true;
@@ -247,16 +247,11 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
         // compute overlap depth along normal direction for each grain
         // overlap is positive for both grains
         overlap1 = MathExtraSuperellipsoids::compute_overlap_distance(shapei, blocki, Ri, flagi, X0, nij, x[i]);
-        overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]); // TODO: Jibril: I wonder if we'd get the correct, but negative overlap if we picked nji, which might be cheaper than computing nji
+        overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]);
 
-        // TODO: for the hertzian contact pass the surface points directly to the 
-        // curvature calculations. Need to add the normal scaled by the overlap to the contact point
         double surf_point_i[3], surf_point_j[3], curvature_i, curvature_j;
-        
-        for (int dim = 0; dim < 3; dim++) {
-          surf_point_i[dim] = X0[dim] + nij[dim] * overlap1;
-          surf_point_j[dim] = X0[dim] - nij[dim] * overlap2;
-        }
+        MathExtra::scaleadd3(overlap1, nij, X0, surf_point_i);
+        MathExtra::scaleadd3(overlap2, nji, X0, surf_point_j);
 
         curvature_i = MathExtraSuperellipsoids::mean_curvature_superellipsoid(shapei, blocki, flagi, Ri, surf_point_i, x[i]);
         curvature_j = MathExtraSuperellipsoids::mean_curvature_superellipsoid(shapej, blockj, flagj, Rj, surf_point_j, x[j]);
@@ -320,7 +315,7 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
         // if I or J part of rigid body, use body mass
         // if I or J is frozen, meff is other particle
 
-        mi = rmass[i]; // JB I assume this is the mass of particle i, need to check
+        mi = rmass[i];
         mj = rmass[j];
         if (fix_rigid) {
           if (mass_rigid[i] > 0.0) mi = mass_rigid[i];
@@ -331,7 +326,7 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
         if (mask[i] & freeze_group_bit) meff = mj;
         if (mask[j] & freeze_group_bit) meff = mi;
 
-        // normal forces = Hookian contact + normal velocity damping
+        // normal forces = Hertzian contact + normal velocity damping
 
         damp = meff * gamman * vnnr;
         ccel = kn * (overlap1 + overlap2) + damp; // assuming we get the overlap depth
@@ -388,9 +383,9 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
 
         // forces & torques
 
-        fx = -nij[0] * ccel + fs1;
-        fy = -nij[1] * ccel + fs2;
-        fz = -nij[2] * ccel + fs3;
+        fx = nji[0] * ccel + fs1;
+        fy = nji[1] * ccel + fs2;
+        fz = nji[2] * ccel + fs3;
         fx *= factor_lj; // I think factor lj is just 1 except for special bonds
         fy *= factor_lj;
         fz *= factor_lj;
@@ -473,6 +468,11 @@ void PairGranHertzHistoryEllipsoid::settings(int narg, char **arg)
   if (kn < 0.0 || kt < 0.0 || gamman < 0.0 || gammat < 0.0 || xmu < 0.0 || xmu > 10000.0 ||
       dampflag < 0 || dampflag > 1)
     error->all(FLERR, "Illegal pair_style command");
+
+  // convert Kn and Kt from pressure units to force/distance^2
+
+  kn /= force->nktv2p;
+  kt /= force->nktv2p;
 }
 
 /* ---------------------------------------------------------------------- */
