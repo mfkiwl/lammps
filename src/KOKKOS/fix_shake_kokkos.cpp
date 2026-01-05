@@ -340,7 +340,7 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
 
   // Use local variables for capture to resolve deprecated-this-capture warnings
   // Convention: use 'l_' for variables instead of 'd_'
-  const double l_kbond = this->kbond;
+  const KK_FLOAT l_kbond = this->kbond;
   const int l_output_every = this->output_every;
   const int l_nb = atom->nbondtypes + 1;
   const int l_na = atom->nangletypes + 1;
@@ -349,13 +349,29 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
 
   // 2. Setup ScatterView for thread-safe forces
   neighflag = lmp->kokkos->neighflag;
-  int l_need_dup = (neighflag != HALF);
-  if (l_need_dup) {
-    dup_f = Kokkos::Experimental::create_scatter_view<Kokkos::Experimental::ScatterSum, Kokkos::Experimental::ScatterDuplicated>(d_f);
-  } else {
-    ndup_f = Kokkos::Experimental::create_scatter_view<Kokkos::Experimental::ScatterSum, Kokkos::Experimental::ScatterNonDuplicated>(d_f);
+
+  // FULL neighlist still needs atomics in fix shake
+
+  if (neighflag == FULL) {
+    if (lmp->kokkos->nthreads > 1 || lmp->kokkos->ngpus > 0)
+      neighflag = HALFTHREAD;
+    else
+      neighflag = HALF;
   }
 
+  int l_need_dup = 0;
+  if (neighflag != HALF)
+    l_need_dup = std::is_same_v<NeedDup_v<HALFTHREAD,DeviceType>,Kokkos::Experimental::ScatterDuplicated>;
+
+  // allocate duplicated memory for lambda capture
+  decltype(dup_f) l_dup_f;
+  decltype(ndup_f) l_ndup_f;
+
+  if (l_need_dup)
+    dup_f = Kokkos::Experimental::create_scatter_view<Kokkos::Experimental::ScatterSum, Kokkos::Experimental::ScatterDuplicated>(d_f);
+  else
+    ndup_f = Kokkos::Experimental::create_scatter_view<Kokkos::Experimental::ScatterSum, Kokkos::Experimental::ScatterNonDuplicated>(d_f);
+  
   // Statistics Views
   typename AT::t_double_2d d_b_stats("shake:b_stats", l_nb, 4); // [count, sum, max, min]
   typename AT::t_double_2d d_a_stats("shake:a_stats", l_na, 4); 
@@ -379,11 +395,11 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
   auto l_dup_f = this->dup_f;
   auto l_ndup_f = this->ndup_f;
 
-  double ebond_sync = 0.0;
+  KK_FLOAT ebond_sync = 0.0;
 
   Kokkos::parallel_reduce("FixShake:min_post_force", 
     Kokkos::RangePolicy<DeviceType>(0, l_nlist),
-    KOKKOS_LAMBDA(const int &i, double &update_ebond) {
+    KOKKOS_LAMBDA(const int &i, KK_FLOAT &update_ebond) {
       
       auto v_f = ScatterViewHelper<NeedDup_v<HALF,DeviceType>, decltype(l_dup_f), decltype(l_ndup_f)>::get(l_dup_f, l_ndup_f);
       auto a_f = v_f.template access<AtomicDup_v<HALF,DeviceType>>();
@@ -394,20 +410,20 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
 
       // Replicating bond_force logic EXACTLY
       auto apply_restraint = [&](int idx0, int idx1, int type_idx, bool is_angle) {
-        const double d0 = is_angle ? l_angle_distance[type_idx] : l_bond_distance[type_idx];
+        const KK_FLOAT d0 = is_angle ? l_angle_distance[type_idx] : l_bond_distance[type_idx];
         
         // PBC handling: pre_neighbor populated closest_list with image-corrected indices
-        const double delx = l_x(idx0, 0) - l_x(idx1, 0);
-        const double dely = l_x(idx0, 1) - l_x(idx1, 1);
-        const double delz = l_x(idx0, 2) - l_x(idx1, 2);
+        const KK_FLOAT delx = l_x(idx0, 0) - l_x(idx1, 0);
+        const KK_FLOAT dely = l_x(idx0, 1) - l_x(idx1, 1);
+        const KK_FLOAT delz = l_x(idx0, 2) - l_x(idx1, 2);
         
-        const double r = sqrt(delx*delx + dely*dely + delz*delz);
-        const double dr = r - d0;
+        const KK_FLOAT r = sqrt(delx*delx + dely*dely + delz*delz);
+        const KK_FLOAT dr = r - d0;
         
         // Parity with FixShake::bond_force: fbond = -2.0*rk/r, energy = rk*dr
-        const double rk = l_kbond * dr;
-        const double fbond = (r > 0.0) ? -2.0 * rk / r : 0.0;
-        const double eb = rk * dr;
+        const KK_FLOAT rk = l_kbond * dr;
+        const KK_FLOAT fbond = (r > 0.0) ? -2.0 * rk / r : 0.0;
+        const KK_FLOAT eb = rk * dr;
         
         // Tally energy based on local atom contributions
         if (idx0 < l_nlocal) update_ebond += 0.5 * eb;
@@ -455,12 +471,12 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
       } else if (flag == 1) { 
         int i1 = l_closest_list(i, 1);
         int i2 = l_closest_list(i, 2);
-        double r1 = apply_restraint(i0, i1, l_shake_type(m, 0), false);
-        double r2 = apply_restraint(i0, i2, l_shake_type(m, 1), false);
-        double r3 = apply_restraint(i1, i2, l_shake_type(m, 2), true);
+        KK_FLOAT r1 = apply_restraint(i0, i1, l_shake_type(m, 0), false);
+        KK_FLOAT r2 = apply_restraint(i0, i2, l_shake_type(m, 1), false);
+        KK_FLOAT r3 = apply_restraint(i1, i2, l_shake_type(m, 2), true);
         
         if (l_output_every) {
-          double angle = acos((r1*r1 + r2*r2 - r3*r3) / (2.0*r1*r2)) * 180.0/MY_PI;
+          KK_FLOAT angle = acos((r1*r1 + r2*r2 - r3*r3) / (2.0*r1*r2)) * 180.0/MY_PI;
           int mt = l_shake_type(m, 2);
           int count = 0;
           if (i0 < l_nlocal) count++;
@@ -469,6 +485,8 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
           if (count > 0) {
             Kokkos::atomic_add(&d_a_stats(mt, 0), (double)count);
             Kokkos::atomic_add(&d_a_stats(mt, 1), (double)count * angle);
+            Kokkos::atomic_add(&d_a_stats(mt, 0), (KK_FLOAT)count);
+            Kokkos::atomic_add(&d_a_stats(mt, 1), (KK_FLOAT)count * angle);
             Kokkos::atomic_max(&d_a_stats(mt, 2), angle);
             Kokkos::atomic_min(&d_a_stats(mt, 3), angle);
           }
@@ -477,7 +495,7 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
     }, ebond_sync);
 
   // 4. Finalize and Sync to Host
-  if (l_need_dup) Kokkos::Experimental::contribute(d_f, dup_f);
+  if (need_dup) Kokkos::Experimental::contribute(d_f, dup_f);
   
   this->ebond = ebond_sync; 
   atomKK->modified(execution_space, F_MASK);
@@ -495,8 +513,9 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
      }
   }
 
-  dup_f = {};
-  ndup_f = {};
+  // free duplicated memory
+  if (need_dup) dup_f = {};
+    
 }
 
 /* ----------------------------------------------------------------------
