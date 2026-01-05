@@ -376,6 +376,8 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
   typename AT::t_double_2d d_b_stats("shake:b_stats", l_nb, 4); // [count, sum, max, min]
   typename AT::t_double_2d d_a_stats("shake:a_stats", l_na, 4); 
 
+  copymode = 1;
+  
   if (l_output_every) {
     Kokkos::parallel_for("FixShake:zero_stats", Kokkos::RangePolicy<DeviceType>(0, l_nb > l_na ? l_nb : l_na), 
       KOKKOS_LAMBDA(const int &i) {
@@ -493,6 +495,8 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
         }
       }
     }, ebond_sync);
+    
+  copymode = 0;
 
   // 4. Finalize and Sync to Host
   if (need_dup) Kokkos::Experimental::contribute(d_f, dup_f);
