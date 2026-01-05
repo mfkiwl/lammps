@@ -389,7 +389,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
       // clang-format off
       TextInfo txt{"", {0.0, 0.0, 0.0}, 0, 0, nullptr, {255.0, 255.0, 255.0},
                    {192.0, 192.0, 192.0}, {192.0, 192.0, 192.0}, {192.0, 192.0, 192.0},
-                   48.0, -1, -1, -1, -1, nullptr, nullptr, nullptr, nullptr};
+                   48.0, 0.5, -1, -1, -1, -1, nullptr, nullptr, nullptr, nullptr};
       // clang-format on
 
       txt.text = arg[iarg + 1];
@@ -428,9 +428,15 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
             // text is rendered as 2x2 size pixmap and later scaled down for anti-aliasing
             txt.size = 2.0 * utils::numeric(FLERR, arg[iarg + 1], false, lmp);
           }
-          if ((txt.size <= 0.0) || (txt.size > 128.0))
+          if ((txt.size < 8.0) || (txt.size > 1024.0))
             error->all(FLERR, iarg + 1, "Invalid fix graphics/labels text size value: {}",
                        txt.size * 0.5);
+          if (txt.size > 128.0) {
+            txt.scale = txt.size / 256.0;
+            txt.size = 128.0;
+          } else {
+            txt.scale = 0.5;
+          }
           iarg += 2;
         } else if (strcmp(arg[iarg], "fontcolor") == 0) {
           if (iarg + 2 > narg)
@@ -664,8 +670,18 @@ void FixGraphicsLabels::end_of_step()
     if (txt.ystr) txt.pos[1] = input->variable->compute_equal(txt.yvar);
     if (txt.zstr) txt.pos[2] = input->variable->compute_equal(txt.zvar);
     // text is rasterized at twice the size for some anti-aliasing. clamp to avoid crashes.
-    if (txt.sstr)
-      txt.size = std::clamp(2.0 * input->variable->compute_equal(txt.svar), 1.0e-2, 128.0);
+    if (txt.sstr) {
+      txt.size = 2.0 * input->variable->compute_equal(txt.svar);
+      if (txt.size > 128.0) {
+        txt.scale = txt.size / 256.0;
+        txt.size = 128.0;
+      } else {
+        txt.size = MAX(txt.size, 8.0);
+        txt.scale = 0.5;
+      }
+
+    }
+
 
     SSFN::ssfn_select(&ctx, SSFN_FAMILY_SANS, nullptr, SSFN_STYLE_REGULAR, (int) (txt.size),
                       SSFN_MODE_BITMAP);
@@ -776,7 +792,7 @@ void FixGraphicsLabels::end_of_step()
     imgparms[n][7] = txt.transcolor[0] / 255.0;
     imgparms[n][8] = txt.transcolor[1] / 255.0;
     imgparms[n][9] = txt.transcolor[2] / 255.0;
-    imgparms[n][10] = 0.5;    // we render the text at 2x the size to have some anti-aliasing
+    imgparms[n][10] = txt.scale;
     ++n;
   }
 

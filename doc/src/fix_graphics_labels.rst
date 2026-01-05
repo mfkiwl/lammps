@@ -134,9 +134,9 @@ evaluated and expanded at every *Nevery* time step.
 When using the *text* keyword, the text and its position in the "scene"
 are required arguments.  Optional keyword / value pairs may be added:
 
-  The *size* value determines if the size of the letters in the text
-  in pixels.  Default value is 24. The maximum allowed value is 64.
-  This is a restriction of the font rasterizer used.
+  The *size* value determines the size of the letters in the text in
+  pixels (approximately) and values between 4 and 512 are accepted.
+  The default value is 24.
 
   There are four color settings: *fontcolor* or *framecolor* or
   *backcolor* or *transcolor*\ .  The color can be specified for all of

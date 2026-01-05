@@ -61,6 +61,7 @@ class FixGraphicsLabels : public Fix {
     double framecolor[3];
     double transcolor[3];
     double size;
+    double scale;
     int xvar, yvar, zvar, svar;
     char *xstr, *ystr, *zstr, *sstr;
   };
