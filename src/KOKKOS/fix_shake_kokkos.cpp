@@ -394,7 +394,7 @@ void FixShakeKokkos<DeviceType>::min_post_force(int vflag)
   copymode = 0;
 
   if (need_dup) Kokkos::Experimental::contribute(d_f, dup_f);
-  
+  comm->reverse_comm(this);
   this->ebond = ev.evdwl;
   
   utils::logmesg(lmp,"*** ebond {} v {} {} {} {} {} {}\n", ebond, ev.v[0], ev.v[1], ev.v[2], ev.v[3], ev.v[4], ev.v[5]);
