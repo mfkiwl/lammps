@@ -625,7 +625,7 @@ velocities:
    variable dip2x equal v_scale*c_dip[1]
    variable dip2y equal v_scale*c_dip[2]
    variable dip2z equal v_scale*c_dip[3]
-   fix dipole all graphics 1 arrow 1  v_dip1x v_dip1y v_dip1z v_dip2x v_dip2y v_dip2z 0.3 0.2
+   fix dipole all graphics/objects 1 arrow 1  v_dip1x v_dip1y v_dip1z v_dip2x v_dip2y v_dip2z 0.3 0.2
 
    dump viz all image 100 image-*.png element type size 600 600 zoom 1.3 view 70 20 shiny 0.1 &
                 bond atom 0.2box yes 0.025 axes no 0.0 0.0 center s 0.5 0.5 0.5 fsaa yes &
