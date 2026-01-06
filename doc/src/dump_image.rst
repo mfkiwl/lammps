@@ -1109,10 +1109,10 @@ The arguments for the *gmap* keyword are identical to those for the
 Restrictions
 """"""""""""
 
-To write JPEG images, you must use the -DLAMMPS_JPEG switch when
-building LAMMPS and link with a JPEG library. To write PNG images, you
-must use the -DLAMMPS_PNG switch when building LAMMPS and link with a
-PNG library.
+To write JPEG or PNG format images, support for the corresponding
+graphics libraries must have been compiled and linked into LAMMPS.
+Please see the :ref:`instructions for building LAMMPS <graphics>` for
+more information on how to do that.
 
 To write *movie* dumps, you must use the -DLAMMPS_FFMPEG switch when
 building LAMMPS and have the FFmpeg executable available on the

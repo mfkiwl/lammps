@@ -12,7 +12,7 @@ explains how to do this for building both with CMake and make.
 * `FFT library`_ for use with the :doc:`kspace_style pppm <kspace_style>` command
 * `Size of LAMMPS integer types and size limits`_
 * `Read or write compressed files`_
-* `Output of JPEG, PNG, and movie files`_ via the :doc:`dump image <dump_image>` or :doc:`dump movie <dump_image>` commands
+* `Support for JPEG, PNG, and movie files`_ in the :doc:`dump image <dump_image>` or :doc:`dump movie <dump_image>` or :doc:`fix graphics/labels <fix_graphics_labels>` commands
 * `Support for downloading files from the input`_
 * `Prevent download of large potential files`_
 * `Memory allocation alignment`_
@@ -386,13 +386,14 @@ in whichever ``lib/gpu/Makefile`` is used must be the same as above.
 
 .. _graphics:
 
-Output of JPEG, PNG, and movie files
-------------------------------------
+Support for JPEG, PNG, and movie files
+--------------------------------------
 
 The :doc:`dump image <dump_image>` command has options to output JPEG or
-PNG image files.  Likewise, the :doc:`dump movie <dump_image>` command
-outputs movie files in a variety of movie formats.  Using these options
-requires the following settings:
+PNG image files and the :doc:`fix graphics/labels <fix_graphics_labels>`
+can read images in JPEG or PNG format.  Likewise, the :doc:`dump movie
+<dump_image>` command outputs movie files in a variety of movie formats.
+Using these options requires the following settings:
 
 .. tabs::
 
