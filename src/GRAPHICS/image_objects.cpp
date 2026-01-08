@@ -158,7 +158,7 @@ ArrowObj::ArrowObj(double _tipl, double _tipw, double radius, int res)
   }
 }
 
-// draw custom arrow from unit template
+// draw custom arrow from unit template using center, direction, and length
 void ArrowObj::draw(Image *img, const double *color, const double *center, double length,
                     const double *data, double scale, double opacity)
 {
@@ -169,6 +169,37 @@ void ArrowObj::draw(Image *img, const double *color, const double *center, doubl
 
   vec3 dir{data[0], data[1], data[2]};
   double lscale = vec3len(dir) * length;
+  double wscale = scale / diameter;
+
+  auto arrow =
+      std::move(transform(triangles, dir, {center[0], center[1], center[2]}, lscale, wscale));
+
+  // nothing to draw
+  if (!arrow.size()) return;
+
+  // draw tip and bottom from list of triangles
+  for (const auto &tri : arrow)
+    img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
+
+  // infer cylinder end points for body from list of triangles
+  // (middle corner of all triangles in the the second and last set of triangles)
+  if (arrow.size() > resolution + 2)
+    img->draw_cylinder(arrow[1][1].data(), arrow[arrow.size() - 1][1].data(), color,
+                       scale, 0, opacity);
+}
+
+// draw custom arrow from unit template using center, direction, and length
+void ArrowObj::draw(Image *img, const double *color, const double *bottom,
+                    const double *tip, double scale, double opacity)
+{
+  // nothing to draw
+  if (!triangles.size()) return;
+
+  // transform the template into the arrow object we want to draw
+
+  vec3 dir{vec3{tip[0],tip[1],tip[2]} - vec3{bottom[0],bottom[1],bottom[2]}};
+  vec3 center{0.5*dir+vec3{bottom[0],bottom[1],bottom[2]}};
+  double lscale = vec3len(dir);
   double wscale = scale / diameter;
 
   auto arrow =

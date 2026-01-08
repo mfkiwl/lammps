@@ -59,8 +59,10 @@ namespace ImageObjects {
     // build an arrow template with length 1 in (1.0, 0.0, 0.0) direction as list of triangles
     ArrowObj(double _tipl = 0.2, double _tipw = 0.1, double radius = 0.1, int res = RESOLUTION);
 
-    // draw custom arrow from unit template
+    // draw custom arrow from unit template using center, direction, and length
     void draw(Image *, const double *, const double *, double, const double *, double, double);
+    // draw custom arrow from unit template using two end points
+    void draw(Image *, const double *, const double *, const double *, double, double);
 
    private:
     double tiplength;
