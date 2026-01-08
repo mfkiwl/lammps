@@ -322,6 +322,33 @@ void ConeObj::draw(Image *img, int flag, const vec3 &dir, const vec3 &mid, const
   }
 }
 
+// draw triangle mesh for fix.
+
+void ConeObj::draw(Image *img, const vec3 &bot, const vec3 &top, const double *color,
+                   double opacity)
+{
+  // nothing to draw
+  if (!triangles.size()) return;
+
+  vec3 mid{0.5*(top + bot)};
+  vec3 dir{top - bot};
+  double length = vec3len(dir);
+  dir = vec3norm(dir);
+
+  // rotate to selected axis and translate from origin to original center
+  // no need of scaling here since length and width was already applied during construction
+  auto cone = std::move(transform(triangles, dir, mid, length, 1.0));
+
+  // nothing to draw
+  if (!cone.size()) return;
+
+  int n = 0;
+  for (auto &tri : cone) {
+    // draw triangle
+    img->draw_triangle(tri[0].data(), tri[1].data(), tri[2].data(), color, opacity);
+  }
+}
+
 // Refine triangle mesh by replacing each triangle with four triangles.
 // Compute the new positions so they are located on a sphere with radius 1.
 //

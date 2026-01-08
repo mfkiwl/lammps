@@ -1604,6 +1604,10 @@ void DumpImage::create_image()
         ArrowObj a(fixarray[i][9]);
         a.draw(image, color, &fixarray[i][1], fixarray[i][7], &fixarray[i][4], fixarray[i][8],
                opacity);
+      } else if (fixvec[i] == Graphics::CONE) {
+        ConeObj c(1.0, fixarray[i][7] + ifix.flag2, fixarray[i][8] + ifix.flag2, fixarray[i][9]);
+        c.draw(image, vec3{fixarray[i][1], fixarray[i][2], fixarray[i][3]},
+               vec3{fixarray[i][4], fixarray[i][5], fixarray[i][6]}, color, opacity);
       } else if (fixvec[i] == Graphics::PIXMAP) {
         // get pointer to pixmap buffer and background transparency color
         auto *pixmap = (const unsigned char *) ubuf(fixarray[i][6]).i;

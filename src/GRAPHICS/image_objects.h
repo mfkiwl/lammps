@@ -82,6 +82,9 @@ namespace ImageObjects {
     // draw triangle mesh for region. flag 1 is triangles, flag 2 is wireframe, flag 3 both
     void draw(Image *, int, const vec3 &, const vec3 &, const double *, Region *, double, double);
 
+    // draw triangle mesh for fix
+    void draw(Image *img, const vec3 &, const vec3 &, const double *, double);
+
    private:
     std::vector<triangle> triangles;
   };
