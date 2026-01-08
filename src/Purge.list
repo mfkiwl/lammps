@@ -53,6 +53,12 @@ lmpinstalledpkgs.h
 lmpgitversion.h
 mliap_model_python_couple.cpp
 mliap_model_python_couple.h
+mliap_model_python_couple_kokkos.cpp
+mliap_model_python_couple_kokkos.h
+mliap_unified_couple.cpp
+mliap_unified_couple.h
+mliap_unified_couple_kokkos.cpp
+mliap_unified_couple_kokkos.h
 # moved to new GRAPHICS package in Jan 2026
 dump_image.cpp
 dump_image.h
