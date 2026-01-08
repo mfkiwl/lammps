@@ -622,6 +622,7 @@ styles:
    * :doc:`fix indent <fix_indent>`
    * :doc:`fix reaxff/bonds <fix_reaxff_bonds>`
    * :doc:`fix smd/wall_surface <fix_smd_wall_surface>`
+   * :doc:`fix wall/body/polygon <fix_wall_body_polygon>`
    * :doc:`fix wall/lj93 <fix_wall>`
    * :doc:`fix wall/lj126 <fix_wall>`
    * :doc:`fix wall/lj1043 <fix_wall>`
