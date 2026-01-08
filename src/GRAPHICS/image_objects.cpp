@@ -184,21 +184,21 @@ void ArrowObj::draw(Image *img, const double *color, const double *center, doubl
   // infer cylinder end points for body from list of triangles
   // (middle corner of all triangles in the the second and last set of triangles)
   if (arrow.size() > resolution + 2)
-    img->draw_cylinder(arrow[1][1].data(), arrow[arrow.size() - 1][1].data(), color,
-                       scale, 0, opacity);
+    img->draw_cylinder(arrow[1][1].data(), arrow[arrow.size() - 1][1].data(), color, scale, 0,
+                       opacity);
 }
 
 // draw custom arrow from unit template using center, direction, and length
-void ArrowObj::draw(Image *img, const double *color, const double *bottom,
-                    const double *tip, double scale, double opacity)
+void ArrowObj::draw(Image *img, const double *color, const double *bottom, const double *tip,
+                    double scale, double opacity)
 {
   // nothing to draw
   if (!triangles.size()) return;
 
   // transform the template into the arrow object we want to draw
 
-  vec3 dir{vec3{tip[0],tip[1],tip[2]} - vec3{bottom[0],bottom[1],bottom[2]}};
-  vec3 center{0.5*dir+vec3{bottom[0],bottom[1],bottom[2]}};
+  vec3 dir{vec3{tip[0], tip[1], tip[2]} - vec3{bottom[0], bottom[1], bottom[2]}};
+  vec3 center{0.5 * dir + vec3{bottom[0], bottom[1], bottom[2]}};
   double lscale = vec3len(dir);
   double wscale = scale / diameter;
 
@@ -215,8 +215,8 @@ void ArrowObj::draw(Image *img, const double *color, const double *bottom,
   // infer cylinder end points for body from list of triangles
   // (middle corner of all triangles in the the second and last set of triangles)
   if (arrow.size() > resolution + 2)
-    img->draw_cylinder(arrow[1][1].data(), arrow[arrow.size() - 1][1].data(), color,
-                       scale, 0, opacity);
+    img->draw_cylinder(arrow[1][1].data(), arrow[arrow.size() - 1][1].data(), color, scale, 0,
+                       opacity);
 }
 
 // construct a truncated cone from triangles and draw them
