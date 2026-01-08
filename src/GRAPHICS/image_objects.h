@@ -14,6 +14,8 @@
 #ifndef LMP_IMAGE_OBJECTS_H
 #define LMP_IMAGE_OBJECTS_H
 
+#include "graphics.h"
+
 #include <array>
 #include <vector>
 
@@ -24,10 +26,6 @@ namespace ImageObjects {
   constexpr int RESOLUTION = 36;       // default resolution for cylindrical objects
   constexpr int DEF_ELEVEL = 3;        // default refinement level for ellipsoids
   constexpr int DEF_PLEVEL = 6;        // default refinement level for planes
-  constexpr int CONE_TOP = 1 << 0;     // draw top cap of cone/cylinder
-  constexpr int CONE_BOT = 1 << 1;     // draw bottom cap of cone/cylinder
-  constexpr int CONE_SIDE = 1 << 2;    // draw side of cone/cylinder
-  constexpr int CONE_ALL = CONE_TOP | CONE_BOT | CONE_SIDE;
 
   // custom data types for positions and triangles based on std::array
   using vec3 = std::array<double, 3>;
@@ -77,7 +75,7 @@ namespace ImageObjects {
     // build a truncated cone in (1.0, 0.0, 0.0) direction centered at (0.0, 0.0, 0.0)
     // with given length and top / bottom diameter as list of triangles.
     // flag is bitmap deciding whether top / bottom or side is shown.
-    ConeObj(double, double, double, int flag = CONE_ALL, int res = RESOLUTION);
+    ConeObj(double, double, double, int flag = Graphics::CONE_ALL, int res = RESOLUTION);
 
     // draw triangle mesh for region. flag 1 is triangles, flag 2 is wireframe, flag 3 both
     void draw(Image *, int, const vec3 &, const vec3 &, const double *, Region *, double, double);

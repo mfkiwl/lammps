@@ -21,7 +21,6 @@
 #include "domain.h"
 #include "error.h"
 #include "graphics.h"
-#include "image_objects.h"
 #include "input.h"
 #include "lattice.h"
 #include "math_extra.h"
@@ -131,8 +130,8 @@ FixIndent::FixIndent(LAMMPS *lmp, int narg, char **arg) :
       memory->create(imgobjs, 1, "fix_indent:imgobjs");
       memory->create(imgparms, 1, 10, "fix_indent:imgparms");
       imgobjs[0] = Graphics::CONE;
-      imgparms[0][0] = 1;    // use color of first atom type
-      imgparms[0][9] = ImageObjects::CONE_TOP;
+      imgparms[0][0] = 1;                     // use color of first atom type
+      imgparms[0][9] = Graphics::CONE_TOP;    // draw only the top circle
     } else {
       // one sphere object to draw in 3d
       memory->create(imgobjs, 1, "fix_indent:imgobjs");
@@ -164,8 +163,8 @@ FixIndent::FixIndent(LAMMPS *lmp, int narg, char **arg) :
       memory->create(imgobjs, 1, "fix_indent:imgobjs");
       memory->create(imgparms, 1, 10, "fix_indent:imgparms");
       imgobjs[0] = Graphics::CONE;
-      imgparms[0][0] = 1;                         // use color of first atom type
-      imgparms[0][9] = ImageObjects::CONE_ALL;    // caps on both sides
+      imgparms[0][0] = 1;                     // use color of first atom type
+      imgparms[0][9] = Graphics::CONE_ALL;    // caps on both sides
     }
   } else if (istyle == PLANE) {
     if (domain->dimension == 2) {

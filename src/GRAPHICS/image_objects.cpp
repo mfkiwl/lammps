@@ -246,9 +246,9 @@ ConeObj::ConeObj(double length, double topwidth, double botwidth, int flag, int 
 
   // store settings for cone
 
-  bool dotop = (flag & CONE_TOP) > 0;
-  bool dobot = (flag & CONE_BOT) > 0;
-  bool doside = (flag & CONE_SIDE) > 0;
+  bool dotop = (flag & Graphics::CONE_TOP) > 0;
+  bool dobot = (flag & Graphics::CONE_BOT) > 0;
+  bool doside = (flag & Graphics::CONE_SIDE) > 0;
 
   vec3 top{0.5 * length, 0.0, 0.0};
   vec3 bot{-0.5 * length, 0.0, 0.0};

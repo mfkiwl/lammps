@@ -29,6 +29,14 @@ namespace Graphics {
     CONE,     // a truncated cone with flat caps, fflag1 sets caps
     PIXMAP    // a pointer to a pixmap buffer at x,y,z location
   };    // used by some Body and Fix child classes
-}
+
+  // definitions for rendering caps and sides of a truncated cone
+  enum {
+    CONE_TOP = 1 << 0,                            // draw top cap of cone/cylinder
+    CONE_BOT = 1 << 1,                            // draw bottom cap of cone/cylinder
+    CONE_SIDE = 1 << 2,                           // draw side of cone/cylinder
+    CONE_ALL = CONE_TOP | CONE_BOT | CONE_SIDE    // all of the above
+  };
+}    // namespace Graphics
 }    // namespace LAMMPS_NS
 #endif
