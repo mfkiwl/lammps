@@ -280,6 +280,8 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
       bodyflag = YES;
       if (strcmp(arg[iarg+1],"type") == 0) bodycolor = TYPE;
       else error->all(FLERR, iarg+1, "Dump image body only supports color by type");
+      if (acolor != ATTRIBUTE)
+        error->all(FLERR, iarg+1, "Must color atoms by type with body particles");
       bodyflag1 = utils::numeric(FLERR,arg[iarg+2],false,lmp);
       bodyflag2 = utils::numeric(FLERR,arg[iarg+3],false,lmp);
       iarg += 4;
@@ -1262,7 +1264,9 @@ void DumpImage::create_image()
 
       if (bodycolor == TYPE) {
         itype = static_cast<int>(buf[m]);
-        color = colortype[itype];
+        color = colortype[(itype % atom->ntypes) + 1];
+      } else {
+        color = image->color2rgb("white");
       }
       double opacity = aopacity[atom->type[j]];
 
