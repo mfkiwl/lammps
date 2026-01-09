@@ -199,6 +199,7 @@ void rgb2yuv(int *rgb, int *yuv)
   yuv[2] = (0.615 * rgb[0]) - (0.51499 * rgb[1]) - (0.10001 * rgb[2]);
 }
 
+// convert XPM-like bitmap to 8-bit pixmap
 void xpm2pix(int width, int height, const char *xpm, unsigned char *pix, double *fg, double *bg)
 {
   for (int j = height; j > 0; --j) {
@@ -604,8 +605,7 @@ void Image::merge()
       else MPI_Waitall(2,requests,MPI_STATUS_IGNORE);
 
       for (int i = 0; i < npixels; i++) {
-        if (depthBuffer[i] < 0 || (depthcopy[i] >= 0 &&
-                                   depthcopy[i] < depthBuffer[i])) {
+        if (depthBuffer[i] < 0 || (depthcopy[i] >= 0 && depthcopy[i] < depthBuffer[i])) {
           depthBuffer[i] = depthcopy[i];
           imageBuffer[i*3+0] = rgbcopy[i*3+0];
           imageBuffer[i*3+1] = rgbcopy[i*3+1];
@@ -726,6 +726,7 @@ void Image::draw_axes(double (*axes)[3], double diameter, double opacity)
   if ((diameter <= 0.0) || (opacity <= 0.0)) return;  // nothing to do
 
   // draw arrows
+
   const double radius = 0.5 * diameter;
   draw_sphere(axes[0], color2rgb("gray"), radius, opacity);
   ImageObjects::ArrowObj arrow;
@@ -736,10 +737,12 @@ void Image::draw_axes(double (*axes)[3], double diameter, double opacity)
 
   // adjust size of labels based on image size,
   // with FSAA active, width and height are doubled; adjust the scale factor accordingly
+
   double scale = static_cast<double>(MIN(width, height)) / 1440.0;
   if (fsaa) scale *= 0.5;
 
-  // select color of labels
+  // determine color of labels
+
   double *fontcolor = color2rgb("white");
   double *backcolor = color2rgb("silver");
   int bgyuv[3];
@@ -856,9 +859,11 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
    render pixel by pixel onto image plane with depth buffering
 ------------------------------------------------------------------------- */
 
-void Image::draw_sphere(const double *x, const double *surfaceColor, double diameter, double opacity)
+void Image::draw_sphere(const double *x, const double *surfaceColor, double diameter,
+                        double opacity)
 {
   if ((diameter <= 0.0) || (opacity <= 0.0)) return;  // nothing to do
+
   double xlocal[3];
 
   xlocal[0] = x[0] - xctr;
@@ -920,6 +925,8 @@ void Image::draw_sphere(const double *x, const double *surfaceColor, double diam
 
 void Image::draw_cube(const double *x, const double *surfaceColor, double diameter, double opacity)
 {
+  if ((diameter <= 0.0) || (opacity <= 0.0)) return;  // nothing to do
+
   double xlocal[3],surface[3];
   double normal[3] = {0.0, 0.0, 1.0};
   double t = 1.0;
@@ -1031,6 +1038,8 @@ void Image::draw_cube(const double *x, const double *surfaceColor, double diamet
 void Image::draw_cylinder(const double *x, const double *y,
                           const double *surfaceColor, double diameter, int sflag, double opacity)
 {
+  if ((diameter <= 0.0) || (opacity <= 0.0)) return;  // nothing to do
+
   double mid[3],xaxis[3],yaxis[3],zaxis[3];
   double camLDir[3], camLRight[3], camLUp[3];
   double zmin, zmax;
@@ -1052,6 +1061,7 @@ void Image::draw_cylinder(const double *x, const double *y,
   mid[2] = (y[2] + x[2]) * 0.5 - zctr;
 
   double len = MathExtra::len3(zaxis);
+  if (len == 0.0) return;       // nothing left to do
   MathExtra::scale3(1.0/len,zaxis);
   len *= 0.5;
   zmax = len;
@@ -1144,9 +1154,9 @@ void Image::draw_cylinder(const double *x, const double *y,
 
       // in camera space
 
-      surface[0] = MathExtra::dot3 (normal, camLRight);
-      surface[1] = MathExtra::dot3 (normal, camLUp);
-      surface[2] = MathExtra::dot3 (normal, camLDir);
+      surface[0] = MathExtra::dot3(normal, camLRight);
+      surface[1] = MathExtra::dot3(normal, camLUp);
+      surface[2] = MathExtra::dot3(normal, camLDir);
 
       double depth = dist - t;
       draw_pixel(ix, iy, depth, surface, surfaceColor);
@@ -1161,6 +1171,8 @@ void Image::draw_cylinder(const double *x, const double *y,
 void Image::draw_triangle(const double *x, const double *y, const double *z,
                           const double *surfaceColor, const double opacity)
 {
+  if (opacity <= 0.0) return;  // nothing to do
+
   double d1[3], d1len, d2[3], d2len, normal[3], invndotd;
   double xlocal[3], ylocal[3], zlocal[3];
   double surface[3];
@@ -1176,20 +1188,23 @@ void Image::draw_triangle(const double *x, const double *y, const double *z,
   zlocal[1] = z[1] - yctr;
   zlocal[2] = z[2] - zctr;
 
-  MathExtra::sub3 (xlocal, ylocal, d1);
-  d1len = MathExtra::len3 (d1);
-  MathExtra::scale3 (1.0 / d1len, d1);
-  MathExtra::sub3 (zlocal, ylocal, d2);
-  d2len = MathExtra::len3 (d2);
-  MathExtra::scale3 (1.0 / d2len, d2);
+  MathExtra::sub3(xlocal, ylocal, d1);
+  d1len = MathExtra::len3(d1);
+  if (d1len == 0.0) return;     // zero length of triangle side
+  MathExtra::scale3(1.0 / d1len, d1);
 
-  MathExtra::cross3 (d1, d2, normal);
-  MathExtra::norm3 (normal);
-  invndotd = 1.0 / MathExtra::dot3(normal, camDir);
+  MathExtra::sub3(zlocal, ylocal, d2);
+  d2len = MathExtra::len3(d2);
+  if (d2len == 0.0) return;     // zero length of triangle side
+  MathExtra::scale3(1.0 / d2len, d2);
 
-  // invalid triangle (parallel)
+  MathExtra::cross3(d1, d2, normal);
+  MathExtra::norm3(normal);
+  invndotd = MathExtra::dot3(normal, camDir);
 
-  if (invndotd == 0) return;
+  // triangle parallel to camera and thus invisible
+  if (invndotd == 0.0) return;
+  invndotd = 1.0 / invndotd;
 
   double r[3],u[3];
 
@@ -1211,7 +1226,6 @@ void Image::draw_triangle(const double *x, const double *y, const double *z,
   double dist = MathExtra::dot3(camPos,camDir) - MathExtra::dot3(xlocal,camDir);
 
   double pixelWidth = (tanPerPixel > 0) ? tanPerPixel * dist : -tanPerPixel / zoom;
-
   double xf = xmap / pixelWidth;
   double yf = ymap / pixelWidth;
   int xc = static_cast<int>(xf);
@@ -1303,8 +1317,7 @@ void Image::draw_pixel(int ix, int iy, double depth,
   if (!std::isfinite(depth)) return; // reject pixels with invalid depth buffer values
 
   double diffuseKey,diffuseFill,diffuseBack,specularKey;
-  if (depth < 0 || (depthBuffer[ix + iy*width] >= 0 &&
-                    depth >= depthBuffer[ix + iy*width])) return;
+  if (depth < 0 || (depthBuffer[ix + iy*width] >= 0 && depth >= depthBuffer[ix + iy*width])) return;
   depthBuffer[ix + iy*width] = depth;
 
   // store only the tangent relative to the camera normal (0,0,-1)
