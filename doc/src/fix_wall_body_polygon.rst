@@ -105,7 +105,7 @@ The *fflag1* setting determines whether the cylinder representing the
 wall is capped with a sphere at the ends: 0 means no caps, 1 means the
 lower end is capped, 2 means the upper end is capped, and 3 means both
 ends are capped.  The *fflag2* setting allows to set the radius of the
-rendered cylinder.
+rendered cylinders.
 
 -------------------
 
