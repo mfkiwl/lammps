@@ -221,7 +221,8 @@ Related commands
 :doc:`fix graphics/arrows <fix_graphics_arrows>`,
 :doc:`fix graphics/isosurface <fix_graphics_isosurface>`,
 :doc:`fix graphics/objects <fix_graphics_objects>`,
-:doc:`fix graphics/periodic <fix_graphics_periodic>`
+:doc:`fix graphics/periodic <fix_graphics_periodic>`,
+:doc:`fix graphics/replica <fix_graphics_replica>`
 
 Default
 """""""

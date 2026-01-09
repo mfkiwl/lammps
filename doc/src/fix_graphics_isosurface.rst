@@ -252,6 +252,7 @@ Related commands
 :doc:`fix graphics/labels <fix_graphics_labels>`,
 :doc:`fix graphics/objects <fix_graphics_objects>`,
 :doc:`fix graphics/periodic <fix_graphics_periodic>`,
+:doc:`fix graphics/replica <fix_graphics_replica>`
 
 Defaults
 """"""""

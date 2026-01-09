@@ -189,7 +189,7 @@ Related commands
 :doc:`fix graphics/objects <fix_graphics_objects>`,
 :doc:`fix graphics/periodic <fix_graphics_periodic>`,
 :doc:`fix graphics/objects <fix_graphics_objects>`,
-:doc:`fix graphics <fix_graphics/replica>`
+:doc:`fix graphics/replica <fix_graphics_replica>`
 
 Default
 """""""

@@ -231,7 +231,7 @@ Related commands
 :doc:`fix graphics/labels <fix_graphics_labels>`,
 :doc:`fix graphics/isosurface <fix_graphics_isosurface>`,
 :doc:`fix graphics/periodic <fix_graphics_periodic>`,
-:doc:`fix graphics <fix_graphics/replica>`
+:doc:`fix graphics/replica <fix_graphics_replica>`
 
 Default
 """""""

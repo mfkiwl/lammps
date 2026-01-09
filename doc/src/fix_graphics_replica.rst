@@ -98,14 +98,18 @@ None of the :doc:`fix_modify <fix_modify>` options apply to this fix.
 Restrictions
 """"""""""""
 
-This fix is part of the REPLICA package.  It is only only enabled if
+This fix is part of the GRAPHICS package.  It is only only enabled if
 LAMMPS was built with that package.  See the :doc:`Build package
 <Build_package>` page for more info.
 
 Related commands
 """"""""""""""""
 
-:doc:`fix graphics <fix_graphics>`, :doc:`fix graphics/arrows <fix_graphics_arrows>`
+:doc:`fix graphics/arrows <fix_graphics_arrows>`,
+:doc:`fix graphics/labels <fix_graphics_labels>`,
+:doc:`fix graphics/isosurface <fix_graphics_isosurface>`,
+:doc:`fix graphics/objects <fix_graphics_objects>`,
+:doc:`fix graphics/periodic <fix_graphics_periodic>`
 
 Default
 """""""
