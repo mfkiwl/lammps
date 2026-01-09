@@ -39,7 +39,7 @@ FixWallSRD::FixWallSRD(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg), nwall(0), fwall(nullptr), fwall_all(nullptr),
     imgobjs(nullptr), imgparms(nullptr)
 {
-  if (narg < 4) error->all(FLERR, "Illegal fix wall/srd command");
+  if (narg < 4) utils::missing_cmd_args(FLERR, "fix wall/srd", error);
 
   // parse args
 
@@ -51,7 +51,7 @@ FixWallSRD::FixWallSRD(LAMMPS *lmp, int narg, char **arg) :
     const std::string thisarg(arg[iarg]);
     if ((thisarg == "xlo") || (thisarg == "ylo") || (thisarg == "zlo")
         || (thisarg == "xhi") || (thisarg == "yhi") || (thisarg == "zhi")) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal fix wall/srd command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix wall/srd " + thisarg, error);
 
       int newwall;
       if (thisarg == "xlo") newwall = XLO;
@@ -63,7 +63,7 @@ FixWallSRD::FixWallSRD(LAMMPS *lmp, int narg, char **arg) :
 
       for (int m = 0; (m < nwall) && (m < 6); m++)
         if (newwall == wallwhich[m])
-          error->all(FLERR, "Wall defined twice in fix wall/srd command");
+          error->all(FLERR, iarg, "Wall {} defined twice in fix wall/srd command", thisarg);
 
       wallwhich[nwall] = newwall;
       if (strcmp(arg[iarg+1], "EDGE") == 0) {
@@ -86,16 +86,16 @@ FixWallSRD::FixWallSRD(LAMMPS *lmp, int narg, char **arg) :
       iarg += 2;
 
     } else if (thisarg == "units") {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal wall/srd command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix wall/srd units", error);
       if (strcmp(arg[iarg+1], "box") == 0)
         scaleflag = 0;
       else if (strcmp(arg[iarg+1], "lattice") == 0)
         scaleflag = 1;
       else
-        error->all(FLERR, "Illegal fix wall/srd command");
+        error->all(FLERR, iarg+1, "Unknown fix wall/srd units setting {}", arg[iarg+1]);
       iarg += 2;
     } else
-      error->all(FLERR, "Illegal fix wall/srd command");
+      error->all(FLERR, iarg, "Unknown fix wall/srd keyword {}", arg[iarg]);
   }
 
   // error check
@@ -104,11 +104,11 @@ FixWallSRD::FixWallSRD(LAMMPS *lmp, int narg, char **arg) :
 
   for (int m = 0; m < nwall; m++) {
     if ((wallwhich[m] == XLO || wallwhich[m] == XHI) && domain->xperiodic)
-      error->all(FLERR, "Cannot use fix wall/srd in periodic dimension");
+      error->all(FLERR, "Cannot use fix wall/srd xlo or xhi with periodic x dimension");
     if ((wallwhich[m] == YLO || wallwhich[m] == YHI) && domain->yperiodic)
-      error->all(FLERR, "Cannot use fix wall/srd in periodic dimension");
+      error->all(FLERR, "Cannot use fix wall/srd ylo or yhi with periodic y dimension");
     if ((wallwhich[m] == ZLO || wallwhich[m] == ZHI) && domain->zperiodic)
-      error->all(FLERR, "Cannot use fix wall/srd in periodic dimension");
+      error->all(FLERR, "Cannot use fix wall/srd zlo or zhi with periodic z dimension");
   }
 
   for (int m = 0; m < nwall; m++)
@@ -218,14 +218,17 @@ int FixWallSRD::setmask()
 void FixWallSRD::init()
 {
   if (modify->get_fix_by_style("^srd").size() == 0)
-    error->all(FLERR, "Cannot use fix wall/srd without fix srd");
+    error->all(FLERR, Error::NOLASTLINE, "Cannot use fix wall/srd without fix srd");
 
   for (int m = 0; m < nwall; m++) {
     if (wallstyle[m] != VARIABLE) continue;
     varindex[m] = input->variable->find(varstr[m]);
-    if (varindex[m] < 0) error->all(FLERR, "Variable name for fix wall/srd does not exist");
+    if (varindex[m] < 0)
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Variable {} for fix wall/srd does not exist", varstr[m]);
     if (!input->variable->equalstyle(varindex[m]))
-      error->all(FLERR, "Variable for fix wall/srd is invalid style");
+      error->all(FLERR, Error::NOLASTLINE,
+                 "Variable {} for fix wall/srd is invalid style", varstr[m]);
   }
 
   dt = update->dt;
