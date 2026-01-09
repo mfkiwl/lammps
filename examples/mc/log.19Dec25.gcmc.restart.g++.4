@@ -1,4 +1,4 @@
-LAMMPS (10 Dec 2025 - Development - patch_10Dec2025-120-ga51f9ba0e7-modified)
+LAMMPS (10 Dec 2025 - Development - patch_10Dec2025-124-g3eb49b8829-modified)
 OMP_NUM_THREADS environment is not set. Defaulting to 1 thread.
   using 1 OpenMP thread(s) per MPI task
 # Test correctness GCMC restart
@@ -70,20 +70,20 @@ Per MPI rank memory allocation (min/avg/max) = 0.4492 | 0.4492 | 0.4492 Mbytes
    Step          Temp          Press          PotEng         KinEng        Density        Atoms   
          0   0              0              0             -0              0                      0 
        100   2.1078187      1.1020099     -2.9854213      3.1098965      0.488                 61 
-Loop time of 0.121542 on 4 procs for 100 steps with 61 atoms
+Loop time of 0.134299 on 4 procs for 100 steps with 61 atoms
 
-Performance: 355432.066 tau/day, 822.759 timesteps/s, 50.188 katom-step/s
+Performance: 321671.237 tau/day, 744.609 timesteps/s, 45.421 katom-step/s
 99.7% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.00059414 | 0.00064822 | 0.00069626 |   0.0 |  0.53
-Neigh   | 0.0024668  | 0.0025167  | 0.0025635  |   0.1 |  2.07
-Comm    | 0.0026847  | 0.0027649  | 0.0028654  |   0.1 |  2.27
-Output  | 2.0351e-05 | 2.336e-05  | 2.9411e-05 |   0.0 |  0.02
-Modify  | 0.11546    | 0.11547    | 0.11548    |   0.0 | 95.00
-Other   |            | 0.0001195  |            |       |  0.10
+Pair    | 0.00063161 | 0.00069943 | 0.00074854 |   0.0 |  0.52
+Neigh   | 0.0025387  | 0.0026355  | 0.0027334  |   0.1 |  1.96
+Comm    | 0.0027463  | 0.002896   | 0.0030606  |   0.2 |  2.16
+Output  | 1.7781e-05 | 2.1336e-05 | 2.8556e-05 |   0.0 |  0.02
+Modify  | 0.12795    | 0.12795    | 0.12795    |   0.0 | 95.27
+Other   |            | 9.537e-05  |            |       |  0.07
 
 Nlocal:          15.25 ave          19 max          13 min
 Histogram: 2 0 0 0 0 1 0 0 0 1
@@ -101,7 +101,7 @@ write_restart   restart.gcmc.lj
 System init for write_restart ...
 Generated 0 of 0 mixed pair_coeff terms from geometric mixing rule
 
-# run simulation and clear simulation
+# run simulation, store reference values, and clear simulation
 
 run             ${nsteps}
 run             1000
@@ -112,20 +112,20 @@ Per MPI rank memory allocation (min/avg/max) = 3.141 | 3.145 | 3.149 Mbytes
    Step          Temp          Press          PotEng         KinEng        Density        Atoms   
        100   2.1078187      1.1020099     -2.9854213      3.1098965      0.488                 61 
       1100   2.0377985      0.82361869    -3.5056264      3.0130306      0.56                  70 
-Loop time of 1.15391 on 4 procs for 1000 steps with 70 atoms
+Loop time of 1.31302 on 4 procs for 1000 steps with 70 atoms
 
-Performance: 374378.913 tau/day, 866.618 timesteps/s, 60.663 katom-step/s
+Performance: 329012.128 tau/day, 761.602 timesteps/s, 53.312 katom-step/s
 99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.0062889  | 0.0067029  | 0.0071101  |   0.4 |  0.58
-Neigh   | 0.022803   | 0.023404   | 0.024028   |   0.3 |  2.03
-Comm    | 0.025165   | 0.026229   | 0.027235   |   0.5 |  2.27
-Output  | 1.2582e-05 | 1.4802e-05 | 2.0985e-05 |   0.0 |  0.00
-Modify  | 1.0968     | 1.0968     | 1.0969     |   0.0 | 95.05
-Other   |            | 0.0007166  |            |       |  0.06
+Pair    | 0.0070715  | 0.0075325  | 0.0079666  |   0.4 |  0.57
+Neigh   | 0.025593   | 0.026334   | 0.026965   |   0.3 |  2.01
+Comm    | 0.029081   | 0.030228   | 0.031481   |   0.5 |  2.30
+Output  | 1.5556e-05 | 1.8085e-05 | 2.5476e-05 |   0.0 |  0.00
+Modify  | 1.2481     | 1.2481     | 1.2482     |   0.0 | 95.06
+Other   |            | 0.0007656  |            |       |  0.06
 
 Nlocal:           17.5 ave          22 max          14 min
 Histogram: 1 0 0 2 0 0 0 0 0 1
@@ -138,6 +138,15 @@ Total # of neighbors = 2908
 Ave neighs/atom = 41.542857
 Neighbor list builds = 1000
 Dangerous builds = 0
+variable        tmp equal temp
+variable        tref equal ${tmp}
+variable        tref equal 2.03779849781659
+variable        tmp equal press
+variable        pref equal ${tmp}
+variable        pref equal 0.823618694046359
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcref equal ${tmp}
+variable        gcmcref equal 240838
 clear
 OMP_NUM_THREADS environment is not set. Defaulting to 1 thread.
   using 1 OpenMP thread(s) per MPI task
@@ -169,7 +178,7 @@ Resetting global fix info from restart file:
 compute_modify  thermo_temp dynamic/dof yes
 thermo_style    custom step temp press pe ke density atoms
 
-# rerun simulation from restart
+# rerun simulation from restart, measure errors, and clear
 
 run             ${nsteps}
 run             1000
@@ -193,20 +202,20 @@ Per MPI rank memory allocation (min/avg/max) = 3.077 | 3.078 | 3.078 Mbytes
    Step          Temp          Press          PotEng         KinEng        Density        Atoms   
        100   2.1078187      1.1020099     -2.9854213      3.1098965      0.488                 61 
       1100   2.0377985      0.82361869    -3.5056264      3.0130306      0.56                  70 
-Loop time of 1.1412 on 4 procs for 1000 steps with 70 atoms
+Loop time of 1.31099 on 4 procs for 1000 steps with 70 atoms
 
-Performance: 378550.204 tau/day, 876.274 timesteps/s, 61.339 katom-step/s
+Performance: 329522.161 tau/day, 762.783 timesteps/s, 53.395 katom-step/s
 99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.0059188  | 0.0069146  | 0.007855   |   0.9 |  0.61
-Neigh   | 0.022137   | 0.022832   | 0.023877   |   0.4 |  2.00
-Comm    | 0.023917   | 0.02595    | 0.027339   |   0.8 |  2.27
-Output  | 1.2841e-05 | 1.5153e-05 | 2.1751e-05 |   0.0 |  0.00
-Modify  | 1.0847     | 1.0848     | 1.0849     |   0.0 | 95.06
-Other   |            | 0.0006902  |            |       |  0.06
+Pair    | 0.0077347  | 0.0082512  | 0.0086872  |   0.4 |  0.63
+Neigh   | 0.026495   | 0.026962   | 0.027623   |   0.3 |  2.06
+Comm    | 0.028985   | 0.03015    | 0.030929   |   0.4 |  2.30
+Output  | 1.4819e-05 | 1.7492e-05 | 2.5038e-05 |   0.0 |  0.00
+Modify  | 1.2448     | 1.2448     | 1.2449     |   0.0 | 94.95
+Other   |            | 0.0008141  |            |       |  0.06
 
 Nlocal:           17.5 ave          22 max          14 min
 Histogram: 1 0 0 2 0 0 0 0 0 1
@@ -219,10 +228,27 @@ Total # of neighbors = 2908
 Ave neighs/atom = 41.542857
 Neighbor list builds = 1000
 Dangerous builds = 0
-
+variable        tmp equal temp
+variable        terror equal ${tmp} - v_tref
+variable        terror equal 2.03779849781659 - v_tref
+variable        tmp equal press
+variable        perror equal ${tmp} - v_pref
+variable        perror equal 0.823618694046359 - v_pref
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcerror equal ${tmp} - v_gcmcref
+variable        gcmcerror equal 240838 - v_gcmcref
 clear
 OMP_NUM_THREADS environment is not set. Defaulting to 1 thread.
   using 1 OpenMP thread(s) per MPI task
+
+# report restart errors
+
+print "LJ: change in temperature from restart = ${terror} "
+LJ: change in temperature from restart = 0 
+print "LJ: change in pressure from restart = ${perror} "
+LJ: change in pressure from restart = 0 
+print "LJ: change in fix GCMC from restart = ${gcmcerror} "
+LJ: change in fix GCMC from restart = 0 
 
 #### H2O ###
 
@@ -233,6 +259,7 @@ variable        lbox equal 10.0
 variable        spacing equal 5.0
 variable        nequil equal 100
 variable        nsteps equal 100
+variable        nevery equal 10
 variable        restartfile string restart.gcmc.h2o
 
 # global model settings
@@ -273,10 +300,7 @@ Read molecule template h2omol:
 create_atoms   	0 box mol h2omol 464563 units box
 Created 24 atoms
   using box units in orthogonal box = (0 0 0) to (10 10 10)
-  create_atoms CPU = 0.002 seconds
-set type 1 charge 0.5
-Setting atom values ...
-  8 settings made for charge
+  create_atoms CPU = 0.001 seconds
 
 # rigid SPC/E water model
 
@@ -304,12 +328,10 @@ timestep        1.0
 minimize 0.0 0.0 100 1000
 Switching to 'neigh_modify every 1 delay 0 check yes' setting during minimization
 Ewald initialization ...
-WARNING: System is not charge neutral, net charge = 10.7776
-For more information see https://docs.lammps.org/err0029 (src/kspace.cpp:329)
   using 12-bit tables for long-range coulomb
-  G vector (1/distance) = 0.16169308
-  estimated absolute RMS force accuracy = 0.033206371
-  estimated relative force accuracy = 0.0001
+  G vector (1/distance) = 0.17044845
+  estimated absolute RMS force accuracy = 0.033206374
+  estimated relative force accuracy = 0.00010000001
   KSpace vectors: actual max1d max3d = 16 2 62
                   kxmax kymax kzmax  = 2 2 2
 Generated 0 of 1 mixed pair_coeff terms from arithmetic mixing rule
@@ -327,32 +349,32 @@ Neighbor list info ...
       bin: standard
 Per MPI rank memory allocation (min/avg/max) = 11.85 | 11.85 | 11.85 Mbytes
    Step          Temp          E_pair         E_mol          TotEng         Press     
-         0   338           -1336.3682      9.2628112e-06 -1313.1953      127336.43    
-        10   338           -1336.8432      0.15416824    -1313.5163      129112.47    
-Loop time of 0.00655322 on 4 procs for 10 steps with 24 atoms
+         0   338           -4.9610797      9.2628112e-06  18.211747      730.90744    
+       100   338           -15.083062      0.15733571     8.2470909      255.33962    
+Loop time of 0.03779 on 4 procs for 100 steps with 24 atoms
 
-99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
+99.7% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 Minimization stats:
-  Stopping criterion = linesearch alpha is zero
+  Stopping criterion = max iterations
   Energy initial, next-to-last, final = 
-     -1336.36816140236  -1336.68907819159  -1336.68907819159
-  Force two-norm initial, final = 21.740305 3.6166483
-  Force max component initial, final = 5.4789791 1.1224159
-  Final line search alpha, max atom move = 8.7697054e-10 9.843257e-10
-  Iterations, force evaluations = 10 69
+      -4.9610704341957  -14.9222147380404  -14.9257264056654
+  Force two-norm initial, final = 15.473961 10.983883
+  Force max component initial, final = 5.8004232 3.5492578
+  Final line search alpha, max atom move = 0.00078794437 0.0027966177
+  Iterations, force evaluations = 100 354
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.00099245 | 0.0018678  | 0.0030569  |   1.7 | 28.50
-Bond    | 2.0901e-05 | 2.4906e-05 | 3.0245e-05 |   0.0 |  0.38
-Kspace  | 0.0003042  | 0.0014697  | 0.0023259  |   1.9 | 22.43
+Pair    | 0.0051405  | 0.010711   | 0.01833    |   4.6 | 28.34
+Bond    | 0.0001038  | 0.00014474 | 0.00017598 |   0.0 |  0.38
+Kspace  | 0.0017466  | 0.0092517  | 0.014719   |   4.9 | 24.48
 Neigh   | 0          | 0          | 0          |   0.0 |  0.00
-Comm    | 0.0028967  | 0.002915   | 0.0029442  |   0.0 | 44.48
-Output  | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 0.015941   | 0.016066   | 0.016183   |   0.1 | 42.51
+Output  | 1.1794e-05 | 1.4097e-05 | 2.0869e-05 |   0.0 |  0.04
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 0.0002757  |            |       |  4.21
+Other   |            | 0.001603   |            |       |  4.24
 
 Nlocal:              6 ave           8 max           3 min
 Histogram: 1 0 0 0 1 0 0 0 0 2
@@ -393,11 +415,12 @@ thermo_style    custom step temp press pe ke density atoms
 # gcmc
 
 variable        tfac equal 5.0/3.0 # (3 trans + 2 rot)/(3 trans)
-fix             mygcmc h2o gcmc 100 100 0 0 54341 ${temp} ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 -8.1 ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert 1.66666666666667 group h2o shake wshake
+fix             mygcmc h2o gcmc ${nevery} 100 0 0 54341 ${temp} ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 ${temp} ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 -8.1 ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert 1.66666666666667 group h2o shake wshake
 
 # run equilibration and write restart
 
@@ -405,110 +428,119 @@ run             ${nequil}
 run             100
 Ewald initialization ...
   using 12-bit tables for long-range coulomb
-  G vector (1/distance) = 0.16169308
-  estimated absolute RMS force accuracy = 0.033206371
-  estimated relative force accuracy = 0.0001
+  G vector (1/distance) = 0.17044845
+  estimated absolute RMS force accuracy = 0.033206374
+  estimated relative force accuracy = 0.00010000001
   KSpace vectors: actual max1d max3d = 16 2 62
                   kxmax kymax kzmax  = 2 2 2
 Generated 0 of 1 mixed pair_coeff terms from arithmetic mixing rule
-WARNING: Fix gcmc using full_energy option (src/MC/fix_gcmc.cpp:544)
+WARNING: Fix gcmc using full_energy option (src/MC/fix_gcmc.cpp:545)
 0 atoms in group FixGCMC:gcmc_exclusion_group:mygcmc
 0 atoms in group FixGCMC:rotation_gas_atoms:mygcmc
 WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:659)
 Per MPI rank memory allocation (min/avg/max) = 11.6 | 11.6 | 11.6 Mbytes
    Step          Temp          Press          PotEng         KinEng        Density        Atoms   
-         0   518.26667      124210.93     -1336.8432      23.172817      0.23910963            24 
-       100   826.9794       131105.86     -1417.19        56.696576      0.35866445            36 
-Loop time of 0.0556113 on 4 procs for 100 steps with 36 atoms
+         0   518.26667     -2245.5095     -15.083062      23.172817      0.23910963            24 
+       100   521.42279     -2576.0068     -172.93041      79.267377      0.77710631            78 
+Loop time of 0.883006 on 4 procs for 100 steps with 78 atoms
 
-Performance: 155.364 ns/day, 0.154 hours/ns, 1798.196 timesteps/s, 64.735 katom-step/s
-99.6% CPU use with 4 MPI tasks x 1 OpenMP threads
+Performance: 9.785 ns/day, 2.453 hours/ns, 113.250 timesteps/s, 8.833 katom-step/s
+99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.0024155  | 0.0035109  | 0.0048465  |   1.6 |  6.31
-Bond    | 1.1379e-05 | 2.2531e-05 | 3.0651e-05 |   0.0 |  0.04
-Kspace  | 0.00045678 | 0.0017625  | 0.0028416  |   2.2 |  3.17
-Neigh   | 0.0011226  | 0.0011317  | 0.001137   |   0.0 |  2.03
-Comm    | 0.004902   | 0.0049526  | 0.0049879  |   0.1 |  8.91
-Output  | 1.2703e-05 | 1.5307e-05 | 2.2964e-05 |   0.0 |  0.03
-Modify  | 0.043991   | 0.044008   | 0.044026   |   0.0 | 79.13
-Other   |            | 0.0002083  |            |       |  0.37
+Pair    | 0.0090876  | 0.011376   | 0.015474   |   2.3 |  1.29
+Bond    | 4.594e-05  | 6.1057e-05 | 7.6024e-05 |   0.0 |  0.01
+Kspace  | 0.0007551  | 0.0048419  | 0.0071109  |   3.5 |  0.55
+Neigh   | 0.0040316  | 0.0040444  | 0.0040657  |   0.0 |  0.46
+Comm    | 0.0075191  | 0.007554   | 0.0075784  |   0.0 |  0.86
+Output  | 1.5734e-05 | 1.8491e-05 | 2.6692e-05 |   0.0 |  0.00
+Modify  | 0.85477    | 0.85479    | 0.85482    |   0.0 | 96.81
+Other   |            | 0.0003151  |            |       |  0.04
 
-Nlocal:              9 ave          10 max           7 min
-Histogram: 1 0 0 0 0 0 1 0 0 2
-Nghost:        2305.25 ave        2365 max        2251 min
-Histogram: 1 0 0 0 2 0 0 0 0 1
-Neighs:        2810.75 ave        3483 max        2391 min
-Histogram: 1 1 0 0 1 0 0 0 0 1
+Nlocal:           19.5 ave          24 max          13 min
+Histogram: 1 0 0 0 0 0 1 1 0 1
+Nghost:        4417.75 ave        4507 max        4313 min
+Histogram: 1 0 0 0 0 1 1 0 0 1
+Neighs:        13032.2 ave       19995 max       10044 min
+Histogram: 2 1 0 0 0 0 0 0 0 1
 
-Total # of neighbors = 11243
-Ave neighs/atom = 312.30556
+Total # of neighbors = 52129
+Ave neighs/atom = 668.32051
 Ave special neighs/atom = 2
-Neighbor list builds = 108
+Neighbor list builds = 1020
 Dangerous builds = 0
 write_restart   ${restartfile}
 write_restart   restart.gcmc.h2o
 System init for write_restart ...
 Ewald initialization ...
   using 12-bit tables for long-range coulomb
-  G vector (1/distance) = 0.16835146
-  estimated absolute RMS force accuracy = 0.033206372
-  estimated relative force accuracy = 0.0001
+  G vector (1/distance) = 0.17905152
+  estimated absolute RMS force accuracy = 0.033206443
+  estimated relative force accuracy = 0.00010000022
   KSpace vectors: actual max1d max3d = 16 2 62
                   kxmax kymax kzmax  = 2 2 2
 Generated 0 of 1 mixed pair_coeff terms from arithmetic mixing rule
 0 atoms in group FixGCMC:rotation_gas_atoms:mygcmc
 WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:659)
 
-# run simulation and clear simulation
+# run simulation, store reference values, and clear simulation
 
 run             ${nsteps}
 run             100
 Ewald initialization ...
   using 12-bit tables for long-range coulomb
-  G vector (1/distance) = 0.16835146
-  estimated absolute RMS force accuracy = 0.033206372
-  estimated relative force accuracy = 0.0001
+  G vector (1/distance) = 0.17905152
+  estimated absolute RMS force accuracy = 0.033206443
+  estimated relative force accuracy = 0.00010000022
   KSpace vectors: actual max1d max3d = 16 2 62
                   kxmax kymax kzmax  = 2 2 2
 Generated 0 of 1 mixed pair_coeff terms from arithmetic mixing rule
 0 atoms in group FixGCMC:rotation_gas_atoms:mygcmc
 WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:659)
-Per MPI rank memory allocation (min/avg/max) = 11.7 | 11.7 | 11.7 Mbytes
+Per MPI rank memory allocation (min/avg/max) = 12.02 | 12.02 | 12.03 Mbytes
    Step          Temp          Press          PotEng         KinEng        Density        Atoms   
-       100   826.9794       119623.77     -1414.2585      56.696576      0.35866445            36 
-       200   415.27952      121445.33     -1427.1904      30.946734      0.38855316            39 
-Loop time of 0.0546375 on 4 procs for 100 steps with 39 atoms
+       100   521.42279     -2385.2009     -172.21852      79.267377      0.77710631            78 
+       200   510.4059      -2347.7155     -222.7645       83.678267      0.83688372            84 
+Loop time of 1.73639 on 4 procs for 100 steps with 84 atoms
 
-Performance: 158.133 ns/day, 0.152 hours/ns, 1830.244 timesteps/s, 71.380 katom-step/s
-99.8% CPU use with 4 MPI tasks x 1 OpenMP threads
+Performance: 4.976 ns/day, 4.823 hours/ns, 57.591 timesteps/s, 4.838 katom-step/s
+99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.0031361  | 0.0040066  | 0.0045267  |   0.9 |  7.33
-Bond    | 2.3253e-05 | 2.6534e-05 | 3.1797e-05 |   0.0 |  0.05
-Kspace  | 0.00075368 | 0.001242   | 0.0021535  |   1.6 |  2.27
-Neigh   | 0.0008023  | 0.00080437 | 0.0008067  |   0.0 |  1.47
-Comm    | 0.004955   | 0.0049922  | 0.0050295  |   0.1 |  9.14
-Output  | 1.253e-05  | 1.488e-05  | 2.1879e-05 |   0.0 |  0.03
-Modify  | 0.04333    | 0.043338   | 0.043345   |   0.0 | 79.32
-Other   |            | 0.0002134  |            |       |  0.39
+Pair    | 0.016047   | 0.022208   | 0.033252   |   4.4 |  1.28
+Bond    | 7.1095e-05 | 8.2799e-05 | 9.5402e-05 |   0.0 |  0.00
+Kspace  | 0.0010091  | 0.012036   | 0.018201   |   6.0 |  0.69
+Neigh   | 0.0080372  | 0.0080532  | 0.0080779  |   0.0 |  0.46
+Comm    | 0.0098782  | 0.0099063  | 0.009937   |   0.0 |  0.57
+Output  | 1.5398e-05 | 1.815e-05  | 2.6341e-05 |   0.0 |  0.00
+Modify  | 1.6836     | 1.6837     | 1.6837     |   0.0 | 96.96
+Other   |            | 0.0004367  |            |       |  0.03
 
-Nlocal:           9.75 ave          13 max           8 min
-Histogram: 2 0 0 0 1 0 0 0 0 1
-Nghost:        2423.25 ave        2464 max        2383 min
+Nlocal:             21 ave          25 max          17 min
 Histogram: 1 0 0 1 0 0 1 0 0 1
-Neighs:        3290.25 ave        4116 max        2505 min
-Histogram: 1 0 0 1 0 1 0 0 0 1
+Nghost:           4831 ave        4916 max        4724 min
+Histogram: 1 0 0 0 0 1 1 0 0 1
+Neighs:          15097 ave       22532 max       11220 min
+Histogram: 1 1 1 0 0 0 0 0 0 1
 
-Total # of neighbors = 13161
-Ave neighs/atom = 337.46154
+Total # of neighbors = 60388
+Ave neighs/atom = 718.90476
 Ave special neighs/atom = 2
-Neighbor list builds = 106
+Neighbor list builds = 1020
 Dangerous builds = 0
+variable        tmp equal temp
+variable        tref equal ${tmp}
+variable        tref equal 510.405901723154
+variable        tmp equal press
+variable        pref equal ${tmp}
+variable        pref equal -2347.71548833292
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcref equal ${tmp}
+variable        gcmcref equal 2064
 clear
 OMP_NUM_THREADS environment is not set. Defaulting to 1 thread.
   using 1 OpenMP thread(s) per MPI task
@@ -525,9 +557,9 @@ Reading restart file ...
   restoring pair style lj/cut/coul/long from restart
   restoring bond style harmonic from restart
   restoring angle style harmonic from restart
-  36 atoms
-  26 bonds
-  13 angles
+  78 atoms
+  92 bonds
+  46 angles
 Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        0        0       
   special bond factors coul:  0        0        0       
@@ -536,7 +568,7 @@ Finding 1-2 1-3 1-4 neighbors ...
      1 = max # of 1-4 neighbors
      3 = max # of special neighbors
   special bonds CPU = 0.000 seconds
-  read_restart CPU = 0.003 seconds
+  read_restart CPU = 0.002 seconds
 molecule        h2omol H2O.txt
 Read molecule template h2omol:
 # Water molecule. SPC/E model.
@@ -559,7 +591,7 @@ Finding SHAKE clusters ...
        0 = # of size 2 clusters
        0 = # of size 3 clusters
        0 = # of size 4 clusters
-      12 = # of frozen angles
+      26 = # of frozen angles
   find clusters CPU = 0.000 seconds
 
 # important to make temperature dofs dynamic
@@ -569,11 +601,12 @@ compute_modify  mynvt_temp dynamic/dof yes
 
 # gcmc
 
-fix             mygcmc h2o gcmc 100 100 0 0 54341 ${temp} ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 -8.1 ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
-fix             mygcmc h2o gcmc 100 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert 1.66666666666667 group h2o shake wshake
+fix             mygcmc h2o gcmc ${nevery} 100 0 0 54341 ${temp} ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 ${temp} ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 ${mu} ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 -8.1 ${disp} mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert ${tfac} group h2o shake wshake
+fix             mygcmc h2o gcmc 10 100 0 0 54341 338 -8.1 0.5 mol                 h2omol tfac_insert 1.66666666666667 group h2o shake wshake
 Resetting global fix info from restart file:
   fix style: gcmc, fix ID: mygcmc
 
@@ -582,22 +615,20 @@ Resetting global fix info from restart file:
 compute_modify  thermo_temp dynamic/dof yes
 thermo_style    custom step temp press pe ke density atoms
 
-# rerun simulation from restart
+# rerun simulation from restart, measure errors, and clear
 
 run             ${nsteps}
 run             100
 Ewald initialization ...
-WARNING: System is not charge neutral, net charge = 10.7776
-For more information see https://docs.lammps.org/err0029 (src/kspace.cpp:329)
   using 12-bit tables for long-range coulomb
-  G vector (1/distance) = 0.16835146
-  estimated absolute RMS force accuracy = 0.033206372
-  estimated relative force accuracy = 0.0001
+  G vector (1/distance) = 0.17905152
+  estimated absolute RMS force accuracy = 0.033206443
+  estimated relative force accuracy = 0.00010000022
   KSpace vectors: actual max1d max3d = 16 2 62
                   kxmax kymax kzmax  = 2 2 2
 Generated 0 of 1 mixed pair_coeff terms from arithmetic mixing rule
 All restart file global fix info was re-assigned
-WARNING: Fix gcmc using full_energy option (src/MC/fix_gcmc.cpp:544)
+WARNING: Fix gcmc using full_energy option (src/MC/fix_gcmc.cpp:545)
 0 atoms in group FixGCMC:gcmc_exclusion_group:mygcmc
 0 atoms in group FixGCMC:rotation_gas_atoms:mygcmc
 WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:659)
@@ -613,37 +644,59 @@ Neighbor list info ...
       pair build: half/bin/newton
       stencil: half/bin/3d
       bin: standard
-Per MPI rank memory allocation (min/avg/max) = 11.63 | 11.63 | 11.63 Mbytes
+Per MPI rank memory allocation (min/avg/max) = 11.7 | 11.71 | 11.71 Mbytes
    Step          Temp          Press          PotEng         KinEng        Density        Atoms   
-       100   826.9794       119623.77     -1414.2585      56.696576      0.35866445            36 
-       200   415.27952      121445.33     -1427.1904      30.946734      0.38855316            39 
-Loop time of 0.0549436 on 4 procs for 100 steps with 39 atoms
+       100   521.42279     -2385.201      -172.21852      79.267377      0.77710631            78 
+       200   510.40591     -2347.7158     -222.7645       83.678268      0.83688372            84 
+Loop time of 1.73221 on 4 procs for 100 steps with 84 atoms
 
-Performance: 157.252 ns/day, 0.153 hours/ns, 1820.048 timesteps/s, 70.982 katom-step/s
-99.7% CPU use with 4 MPI tasks x 1 OpenMP threads
+Performance: 4.988 ns/day, 4.812 hours/ns, 57.730 timesteps/s, 4.849 katom-step/s
+99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.0032449  | 0.0041593  | 0.0047897  |   0.9 |  7.57
-Bond    | 9.987e-06  | 1.3876e-05 | 2.4296e-05 |   0.0 |  0.03
-Kspace  | 0.0006922  | 0.0013174  | 0.0022208  |   1.6 |  2.40
-Neigh   | 0.00079046 | 0.00079456 | 0.00079748 |   0.0 |  1.45
-Comm    | 0.0050367  | 0.0050707  | 0.0050963  |   0.0 |  9.23
-Output  | 1.2207e-05 | 1.4482e-05 | 2.1111e-05 |   0.0 |  0.03
-Modify  | 0.043328   | 0.043352   | 0.043376   |   0.0 | 78.90
-Other   |            | 0.0002213  |            |       |  0.40
+Pair    | 0.015954   | 0.022203   | 0.033344   |   4.5 |  1.28
+Bond    | 1.587e-05  | 2.3743e-05 | 3.5687e-05 |   0.0 |  0.00
+Kspace  | 0.00094439 | 0.012002   | 0.01822    |   6.0 |  0.69
+Neigh   | 0.0080553  | 0.008063   | 0.0080757  |   0.0 |  0.47
+Comm    | 0.009893   | 0.0099469  | 0.010019   |   0.1 |  0.57
+Output  | 1.6107e-05 | 1.8995e-05 | 2.7636e-05 |   0.0 |  0.00
+Modify  | 1.6795     | 1.6795     | 1.6796     |   0.0 | 96.96
+Other   |            | 0.0004194  |            |       |  0.02
 
-Nlocal:           9.75 ave          13 max           8 min
-Histogram: 2 0 0 0 1 0 0 0 0 1
-Nghost:        2423.25 ave        2464 max        2383 min
+Nlocal:             21 ave          25 max          17 min
 Histogram: 1 0 0 1 0 0 1 0 0 1
-Neighs:        3290.25 ave        4116 max        2505 min
-Histogram: 1 0 0 1 0 1 0 0 0 1
+Nghost:           4831 ave        4916 max        4724 min
+Histogram: 1 0 0 0 0 1 1 0 0 1
+Neighs:          15097 ave       22532 max       11220 min
+Histogram: 1 1 1 0 0 0 0 0 0 1
 
-Total # of neighbors = 13161
-Ave neighs/atom = 337.46154
+Total # of neighbors = 60388
+Ave neighs/atom = 718.90476
 Ave special neighs/atom = 2
-Neighbor list builds = 106
+Neighbor list builds = 1020
 Dangerous builds = 0
-Total wall time: 0:00:02
+variable        tmp equal temp
+variable        terror equal ${tmp} - v_tref
+variable        terror equal 510.405907005116 - v_tref
+variable        tmp equal press
+variable        perror equal ${tmp} - v_pref
+variable        perror equal -2347.71576941982 - v_pref
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcerror equal ${tmp} - v_gcmcref
+variable        gcmcerror equal 2064 - v_gcmcref
+clear
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread.
+  using 1 OpenMP thread(s) per MPI task
+
+# report restart errors
+
+print "H2O: change in temperature from restart = ${terror} "
+H2O: change in temperature from restart = 5.28196198956721e-06 
+print "H2O: change in pressure from restart = ${perror} "
+H2O: change in pressure from restart = -0.000281086900031369 
+print "H2O: change in fix GCMC from restart = ${gcmcerror} "
+H2O: change in fix GCMC from restart = 0 
+
+Total wall time: 0:00:07

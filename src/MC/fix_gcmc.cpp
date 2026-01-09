@@ -2578,7 +2578,6 @@ void FixGCMC::write_restart(FILE *fp)
   int nglobalvals = 12;
   int nlocalvals = comm->nprocs;
   int ntotalvals = nglobalvals + nlocalvals;
-  //  double list[ntotalvals];
   std::vector<double> list(ntotalvals);
   int n = 0;
   list[n++] = random_equal->state();
@@ -2634,9 +2633,8 @@ void FixGCMC::restart(char *buf)
   // read stored state of RNG unique to this process
   // if nprocs changed, use state of proc 0
 
-  int nlocalvals = comm->nprocs;
-  int ntmp = list[n++];
-  if (nlocalvals == ntmp) n += comm->me;
+  int nlocalvals = list[n++];
+  if (nlocalvals == comm->nprocs) n += comm->me;
   seed = static_cast<int> (list[n]);
   random_unequal->reset(seed);
 }

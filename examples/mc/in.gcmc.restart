@@ -40,9 +40,15 @@ thermo_style    custom step temp press pe ke density atoms
 run             ${nequil}
 write_restart   ${restartfile}
 
-# run simulation and clear simulation
+# run simulation, store reference values, and clear simulation
 
 run             ${nsteps}
+variable        tmp equal temp
+variable        tref equal ${tmp}
+variable        tmp equal press
+variable        pref equal ${tmp}
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcref equal ${tmp}
 clear
 
 # rerun simulation from restart
@@ -58,11 +64,22 @@ fix             mygcmc gcmcgroup gcmc 1 100 100 1 29494 ${temp} ${mu} ${disp}
 compute_modify  thermo_temp dynamic/dof yes
 thermo_style    custom step temp press pe ke density atoms
 
-# rerun simulation from restart
+# rerun simulation from restart, measure errors, and clear
 
 run             ${nsteps}
-
+variable        tmp equal temp
+variable        terror equal ${tmp} - v_tref
+variable        tmp equal press
+variable        perror equal ${tmp} - v_pref
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcerror equal ${tmp} - v_gcmcref
 clear
+
+# report restart errors
+
+print "LJ: change in temperature from restart = ${terror} "
+print "LJ: change in pressure from restart = ${perror} "
+print "LJ: change in fix GCMC from restart = ${gcmcerror} "
 
 #### H2O ###
 
@@ -73,6 +90,7 @@ variable        lbox equal 10.0
 variable        spacing equal 5.0
 variable        nequil equal 100
 variable        nsteps equal 100
+variable        nevery equal 10
 variable        restartfile string restart.gcmc.h2o
 
 # global model settings
@@ -99,7 +117,6 @@ create_box      2 box                       &
 
 molecule        h2omol H2O.txt
 create_atoms   	0 box mol h2omol 464563 units box
-set type 1 charge 0.5
 
 # rigid SPC/E water model
 
@@ -142,7 +159,7 @@ thermo_style    custom step temp press pe ke density atoms
 # gcmc
 
 variable        tfac equal 5.0/3.0 # (3 trans + 2 rot)/(3 trans)
-fix             mygcmc h2o gcmc 100 100 0 0 54341 ${temp} ${mu} ${disp} mol &
+fix             mygcmc h2o gcmc ${nevery} 100 0 0 54341 ${temp} ${mu} ${disp} mol &
                 h2omol tfac_insert ${tfac} group h2o shake wshake
 
 # run equilibration and write restart
@@ -150,9 +167,15 @@ fix             mygcmc h2o gcmc 100 100 0 0 54341 ${temp} ${mu} ${disp} mol &
 run             ${nequil}
 write_restart   ${restartfile}
 
-# run simulation and clear simulation
+# run simulation, store reference values, and clear simulation
 
 run             ${nsteps}
+variable        tmp equal temp
+variable        tref equal ${tmp}
+variable        tmp equal press
+variable        pref equal ${tmp}
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcref equal ${tmp}
 clear
 
 # rerun simulation from restart
@@ -170,7 +193,7 @@ compute_modify  mynvt_temp dynamic/dof yes
 
 # gcmc
 
-fix             mygcmc h2o gcmc 100 100 0 0 54341 ${temp} ${mu} ${disp} mol &
+fix             mygcmc h2o gcmc ${nevery} 100 0 0 54341 ${temp} ${mu} ${disp} mol &
                 h2omol tfac_insert ${tfac} group h2o shake wshake
 
 # output
@@ -178,6 +201,20 @@ fix             mygcmc h2o gcmc 100 100 0 0 54341 ${temp} ${mu} ${disp} mol &
 compute_modify  thermo_temp dynamic/dof yes
 thermo_style    custom step temp press pe ke density atoms
 
-# rerun simulation from restart
+# rerun simulation from restart, measure errors, and clear
 
 run             ${nsteps}
+variable        tmp equal temp
+variable        terror equal ${tmp} - v_tref
+variable        tmp equal press
+variable        perror equal ${tmp} - v_pref
+variable        tmp equal sum(f_mygcmc)
+variable        gcmcerror equal ${tmp} - v_gcmcref
+clear
+
+# report restart errors
+
+print "H2O: change in temperature from restart = ${terror} "
+print "H2O: change in pressure from restart = ${perror} "
+print "H2O: change in fix GCMC from restart = ${gcmcerror} "
+
