@@ -769,8 +769,6 @@ int ssfn_load(ssfn_t *ctx, const ssfn_font_t *font)
  */
 int ssfn_select(ssfn_t *ctx, int family, int style, int size)
 {
-  int i, j, l;
-
   if (!ctx) return SSFN_ERR_INVINP;
   if ((style & ~0xCF)) return (ctx->err = SSFN_ERR_BADSTYLE);
   if (size < 8 || size > 255) return (ctx->err = SSFN_ERR_BADSIZE);
@@ -786,9 +784,6 @@ int ssfn_select(ssfn_t *ctx, int family, int style, int size)
   ctx->size = size;
   ctx->mode = SSFN_MODE_BITMAP;
   return (ctx->err = SSFN_OK);
-
-invinp:
-  return (ctx->err = SSFN_ERR_INVINP);
 }
 
 /**
