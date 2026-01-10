@@ -194,9 +194,9 @@ void scale_pixmap(int ow, int oh, const unsigned char *opix, int nw, int nh, uns
 // convert an RGB color to YUV colorspace
 void rgb2yuv(int *rgb, int *yuv)
 {
-  yuv[0] = (0.299 * rgb[0]) + (0.587 * rgb[1]) + (0.114 * rgb[2]);
-  yuv[1] = -(0.14713 * rgb[0]) - (0.28886 * rgb[1]) + (0.436 * rgb[2]);
-  yuv[2] = (0.615 * rgb[0]) - (0.51499 * rgb[1]) - (0.10001 * rgb[2]);
+  yuv[0] = static_cast<int>((0.299 * rgb[0]) + (0.587 * rgb[1]) + (0.114 * rgb[2]));
+  yuv[1] = static_cast<int>(-(0.14713 * rgb[0]) - (0.28886 * rgb[1]) + (0.436 * rgb[2]));
+  yuv[2] = static_cast<int>((0.615 * rgb[0]) - (0.51499 * rgb[1]) - (0.10001 * rgb[2]));
 }
 
 // convert XPM-like bitmap to 8-bit pixmap
@@ -567,9 +567,9 @@ void Image::clear()
   } else {
     for (int iy = 0; iy < height; iy ++) {
       double fraction = (double) iy / (double) height;
-      red   = fraction * background2[0] + (1.0 - fraction) * background[0];
-      green = fraction * background2[1] + (1.0 - fraction) * background[1];
-      blue  = fraction * background2[2] + (1.0 - fraction) * background[2];
+      red   = static_cast<int>(fraction * background2[0] + (1.0 - fraction) * background[0]);
+      green = static_cast<int>(fraction * background2[1] + (1.0 - fraction) * background[1]);
+      blue  = static_cast<int>(fraction * background2[2] + (1.0 - fraction) * background[2]);
       for (int ix = 0; ix < width; ix ++) {
         imageBuffer[iy * width * 3 + ix * 3 + 0] = red;
         imageBuffer[iy * width * 3 + ix * 3 + 1] = green;
@@ -811,8 +811,8 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
   // adjust scale factor for FSAA and only scale as much as needed.
   if (fsaa) scale *= 2.0;
   if (scale != 1.0) {
-    int nwidth = scale * pixwidth + 0.5;
-    int nheight = scale * pixheight + 0.5;
+    int nwidth = std::lround(scale * pixwidth + 0.5);
+    int nheight = std::lround(scale * pixheight + 0.5);
     npixmap = new unsigned char[3*nwidth*nheight];
     scale_pixmap(pixwidth, pixheight, pixmap, nwidth, nheight, npixmap);
     mypixmap = npixmap;
@@ -1395,7 +1395,7 @@ void Image::compute_SSAO()
     int y = index / width;
 
     double cdepth = depthBuffer[index];
-    if (cdepth < 0) { continue; }
+    if (cdepth < 0) continue;
 
     double sx = surfaceBuffer[index * 2 + 0];
     double sy = surfaceBuffer[index * 2 + 1];

@@ -124,6 +124,8 @@ const char *ssfn_errstr[] = {"",
                              "Glyph variant not found"};
 
 /*** Private functions ***/
+namespace {
+
 /* f = file scale, g = grid 4095.15, o = screen point 255.255, i = screen pixel 255, c = ceil */
 #define _ssfn_i2g(x) ((x) ? (((x) << 16) - (1 << 15)) / ctx->m : 0)
 #define _ssfn_g2o(x) (((x) * ctx->m + (1 << 7)) >> 8)
@@ -141,659 +143,661 @@ const char *ssfn_errstr[] = {"",
 #define _ssfn_igg(y) (((4096 << 4) - (y)) >> (2))
 #define _ssfn_igi(y) ((((4096 << 4) - (y)) * ctx->m + (1 << (15 + 3))) >> (16 + 3))
 
-/* parse character table */
-uint8_t *_ssfn_c(const ssfn_font_t *font, uint32_t unicode, int v)
-{
-  uint32_t i, j, l;
-  uint8_t *ptr;
+  /* parse character table */
+  uint8_t *_ssfn_c(const ssfn_font_t *font, uint32_t unicode, int v)
+  {
+    uint32_t i, j, l;
+    uint8_t *ptr;
 
-  if (!font->characters_offs[v]) return nullptr;
+    if (!font->characters_offs[v]) return nullptr;
 
-  ptr = (uint8_t *) font + font->characters_offs[v];
-  l = (font->quality < 5 && font->characters_offs[v] < 65536)
-      ? 4
-      : (font->characters_offs[v] < 1048576 ? 5 : 6);
+    ptr = (uint8_t *) font + font->characters_offs[v];
+    l = (font->quality < 5 && font->characters_offs[v] < 65536)
+        ? 4
+        : (font->characters_offs[v] < 1048576 ? 5 : 6);
 
-  for (j = i = 0; i < 0x110000; i++) {
-    if (ptr[0] & 0x80) {
-      if (ptr[0] & 0x40) {
-        i += ptr[1] | ((ptr[0] & 0x3f) << 8);
-        ptr += 2;
+    for (j = i = 0; i < 0x110000; i++) {
+      if (ptr[0] & 0x80) {
+        if (ptr[0] & 0x40) {
+          i += ptr[1] | ((ptr[0] & 0x3f) << 8);
+          ptr += 2;
+        } else {
+          i += ptr[0] & 0x3f;
+          ptr++;
+        }
       } else {
-        i += ptr[0] & 0x3f;
-        ptr++;
+        if (i == unicode) return ptr;
+        ptr += ptr[0] * l + 10;
+        j++;
       }
-    } else {
-      if (i == unicode) return ptr;
-      ptr += ptr[0] * l + 10;
-      j++;
+    }
+    return nullptr;
+  }
+
+  /* add a line to contour */
+  void _ssfn_l(ssfn_t *ctx, int x, int y, int l)
+  {
+    if (x > (4096 << 4) - 16) x = (4096 << 4) - 16;
+    if (y > (4096 << 4) - 16) y = (4096 << 4) - 16;
+    if (x < -1 || y < -1 || (x == ctx->lx && y == ctx->ly)) return;
+
+    if (ctx->np + 2 >= ctx->mp) {
+      ctx->mp += 512;
+      ctx->p = (uint16_t *) realloc(ctx->p, ctx->mp * sizeof(uint16_t));
+      if (!ctx->p) {
+        ctx->err = SSFN_ERR_ALLOC;
+        return;
+      }
+    }
+    if (!ctx->np || !l || _ssfn_g2i(ctx->p[ctx->np - 2]) != _ssfn_g2i(x) ||
+        _ssfn_g2i(ctx->p[ctx->np - 1]) != _ssfn_g2i(y)) {
+      ctx->p[ctx->np++] = x;
+      ctx->p[ctx->np++] = y;
+      ctx->lx = x;
+      ctx->ly = y;
+    }
+    if ((ctx->style & 0x200) && x >= 0 && ctx->ix > x) ctx->ix = x;
+  }
+
+  /* add a Bezier curve to contour */
+  void _ssfn_b(ssfn_t *ctx, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, int l)
+  {
+    int m0x, m0y, m1x, m1y, m2x, m2y, m3x, m3y, m4x, m4y, m5x, m5y;
+    if (l < 8 && (x0 != x3 || y0 != y3)) {
+      m0x = ((x1 - x0) / 2) + x0;
+      m0y = ((y1 - y0) / 2) + y0;
+      m1x = ((x2 - x1) / 2) + x1;
+      m1y = ((y2 - y1) / 2) + y1;
+      m2x = ((x3 - x2) / 2) + x2;
+      m2y = ((y3 - y2) / 2) + y2;
+      m3x = ((m1x - m0x) / 2) + m0x;
+      m3y = ((m1y - m0y) / 2) + m0y;
+      m4x = ((m2x - m1x) / 2) + m1x;
+      m4y = ((m2y - m1y) / 2) + m1y;
+      m5x = ((m4x - m3x) / 2) + m3x;
+      m5y = ((m4y - m3y) / 2) + m3y;
+      _ssfn_b(ctx, x0, y0, m0x, m0y, m3x, m3y, m5x, m5y, l + 1);
+      _ssfn_b(ctx, m5x, m5y, m4x, m4y, m2x, m2y, x3, y3, l + 1);
+    }
+    _ssfn_l(ctx, x3, y3, l);
+  }
+
+  /* rasterize contour */
+  void _ssfn_r(ssfn_t *ctx)
+  {
+    int i, k, l, m, n = 0, x, y, Y, M = 0;
+    uint16_t *r;
+    uint8_t *pix = ctx->ret->data;
+
+    for (y = 0; y < ctx->ret->h; y++) {
+      Y = _ssfn_i2g(y);
+      r = ctx->r[y];
+      for (n = 0, i = 0; i < ctx->np - 3; i += 2) {
+        if ((ctx->p[i] == 0xffff && ctx->p[i + 1] == 0xffff) ||
+            (ctx->p[i + 2] == 0xffff && ctx->p[i + 3] == 0xffff))
+          continue;
+        if ((ctx->p[i + 1] < Y && ctx->p[i + 3] >= Y) ||
+            (ctx->p[i + 3] < Y && ctx->p[i + 1] >= Y)) {
+          if (_ssfn_g2iy(ctx->p[i + 1]) == _ssfn_g2iy(ctx->p[i + 3]))
+            x = (((int) ctx->p[i] + (int) ctx->p[i + 2]) >> 1);
+          else
+            x = ((int) ctx->p[i]) +
+                ((Y - (int) ctx->p[i + 1]) * ((int) ctx->p[i + 2] - (int) ctx->p[i]) /
+                 ((int) ctx->p[i + 3] - (int) ctx->p[i + 1]));
+          if (y == ctx->u) {
+            if (x < ctx->uix) { ctx->uix = x; }
+            if (x > ctx->uax) { ctx->uax = x; }
+          }
+          x = _ssfn_g2ox(x - ctx->ix);
+          for (k = 0; k < n && x > r[k]; k++);
+          if (n >= ctx->nr[y]) {
+            ctx->nr[y] = (n < ctx->np) ? ctx->np : (n + 1) << 1;
+            ctx->r[y] = (uint16_t *) realloc(ctx->r[y], (ctx->nr[y] << 1));
+            if (!ctx->r[y]) {
+              ctx->err = SSFN_ERR_ALLOC;
+              return;
+            }
+            r = ctx->r[y];
+          }
+          for (l = n; l > k; l--) r[l] = r[l - 1];
+          r[k] = x;
+          n++;
+        }
+      }
+      if (n > 1 && n & 1) {
+        r[n - 2] = r[n - 1];
+        n--;
+      }
+      ctx->nr[y] = n;
+      if (n) {
+        if (y > M) M = y;
+        k = y * ctx->ret->pitch;
+        for (i = 0; i < n - 1; i += 2) {
+          if (ctx->style & 0x100) {
+            l = (r[i] + r[i + 1]) >> 9;
+            if (ctx->mode == SSFN_MODE_BITMAP ? (pix[k + (l >> 3)] & (1 << (l & 7)) ? 1 : 0)
+                                              : (pix[k + l] == 0xFF)) {
+              if (r[i] + 256 > r[i + 1])
+                r[i] = r[i + 1] - 128;
+              else
+                r[i] += 256;
+              if (r[i + 1] - 256 > r[i]) r[i + 1] -= 256;
+            } else {
+              if (i >= n - 2 || r[i + 1] + 256 < r[i + 2]) r[i + 1] += 256;
+            }
+          }
+          l = ((r[i] + 128) >> 8);
+          m = ((r[i + 1] + 128) >> 8);
+          if (ctx->mode != SSFN_MODE_BITMAP && l + 1 < m) l++;
+          for (; l < m; l++) {
+            switch (ctx->mode) {
+              case SSFN_MODE_BITMAP:
+                pix[k + (l >> 3)] ^= 1 << (l & 7);
+                break;
+              case SSFN_MODE_ALPHA:
+                pix[k + l] ^= 0xFF;
+                break;
+              case SSFN_MODE_CMAP:
+                pix[k + l] ^= 0x0F;
+                break;
+            }
+          }
+          if (l + 1 > ctx->ret->w) ctx->ret->w = l + 1;
+        }
+      }
+    }
+    /* fix rounding errors */
+    if (M + 1 == ctx->ret->baseline) {
+      ctx->ret->baseline--;
+      ctx->u--;
     }
   }
-  return nullptr;
-}
 
-/* add a line to contour */
-void _ssfn_l(ssfn_t *ctx, int x, int y, int l)
-{
-  if (x > (4096 << 4) - 16) x = (4096 << 4) - 16;
-  if (y > (4096 << 4) - 16) y = (4096 << 4) - 16;
-  if (x < -1 || y < -1 || (x == ctx->lx && y == ctx->ly)) return;
+  /* anti-alias a contour */
+  void _ssfn_a(ssfn_t *ctx)
+  {
+    int i, x, y, x0, y0, x1, y1, sx, sy, dx, dy, m, o, p = ctx->ret->pitch;
+    uint8_t *pix = ctx->ret->data, e;
+    uint16_t *r;
 
-  if (ctx->np + 2 >= ctx->mp) {
-    ctx->mp += 512;
-    ctx->p = (uint16_t *) realloc(ctx->p, ctx->mp * sizeof(uint16_t));
-    if (!ctx->p) {
-      ctx->err = SSFN_ERR_ALLOC;
-      return;
+    if (ctx->mode < SSFN_MODE_ALPHA || !ctx->p || ctx->np < 4) return;
+
+    for (y = o = 0; y < ctx->ret->h; y++, o += p) {
+      if (ctx->nr[y] && (r = ctx->r[y])) {
+        for (i = 0; i < ctx->nr[y] - 1; i += 2) {
+          x = (r[i] + 128) >> 8;
+          e = ~((r[i] + 128) & 0xFF);
+          if (e == 127)
+            e = 255;
+          else {
+            if (x && pix[o + x - 1] > e) e = pix[o + x - 1];
+            if (y && pix[o + x - p] > e) e = pix[o + x - p];
+          }
+          if (ctx->mode == SSFN_MODE_CMAP) e = (e >> 4) | 0xF0;
+          if (e > pix[o + x]) pix[o + x] = e;
+          e = ((r[i + 1] + 128) & 0xFF);
+          if (e == 128) e = 255;
+          pix[o + ((r[i + 1] + 128) >> 8)] = ctx->mode == SSFN_MODE_CMAP ? (e >> 4) | 0xF0 : e;
+        }
+      }
     }
-  }
-  if (!ctx->np || !l || _ssfn_g2i(ctx->p[ctx->np - 2]) != _ssfn_g2i(x) ||
-      _ssfn_g2i(ctx->p[ctx->np - 1]) != _ssfn_g2i(y)) {
-    ctx->p[ctx->np++] = x;
-    ctx->p[ctx->np++] = y;
-    ctx->lx = x;
-    ctx->ly = y;
-  }
-  if ((ctx->style & 0x200) && x >= 0 && ctx->ix > x) ctx->ix = x;
-}
 
-/* add a Bezier curve to contour */
-void _ssfn_b(ssfn_t *ctx, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, int l)
-{
-  int m0x, m0y, m1x, m1y, m2x, m2y, m3x, m3y, m4x, m4y, m5x, m5y;
-  if (l < 8 && (x0 != x3 || y0 != y3)) {
-    m0x = ((x1 - x0) / 2) + x0;
-    m0y = ((y1 - y0) / 2) + y0;
-    m1x = ((x2 - x1) / 2) + x1;
-    m1y = ((y2 - y1) / 2) + y1;
-    m2x = ((x3 - x2) / 2) + x2;
-    m2y = ((y3 - y2) / 2) + y2;
-    m3x = ((m1x - m0x) / 2) + m0x;
-    m3y = ((m1y - m0y) / 2) + m0y;
-    m4x = ((m2x - m1x) / 2) + m1x;
-    m4y = ((m2y - m1y) / 2) + m1y;
-    m5x = ((m4x - m3x) / 2) + m3x;
-    m5y = ((m4y - m3y) / 2) + m3y;
-    _ssfn_b(ctx, x0, y0, m0x, m0y, m3x, m3y, m5x, m5y, l + 1);
-    _ssfn_b(ctx, m5x, m5y, m4x, m4y, m2x, m2y, x3, y3, l + 1);
-  }
-  _ssfn_l(ctx, x3, y3, l);
-}
-
-/* rasterize contour */
-void _ssfn_r(ssfn_t *ctx)
-{
-  int i, k, l, m, n = 0, x, y, Y, M = 0;
-  uint16_t *r;
-  uint8_t *pix = ctx->ret->data;
-
-  for (y = 0; y < ctx->ret->h; y++) {
-    Y = _ssfn_i2g(y);
-    r = ctx->r[y];
-    for (n = 0, i = 0; i < ctx->np - 3; i += 2) {
+    for (i = 0; i < ctx->np - 3; i += 2) {
       if ((ctx->p[i] == 0xffff && ctx->p[i + 1] == 0xffff) ||
           (ctx->p[i + 2] == 0xffff && ctx->p[i + 3] == 0xffff))
         continue;
-      if ((ctx->p[i + 1] < Y && ctx->p[i + 3] >= Y) || (ctx->p[i + 3] < Y && ctx->p[i + 1] >= Y)) {
-        if (_ssfn_g2iy(ctx->p[i + 1]) == _ssfn_g2iy(ctx->p[i + 3]))
-          x = (((int) ctx->p[i] + (int) ctx->p[i + 2]) >> 1);
-        else
-          x = ((int) ctx->p[i]) +
-              ((Y - (int) ctx->p[i + 1]) * ((int) ctx->p[i + 2] - (int) ctx->p[i]) /
-               ((int) ctx->p[i + 3] - (int) ctx->p[i + 1]));
-        if (y == ctx->u) {
-          if (x < ctx->uix) { ctx->uix = x; }
-          if (x > ctx->uax) { ctx->uax = x; }
-        }
-        x = _ssfn_g2ox(x - ctx->ix);
-        for (k = 0; k < n && x > r[k]; k++);
-        if (n >= ctx->nr[y]) {
-          ctx->nr[y] = (n < ctx->np) ? ctx->np : (n + 1) << 1;
-          ctx->r[y] = (uint16_t *) realloc(ctx->r[y], (ctx->nr[y] << 1));
-          if (!ctx->r[y]) {
-            ctx->err = SSFN_ERR_ALLOC;
-            return;
-          }
-          r = ctx->r[y];
-        }
-        for (l = n; l > k; l--) r[l] = r[l - 1];
-        r[k] = x;
-        n++;
-      }
-    }
-    if (n > 1 && n & 1) {
-      r[n - 2] = r[n - 1];
-      n--;
-    }
-    ctx->nr[y] = n;
-    if (n) {
-      if (y > M) M = y;
-      k = y * ctx->ret->pitch;
-      for (i = 0; i < n - 1; i += 2) {
-        if (ctx->style & 0x100) {
-          l = (r[i] + r[i + 1]) >> 9;
-          if (ctx->mode == SSFN_MODE_BITMAP ? (pix[k + (l >> 3)] & (1 << (l & 7)) ? 1 : 0)
-                                            : (pix[k + l] == 0xFF)) {
-            if (r[i] + 256 > r[i + 1])
-              r[i] = r[i + 1] - 128;
-            else
-              r[i] += 256;
-            if (r[i + 1] - 256 > r[i]) r[i + 1] -= 256;
-          } else {
-            if (i >= n - 2 || r[i + 1] + 256 < r[i + 2]) r[i + 1] += 256;
-          }
-        }
-        l = ((r[i] + 128) >> 8);
-        m = ((r[i + 1] + 128) >> 8);
-        if (ctx->mode != SSFN_MODE_BITMAP && l + 1 < m) l++;
-        for (; l < m; l++) {
-          switch (ctx->mode) {
-            case SSFN_MODE_BITMAP:
-              pix[k + (l >> 3)] ^= 1 << (l & 7);
-              break;
-            case SSFN_MODE_ALPHA:
-              pix[k + l] ^= 0xFF;
-              break;
-            case SSFN_MODE_CMAP:
-              pix[k + l] ^= 0x0F;
-              break;
-          }
-        }
-        if (l + 1 > ctx->ret->w) ctx->ret->w = l + 1;
-      }
-    }
-  }
-  /* fix rounding errors */
-  if (M + 1 == ctx->ret->baseline) {
-    ctx->ret->baseline--;
-    ctx->u--;
-  }
-}
 
-/* anti-alias a contour */
-void _ssfn_a(ssfn_t *ctx)
-{
-  int i, x, y, x0, y0, x1, y1, sx, sy, dx, dy, m, o, p = ctx->ret->pitch;
-  uint8_t *pix = ctx->ret->data, e;
-  uint16_t *r;
-
-  if (ctx->mode < SSFN_MODE_ALPHA || !ctx->p || ctx->np < 4) return;
-
-  for (y = o = 0; y < ctx->ret->h; y++, o += p) {
-    if (ctx->nr[y] && (r = ctx->r[y])) {
-      for (i = 0; i < ctx->nr[y] - 1; i += 2) {
-        x = (r[i] + 128) >> 8;
-        e = ~((r[i] + 128) & 0xFF);
-        if (e == 127)
-          e = 255;
-        else {
-          if (x && pix[o + x - 1] > e) e = pix[o + x - 1];
-          if (y && pix[o + x - p] > e) e = pix[o + x - p];
+      x0 = ctx->p[i] - ctx->ix;
+      y0 = ctx->p[i + 1];
+      x1 = ctx->p[i + 2] - ctx->ix;
+      y1 = ctx->p[i + 3];
+      sx = x1 >= x0 ? 1 : -1;
+      sy = y1 >= y0 ? 1 : -1;
+      dx = x1 - x0;
+      dy = y1 - y0;
+      if (sx * dx >= sy * dy && dx) {
+        for (x = x0, m = sx * dx; m > 0; m -= 16, x += sx * 16) {
+          y = _ssfn_g2oy(y0 + ((x - x0) * dy / dx));
+          y += 128;
+          e = ~(y & 0xFF);
+          y >>= 8;
+          e >>= 1;
+          o = y * p + ((_ssfn_g2ox(x) + 128) >> 8);
+          if (ctx->mode == SSFN_MODE_CMAP) e = (e >> 4) | 0xF0;
+          if (e > pix[o]) pix[o] = e;
         }
-        if (ctx->mode == SSFN_MODE_CMAP) e = (e >> 4) | 0xF0;
-        if (e > pix[o + x]) pix[o + x] = e;
-        e = ((r[i + 1] + 128) & 0xFF);
-        if (e == 128) e = 255;
-        pix[o + ((r[i + 1] + 128) >> 8)] = ctx->mode == SSFN_MODE_CMAP ? (e >> 4) | 0xF0 : e;
       }
     }
   }
 
-  for (i = 0; i < ctx->np - 3; i += 2) {
-    if ((ctx->p[i] == 0xffff && ctx->p[i + 1] == 0xffff) ||
-        (ctx->p[i + 2] == 0xffff && ctx->p[i + 3] == 0xffff))
-      continue;
+  /* parse a glyph */
+  void _ssfn_g(ssfn_t *ctx, uint8_t *rg, int render)
+  {
+    int i, j, nf, m, n, o, ox, oy, ol, t, x, y, a, b, c, d, w, h, s;
+    uint8_t *raw, *ra, *re, *pix = ctx->ret->data;
 
-    x0 = ctx->p[i] - ctx->ix;
-    y0 = ctx->p[i + 1];
-    x1 = ctx->p[i + 2] - ctx->ix;
-    y1 = ctx->p[i + 3];
-    sx = x1 >= x0 ? 1 : -1;
-    sy = y1 >= y0 ? 1 : -1;
-    dx = x1 - x0;
-    dy = y1 - y0;
-    if (sx * dx >= sy * dy && dx) {
-      for (x = x0, m = sx * dx; m > 0; m -= 16, x += sx * 16) {
-        y = _ssfn_g2oy(y0 + ((x - x0) * dy / dx));
-        y += 128;
-        e = ~(y & 0xFF);
-        y >>= 8;
-        e >>= 1;
-        o = y * p + ((_ssfn_g2ox(x) + 128) >> 8);
-        if (ctx->mode == SSFN_MODE_CMAP) e = (e >> 4) | 0xF0;
-        if (e > pix[o]) pix[o] = e;
+    ctx->lx = ctx->ly = ctx->mx = ctx->my = -1;
+    ol = (ctx->f->quality < 5 && ctx->f->characters_offs[ctx->variant] < 65536)
+        ? 4
+        : ((ctx->f->characters_offs[ctx->variant] < 1048576) ? 5 : 6);
+    s = 16 - ctx->g;
+    nf = rg[0];
+    rg += 10;
+
+    for (h = 0; nf-- && !ctx->err; rg += ol) {
+      switch (ol) {
+        case 4:
+          o = ((rg[1] << 8) | rg[0]);
+          ox = rg[2];
+          oy = rg[3];
+          break;
+        case 5:
+          o = (((rg[2] & 0xF) << 16) | (rg[1] << 8) | rg[0]);
+          ox = (((rg[2] >> 4) & 3) << 8) | rg[3];
+          oy = (((rg[2] >> 6) & 3) << 8) | rg[4];
+          break;
+        default:
+          o = (((rg[3] & 0xF) << 24) | (rg[2] << 16) | (rg[1] << 8) | rg[0]);
+          ox = ((rg[3] & 0xF) << 8) | rg[4];
+          oy = (((rg[3] >> 4) & 0xF) << 8) | rg[5];
+          break;
       }
-    }
-  }
-}
+      ox <<= s;
+      oy <<= s;
+      raw = (uint8_t *) ctx->f + o;
+      if (raw[0] & 0x80) {
+        t = (raw[0] & 0x60) >> 5;
+        if (!render && t != SSFN_FRAG_HINTING) break;
+        switch (t) {
+          case SSFN_FRAG_LBITMAP:
+            x = ((((raw[0] >> 2) & 3) << 8) + raw[1]) + 1;
+            y = (((raw[0] & 3) << 8) | raw[2]) + 1;
+            raw += 3;
+            goto bitmap;
 
-/* parse a glyph */
-void _ssfn_g(ssfn_t *ctx, uint8_t *rg, int render)
-{
-  int i, j, nf, m, n, o, ox, oy, ol, t, x, y, a, b, c, d, w, h, s;
-  uint8_t *raw, *ra, *re, *pix = ctx->ret->data;
+          case SSFN_FRAG_BITMAP:
+            x = (raw[0] & 0x1F) + 1;
+            y = raw[1] + 1;
+            raw += 2;
+          bitmap:
+            if (ctx->mode == SSFN_MODE_OUTLINE) {
+              x <<= 3;
+            outline:
+              ctx->lx = ctx->ly = -1;
+              x <<= s;
+              y <<= s;
+              if (ctx->style & 0x200) {
+                a = (((4096 << 4) - (oy)) >> (3));
+                b = (((4096 << 4) - (oy + y)) >> (3));
+                if (ctx->ix > ox + a) ctx->ix = ox + a;
+              } else
+                a = b = 0;
+              if (ctx->np) _ssfn_l(ctx, -1, -1, 0);
+              _ssfn_l(ctx, ox + a, oy, 0);
+              _ssfn_l(ctx, ox + x + a, oy, 0);
+              _ssfn_l(ctx, ox + x + b, oy + y, 0);
+              _ssfn_l(ctx, ox + b, oy + y, 0);
+              _ssfn_l(ctx, ox + a, oy, 0);
+            } else {
+              a = x << 3;
+              b = y << s;
+              c = _ssfn_g2i(oy);
+              n = _ssfn_g2i(ox);
+              w = _ssfn_g2i(x << (3 + s));
+              h = _ssfn_g2i(b);
+              if (c + h >= ctx->ret->h) c = ctx->ret->h - h; /* due to rounding */
+              c = t = c * ctx->ret->pitch;
+              for (j = 0; j < h; j++) {
+                o = (((j << 8) * (y << 8) / (h << 8)) >> 8) * x;
+                for (i = 0; i < w; i++) {
+                  m = ((i << 8) * (a << 8) / (w << 8)) >> 8;
+                  if (raw[o + (m >> 3)] & (1 << (m & 7))) {
+                    d = n + ((ctx->style & 0x200) ? _ssfn_igi(oy + (j << s) + 127) : 0) + i;
+                    switch (ctx->mode) {
+                      case SSFN_MODE_BITMAP:
+                        pix[c + (d >> 3)] |= 1 << (d & 7);
+                        d++;
+                        if ((ctx->style & 0x100) && (d >> 3) < ctx->ret->pitch) {
+                          pix[c + (d >> 3)] |= 1 << (d & 7);
+                          d++;
+                          if (ctx->size > 127 && (d >> 3) < ctx->ret->pitch) {
+                            pix[c + (d >> 3)] |= 1 << (d & 7);
+                          }
+                        }
+                        break;
+                      case SSFN_MODE_CMAP:
+                      case SSFN_MODE_ALPHA:
+                        pix[c + (d++)] = 0xFF;
+                        if ((ctx->style & 0x100) && d < ctx->ret->pitch) {
+                          pix[c + (d++)] = 0xFF;
+                          if (ctx->size > 127 && d < ctx->ret->pitch) { pix[c + d] = 0xFF; }
+                        }
+                        break;
+                    }
+                    if (d > ctx->ret->w) ctx->ret->w = d;
+                    d = ox + _ssfn_i2g(d);
+                    if ((ctx->style & 0x200) && ctx->ix > d) ctx->ix = d;
+                    if (_ssfn_g2i(oy) + j == ctx->u) {
+                      if (d < ctx->uix) { ctx->uix = d; }
+                      if (d > ctx->uax) { ctx->uax = d; }
+                    }
+                  }
+                }
+                c += ctx->ret->pitch;
+              }
+              if (ctx->mode != SSFN_MODE_BITMAP && h > y && w > 1) {
+                m = (ctx->mode == SSFN_MODE_CMAP) ? 0xF0 : 0;
+                x = h / y;
+                for (a = x; a; a--) {
+                  b = ctx->style & 0x100 ? (64 + (128 * a / x)) : (192 * a / x);
+                  if (ctx->mode == SSFN_MODE_CMAP) b = (b >> 4) | 0xF0;
+                  c = t + ctx->ret->pitch;
+                  for (j = 1; j < h - 1; j++) {
+                    for (i = 1; i < w - 1; i++) {
+                      d = n + ((ctx->style & 0x200) ? _ssfn_igi(oy + (j << s)) : 0) + i;
+                      if (pix[c + d] == m &&
+                          (pix[c + d - ctx->ret->pitch] > b || pix[c + d + ctx->ret->pitch] > b) &&
+                          (pix[c + d - 1] > b || pix[c + d + 1] > b))
+                        pix[c + d] = b;
+                    }
+                    c += ctx->ret->pitch;
+                  }
+                }
+              }
+            }
+            h = 0;
+            break;
 
-  ctx->lx = ctx->ly = ctx->mx = ctx->my = -1;
-  ol = (ctx->f->quality < 5 && ctx->f->characters_offs[ctx->variant] < 65536)
-      ? 4
-      : ((ctx->f->characters_offs[ctx->variant] < 1048576) ? 5 : 6);
-  s = 16 - ctx->g;
-  nf = rg[0];
-  rg += 10;
-
-  for (h = 0; nf-- && !ctx->err; rg += ol) {
-    switch (ol) {
-      case 4:
-        o = ((rg[1] << 8) | rg[0]);
-        ox = rg[2];
-        oy = rg[3];
-        break;
-      case 5:
-        o = (((rg[2] & 0xF) << 16) | (rg[1] << 8) | rg[0]);
-        ox = (((rg[2] >> 4) & 3) << 8) | rg[3];
-        oy = (((rg[2] >> 6) & 3) << 8) | rg[4];
-        break;
-      default:
-        o = (((rg[3] & 0xF) << 24) | (rg[2] << 16) | (rg[1] << 8) | rg[0]);
-        ox = ((rg[3] & 0xF) << 8) | rg[4];
-        oy = (((rg[3] >> 4) & 0xF) << 8) | rg[5];
-        break;
-    }
-    ox <<= s;
-    oy <<= s;
-    raw = (uint8_t *) ctx->f + o;
-    if (raw[0] & 0x80) {
-      t = (raw[0] & 0x60) >> 5;
-      if (!render && t != SSFN_FRAG_HINTING) break;
-      switch (t) {
-        case SSFN_FRAG_LBITMAP:
-          x = ((((raw[0] >> 2) & 3) << 8) + raw[1]) + 1;
-          y = (((raw[0] & 3) << 8) | raw[2]) + 1;
-          raw += 3;
-          goto bitmap;
-
-        case SSFN_FRAG_BITMAP:
-          x = (raw[0] & 0x1F) + 1;
-          y = raw[1] + 1;
-          raw += 2;
-        bitmap:
-          if (ctx->mode == SSFN_MODE_OUTLINE) {
-            x <<= 3;
-          outline:
-            ctx->lx = ctx->ly = -1;
-            x <<= s;
-            y <<= s;
-            if (ctx->style & 0x200) {
-              a = (((4096 << 4) - (oy)) >> (3));
-              b = (((4096 << 4) - (oy + y)) >> (3));
-              if (ctx->ix > ox + a) ctx->ix = ox + a;
-            } else
-              a = b = 0;
-            if (ctx->np) _ssfn_l(ctx, -1, -1, 0);
-            _ssfn_l(ctx, ox + a, oy, 0);
-            _ssfn_l(ctx, ox + x + a, oy, 0);
-            _ssfn_l(ctx, ox + x + b, oy + y, 0);
-            _ssfn_l(ctx, ox + b, oy + y, 0);
-            _ssfn_l(ctx, ox + a, oy, 0);
-          } else {
-            a = x << 3;
+          case SSFN_FRAG_PIXMAP:
+            x = (((raw[0] & 12) << 6) | raw[1]) + 1;
+            y = (((raw[0] & 3) << 8) | raw[2]) + 1;
+            n = ((raw[4] << 8) | raw[3]) + 1;
+            raw += 5;
+            if (ctx->mode == SSFN_MODE_OUTLINE) goto outline;
+            if (raw[-5] & 0x10) { /* todo: direct ARGB values in pixmap fragment */
+            }
+            a = x * y;
+            if (a >= (ctx->nr[0] << 1)) {
+              ctx->nr[0] = (a + 1) >> 1;
+              ctx->r[0] = (uint16_t *) realloc(ctx->r[0], (ctx->nr[0] << 1));
+              if (!ctx->r[0]) {
+                ctx->err = SSFN_ERR_ALLOC;
+                return;
+              }
+            }
+            ctx->ret->cmap = (uint32_t *) ((uint8_t *) ctx->f + ctx->f->size - 964);
+            for (re = raw + n, ra = (uint8_t *) ctx->r[0], i = 0; i < a && raw < re;) {
+              c = (raw[0] & 0x7F) + 1;
+              if (raw[0] & 0x80) {
+                for (j = 0; j < c; j++) ra[i++] = raw[1];
+                raw += 2;
+              } else {
+                raw++;
+                for (j = 0; j < c; j++) ra[i++] = *raw++;
+              }
+            }
             b = y << s;
             c = _ssfn_g2i(oy);
             n = _ssfn_g2i(ox);
-            w = _ssfn_g2i(x << (3 + s));
+            w = _ssfn_g2i(x << s);
             h = _ssfn_g2i(b);
             if (c + h >= ctx->ret->h) c = ctx->ret->h - h; /* due to rounding */
             c = t = c * ctx->ret->pitch;
             for (j = 0; j < h; j++) {
               o = (((j << 8) * (y << 8) / (h << 8)) >> 8) * x;
               for (i = 0; i < w; i++) {
-                m = ((i << 8) * (a << 8) / (w << 8)) >> 8;
-                if (raw[o + (m >> 3)] & (1 << (m & 7))) {
+                m = ((i << 8) * (x << 8) / (w << 8)) >> 8;
+                if (ra[o + m] < 0xF0) {
                   d = n + ((ctx->style & 0x200) ? _ssfn_igi(oy + (j << s) + 127) : 0) + i;
+                  re = (uint8_t *) &ctx->ret->cmap[ra[o + m]];
+                  a = (re[0] + re[1] + re[2] + 255) >> 2;
                   switch (ctx->mode) {
                     case SSFN_MODE_BITMAP:
-                      pix[c + (d >> 3)] |= 1 << (d & 7);
-                      d++;
-                      if ((ctx->style & 0x100) && (d >> 3) < ctx->ret->pitch) {
-                        pix[c + (d >> 3)] |= 1 << (d & 7);
-                        d++;
-                        if (ctx->size > 127 && (d >> 3) < ctx->ret->pitch) {
-                          pix[c + (d >> 3)] |= 1 << (d & 7);
-                        }
-                      }
+                      if (a > 127) pix[c + (d >> 3)] |= 1 << (d & 7);
                       break;
                     case SSFN_MODE_CMAP:
+                      pix[c + d] = ra[o + m];
+                      break;
                     case SSFN_MODE_ALPHA:
-                      pix[c + (d++)] = 0xFF;
-                      if ((ctx->style & 0x100) && d < ctx->ret->pitch) {
-                        pix[c + (d++)] = 0xFF;
-                        if (ctx->size > 127 && d < ctx->ret->pitch) { pix[c + d] = 0xFF; }
-                      }
+                      a >>= 1;
+                      a = ~a;
+                      pix[c + d] = a;
                       break;
                   }
                   if (d > ctx->ret->w) ctx->ret->w = d;
-                  d = ox + _ssfn_i2g(d);
-                  if ((ctx->style & 0x200) && ctx->ix > d) ctx->ix = d;
-                  if (_ssfn_g2i(oy) + j == ctx->u) {
-                    if (d < ctx->uix) { ctx->uix = d; }
-                    if (d > ctx->uax) { ctx->uax = d; }
-                  }
                 }
               }
               c += ctx->ret->pitch;
             }
-            if (ctx->mode != SSFN_MODE_BITMAP && h > y && w > 1) {
-              m = (ctx->mode == SSFN_MODE_CMAP) ? 0xF0 : 0;
-              x = h / y;
-              for (a = x; a; a--) {
-                b = ctx->style & 0x100 ? (64 + (128 * a / x)) : (192 * a / x);
-                if (ctx->mode == SSFN_MODE_CMAP) b = (b >> 4) | 0xF0;
-                c = t + ctx->ret->pitch;
-                for (j = 1; j < h - 1; j++) {
-                  for (i = 1; i < w - 1; i++) {
-                    d = n + ((ctx->style & 0x200) ? _ssfn_igi(oy + (j << s)) : 0) + i;
-                    if (pix[c + d] == m &&
-                        (pix[c + d - ctx->ret->pitch] > b || pix[c + d + ctx->ret->pitch] > b) &&
-                        (pix[c + d - 1] > b || pix[c + d + 1] > b))
-                      pix[c + d] = b;
-                  }
-                  c += ctx->ret->pitch;
-                }
-              }
-            }
-          }
-          h = 0;
-          break;
+            h = 0;
+            break;
 
-        case SSFN_FRAG_PIXMAP:
-          x = (((raw[0] & 12) << 6) | raw[1]) + 1;
-          y = (((raw[0] & 3) << 8) | raw[2]) + 1;
-          n = ((raw[4] << 8) | raw[3]) + 1;
-          raw += 5;
-          if (ctx->mode == SSFN_MODE_OUTLINE) goto outline;
-          if (raw[-5] & 0x10) { /* todo: direct ARGB values in pixmap fragment */
-          }
-          a = x * y;
-          if (a >= (ctx->nr[0] << 1)) {
-            ctx->nr[0] = (a + 1) >> 1;
-            ctx->r[0] = (uint16_t *) realloc(ctx->r[0], (ctx->nr[0] << 1));
-            if (!ctx->r[0]) {
-              ctx->err = SSFN_ERR_ALLOC;
-              return;
-            }
-          }
-          ctx->ret->cmap = (uint32_t *) ((uint8_t *) ctx->f + ctx->f->size - 964);
-          for (re = raw + n, ra = (uint8_t *) ctx->r[0], i = 0; i < a && raw < re;) {
-            c = (raw[0] & 0x7F) + 1;
-            if (raw[0] & 0x80) {
-              for (j = 0; j < c; j++) ra[i++] = raw[1];
+          case SSFN_FRAG_HINTING:
+            if (raw[0] & 0x10) {
+              n = ((raw[0] & 0xF) << 8) | raw[1];
               raw += 2;
             } else {
-              raw++;
-              for (j = 0; j < c; j++) ra[i++] = *raw++;
-            }
-          }
-          b = y << s;
-          c = _ssfn_g2i(oy);
-          n = _ssfn_g2i(ox);
-          w = _ssfn_g2i(x << s);
-          h = _ssfn_g2i(b);
-          if (c + h >= ctx->ret->h) c = ctx->ret->h - h; /* due to rounding */
-          c = t = c * ctx->ret->pitch;
-          for (j = 0; j < h; j++) {
-            o = (((j << 8) * (y << 8) / (h << 8)) >> 8) * x;
-            for (i = 0; i < w; i++) {
-              m = ((i << 8) * (x << 8) / (w << 8)) >> 8;
-              if (ra[o + m] < 0xF0) {
-                d = n + ((ctx->style & 0x200) ? _ssfn_igi(oy + (j << s) + 127) : 0) + i;
-                re = (uint8_t *) &ctx->ret->cmap[ra[o + m]];
-                a = (re[0] + re[1] + re[2] + 255) >> 2;
-                switch (ctx->mode) {
-                  case SSFN_MODE_BITMAP:
-                    if (a > 127) pix[c + (d >> 3)] |= 1 << (d & 7);
-                    break;
-                  case SSFN_MODE_CMAP:
-                    pix[c + d] = ra[o + m];
-                    break;
-                  case SSFN_MODE_ALPHA:
-                    a >>= 1;
-                    a = ~a;
-                    pix[c + d] = a;
-                    break;
-                }
-                if (d > ctx->ret->w) ctx->ret->w = d;
-              }
-            }
-            c += ctx->ret->pitch;
-          }
-          h = 0;
-          break;
-
-        case SSFN_FRAG_HINTING:
-          if (raw[0] & 0x10) {
-            n = ((raw[0] & 0xF) << 8) | raw[1];
-            raw += 2;
-          } else {
-            n = raw[0] & 0xF;
-            raw++;
-          }
-          if (render || !ox) {
-            raw += n << (ctx->f->features & SSFN_FEAT_HBIGCRD ? 1 : 0);
-            continue;
-          }
-          y = 4096;
-          x = ((ox >> s) - 1) << (s - 4);
-          ctx->h[y++] = x;
-          for (n++; n-- && x < 4096;) {
-            x = raw[0];
-            raw++;
-            if (ctx->f->features & SSFN_FEAT_HBIGCRD) {
-              x |= (raw[0] << 8);
+              n = raw[0] & 0xF;
               raw++;
             }
-            x <<= (s - 4);
+            if (render || !ox) {
+              raw += n << (ctx->f->features & SSFN_FEAT_HBIGCRD ? 1 : 0);
+              continue;
+            }
+            y = 4096;
+            x = ((ox >> s) - 1) << (s - 4);
             ctx->h[y++] = x;
-          }
-          if (y < 4096) ctx->h[y++] = 65535;
-          h = 1;
-          break;
-      }
-    } else {
-      if (!render && h) break;
-      if (raw[0] & 0x40) {
-        n = ((raw[0] & 0x3F) << 8) | raw[1];
-        raw += 2;
-      } else {
-        n = raw[0] & 0x3F;
-        raw++;
-      }
-      if (ctx->f->quality < 5) {
-        x = raw[0];
-        y = raw[1];
-        raw += 2;
-      } else {
-        x = ((raw[0] & 3) << 8) | raw[1];
-        y = ((raw[0] & 0x30) << 4) | raw[2];
-        raw += 3;
-      }
-      x <<= s;
-      y <<= s;
-      y += oy;
-      x += ox + (ctx->style & 0x200 ? _ssfn_igg(y) : 0);
-      if (render) {
-        if (ctx->np) {
-          _ssfn_l(ctx, ctx->mx, ctx->my, 0);
-          _ssfn_l(ctx, -1, -1, 0);
+            for (n++; n-- && x < 4096;) {
+              x = raw[0];
+              raw++;
+              if (ctx->f->features & SSFN_FEAT_HBIGCRD) {
+                x |= (raw[0] << 8);
+                raw++;
+              }
+              x <<= (s - 4);
+              ctx->h[y++] = x;
+            }
+            if (y < 4096) ctx->h[y++] = 65535;
+            h = 1;
+            break;
         }
-        _ssfn_l(ctx, x, y, 0);
-      }
-      ctx->lx = ctx->mx = x;
-      ctx->ly = ctx->my = y;
-      for (n++; n--;) {
-        t = ctx->g < 8 ? (raw[0] >> 7) | ((raw[1] >> 6) & 2) : raw[0] & 3;
-        x = y = a = b = c = d = j = 0;
-        switch (ctx->g) {
-          case 4:
-          case 5:
-          case 6:
-          case 7:
-            x = raw[0] & 0x7F;
-            y = raw[1] & 0x7F;
-            switch (t) {
-              case 0:
-                raw += raw[0] & 4 ? 5 : 2;
-                break;
-              case 1:
-                raw += 2;
-                break;
-              case 2:
-                a = raw[2] & 0x7F;
-                b = raw[3] & 0x7F;
-                raw += 4;
-                break;
-              case 3:
-                a = raw[2] & 0x7F;
-                b = raw[3] & 0x7F;
-                c = raw[4] & 0x7F;
-                d = raw[5] & 0x7F;
-                raw += 6;
-                break;
-            }
-            break;
-
-          case 8:
-            x = raw[1];
-            y = raw[2];
-            switch (t) {
-              case 0:
-                raw += raw[0] & 4 ? 5 : 2;
-                break;
-              case 1:
-                raw += 3;
-                break;
-              case 2:
-                a = raw[3];
-                b = raw[4];
-                raw += 5;
-                break;
-              case 3:
-                a = raw[3];
-                b = raw[4];
-                c = raw[5];
-                d = raw[6];
-                raw += 7;
-                break;
-            }
-            break;
-
-          case 9:
-            x = ((raw[0] & 4) << 6) | raw[1];
-            y = ((raw[0] & 8) << 5) | raw[2];
-            switch (t) {
-              case 0:
-                raw += raw[0] & 4 ? 5 : 2;
-                break;
-              case 1:
-                raw += 3;
-                break;
-              case 2:
-                a = ((raw[0] & 16) << 4) | raw[3];
-                b = ((raw[0] & 32) << 3) | raw[4];
-                raw += 5;
-                break;
-              case 3:
-                a = ((raw[0] & 16) << 4) | raw[3];
-                b = ((raw[0] & 32) << 3) | raw[4];
-                c = ((raw[0] & 64) << 2) | raw[5];
-                d = ((raw[0] & 128) << 1) | raw[6];
-                raw += 7;
-                break;
-            }
-            break;
-
-          default:
-            x = ((raw[0] & 12) << 6) | raw[1];
-            y = ((raw[0] & 48) << 4) | raw[2];
-            switch (t) {
-              case 0:
-                raw += raw[0] & 4 ? 5 : 2;
-                break;
-              case 1:
-                raw += 3;
-                break;
-              case 2:
-                a = ((raw[3] & 3) << 8) | raw[4];
-                b = ((raw[3] & 12) << 6) | raw[5];
-                raw += 6;
-                break;
-              case 3:
-                a = ((raw[3] & 3) << 8) | raw[4];
-                b = ((raw[3] & 12) << 6) | raw[5];
-                c = ((raw[3] & 48) << 4) | raw[6];
-                d = ((raw[3] & 192) << 2) | raw[7];
-                raw += 8;
-                break;
-            }
-            break;
+      } else {
+        if (!render && h) break;
+        if (raw[0] & 0x40) {
+          n = ((raw[0] & 0x3F) << 8) | raw[1];
+          raw += 2;
+        } else {
+          n = raw[0] & 0x3F;
+          raw++;
+        }
+        if (ctx->f->quality < 5) {
+          x = raw[0];
+          y = raw[1];
+          raw += 2;
+        } else {
+          x = ((raw[0] & 3) << 8) | raw[1];
+          y = ((raw[0] & 0x30) << 4) | raw[2];
+          raw += 3;
         }
         x <<= s;
         y <<= s;
-        a <<= s;
-        b <<= s;
-        c <<= s;
-        d <<= s;
-        x += ox;
         y += oy;
-        a += ox;
-        b += oy;
-        c += ox;
-        d += oy;
-        if (ctx->style & 0x200) {
-          x += _ssfn_igg(y);
-          a += _ssfn_igg(b);
-          c += _ssfn_igg(d);
-        }
+        x += ox + (ctx->style & 0x200 ? _ssfn_igg(y) : 0);
         if (render) {
-          switch (t) {
-            case 0: /* this v1.0 renderer does not support colored contours */
+          if (ctx->np) {
+            _ssfn_l(ctx, ctx->mx, ctx->my, 0);
+            _ssfn_l(ctx, -1, -1, 0);
+          }
+          _ssfn_l(ctx, x, y, 0);
+        }
+        ctx->lx = ctx->mx = x;
+        ctx->ly = ctx->my = y;
+        for (n++; n--;) {
+          t = ctx->g < 8 ? (raw[0] >> 7) | ((raw[1] >> 6) & 2) : raw[0] & 3;
+          x = y = a = b = c = d = j = 0;
+          switch (ctx->g) {
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+              x = raw[0] & 0x7F;
+              y = raw[1] & 0x7F;
+              switch (t) {
+                case 0:
+                  raw += raw[0] & 4 ? 5 : 2;
+                  break;
+                case 1:
+                  raw += 2;
+                  break;
+                case 2:
+                  a = raw[2] & 0x7F;
+                  b = raw[3] & 0x7F;
+                  raw += 4;
+                  break;
+                case 3:
+                  a = raw[2] & 0x7F;
+                  b = raw[3] & 0x7F;
+                  c = raw[4] & 0x7F;
+                  d = raw[5] & 0x7F;
+                  raw += 6;
+                  break;
+              }
               break;
-            case 1:
-              _ssfn_l(ctx, x, y, 0);
+
+            case 8:
+              x = raw[1];
+              y = raw[2];
+              switch (t) {
+                case 0:
+                  raw += raw[0] & 4 ? 5 : 2;
+                  break;
+                case 1:
+                  raw += 3;
+                  break;
+                case 2:
+                  a = raw[3];
+                  b = raw[4];
+                  raw += 5;
+                  break;
+                case 3:
+                  a = raw[3];
+                  b = raw[4];
+                  c = raw[5];
+                  d = raw[6];
+                  raw += 7;
+                  break;
+              }
               break;
-            case 2:
-              _ssfn_b(ctx, ctx->lx, ctx->ly, ((a - ctx->lx) >> 1) + ctx->lx,
-                      ((b - ctx->ly) >> 1) + ctx->ly, ((x - a) >> 1) + a, ((y - b) >> 1) + b, x, y,
-                      0);
+
+            case 9:
+              x = ((raw[0] & 4) << 6) | raw[1];
+              y = ((raw[0] & 8) << 5) | raw[2];
+              switch (t) {
+                case 0:
+                  raw += raw[0] & 4 ? 5 : 2;
+                  break;
+                case 1:
+                  raw += 3;
+                  break;
+                case 2:
+                  a = ((raw[0] & 16) << 4) | raw[3];
+                  b = ((raw[0] & 32) << 3) | raw[4];
+                  raw += 5;
+                  break;
+                case 3:
+                  a = ((raw[0] & 16) << 4) | raw[3];
+                  b = ((raw[0] & 32) << 3) | raw[4];
+                  c = ((raw[0] & 64) << 2) | raw[5];
+                  d = ((raw[0] & 128) << 1) | raw[6];
+                  raw += 7;
+                  break;
+              }
               break;
-            case 3:
-              _ssfn_b(ctx, ctx->lx, ctx->ly, a, b, c, d, x, y, 0);
+
+            default:
+              x = ((raw[0] & 12) << 6) | raw[1];
+              y = ((raw[0] & 48) << 4) | raw[2];
+              switch (t) {
+                case 0:
+                  raw += raw[0] & 4 ? 5 : 2;
+                  break;
+                case 1:
+                  raw += 3;
+                  break;
+                case 2:
+                  a = ((raw[3] & 3) << 8) | raw[4];
+                  b = ((raw[3] & 12) << 6) | raw[5];
+                  raw += 6;
+                  break;
+                case 3:
+                  a = ((raw[3] & 3) << 8) | raw[4];
+                  b = ((raw[3] & 12) << 6) | raw[5];
+                  c = ((raw[3] & 48) << 4) | raw[6];
+                  d = ((raw[3] & 192) << 2) | raw[7];
+                  raw += 8;
+                  break;
+              }
               break;
           }
-        } else if (t == 1 && x >= 0 && y >= 0) {
-          a = ((ctx->lx < x) ? x - ctx->lx : ctx->lx - x) >> 4;
-          b = ((ctx->ly < y) ? y - ctx->ly : ctx->ly - y) >> 4;
-          c = (ctx->lx + x) >> 5;
-          if (a < 2)
-            ctx->h[4096 + (!ctx->h[4096 + c] && c && ctx->h[4096 + c - 1] ? c - 1 : c)] += b;
+          x <<= s;
+          y <<= s;
+          a <<= s;
+          b <<= s;
+          c <<= s;
+          d <<= s;
+          x += ox;
+          y += oy;
+          a += ox;
+          b += oy;
+          c += ox;
+          d += oy;
+          if (ctx->style & 0x200) {
+            x += _ssfn_igg(y);
+            a += _ssfn_igg(b);
+            c += _ssfn_igg(d);
+          }
+          if (render) {
+            switch (t) {
+              case 0: /* this v1.0 renderer does not support colored contours */
+                break;
+              case 1:
+                _ssfn_l(ctx, x, y, 0);
+                break;
+              case 2:
+                _ssfn_b(ctx, ctx->lx, ctx->ly, ((a - ctx->lx) >> 1) + ctx->lx,
+                        ((b - ctx->ly) >> 1) + ctx->ly, ((x - a) >> 1) + a, ((y - b) >> 1) + b, x,
+                        y, 0);
+                break;
+              case 3:
+                _ssfn_b(ctx, ctx->lx, ctx->ly, a, b, c, d, x, y, 0);
+                break;
+            }
+          } else if (t == 1 && x >= 0 && y >= 0) {
+            a = ((ctx->lx < x) ? x - ctx->lx : ctx->lx - x) >> 4;
+            b = ((ctx->ly < y) ? y - ctx->ly : ctx->ly - y) >> 4;
+            c = (ctx->lx + x) >> 5;
+            if (a < 2)
+              ctx->h[4096 + (!ctx->h[4096 + c] && c && ctx->h[4096 + c - 1] ? c - 1 : c)] += b;
+          }
+          ctx->lx = x;
+          ctx->ly = y;
         }
-        ctx->lx = x;
-        ctx->ly = y;
       }
     }
-  }
 
-  if (!render && !h) {
-    for (j = m = x = y = 0; j < 4096; j++) {
-      if (ctx->h[4096 + j] >= 4096 / SSFN_HINTING_THRESHOLD) {
-        if (!j)
-          m++;
-        else {
-          ctx->h[4096 + m++] = j - x;
-          x = j;
+    if (!render && !h) {
+      for (j = m = x = y = 0; j < 4096; j++) {
+        if (ctx->h[4096 + j] >= 4096 / SSFN_HINTING_THRESHOLD) {
+          if (!j)
+            m++;
+          else {
+            ctx->h[4096 + m++] = j - x;
+            x = j;
+          }
         }
       }
+      if (m < 4096) ctx->h[4096 + m] = 65535;
     }
-    if (m < 4096) ctx->h[4096 + m] = 65535;
   }
 }    // namespace
 

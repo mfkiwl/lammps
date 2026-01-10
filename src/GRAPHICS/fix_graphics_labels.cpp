@@ -27,6 +27,7 @@
 #include "variable.h"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 
 #ifdef LAMMPS_JPEG
@@ -87,7 +88,6 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
 #if defined(LAMMPS_JPEG)
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
-    JSAMPROW row_pointer;
 
     // initialize for reading from input stream
     jpeg_create_decompress(&cinfo);
@@ -107,7 +107,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
     width = cinfo.output_width;
     height = cinfo.output_height;
     pixmap = new unsigned char[3 * width * height];
-    JSAMPARRAY scanline = new unsigned char *[1];
+    auto **scanline = new unsigned char *[height];
     for (int i = 0; i < height; ++i) {
       scanline[0] = &pixmap[(height - 1 - i) * 3 * width];
       jpeg_read_scanlines(&cinfo, scanline, 1);
@@ -180,7 +180,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
     if ((channels != 3) || (rowbytes != 3 * width)) return nullptr;
 
     pixmap = new unsigned char[height * width * 3];
-    png_bytepp row_pointers = new png_bytep[height];
+    auto *row_pointers = new png_bytep[height];
     for (int i = 0; i < height; ++i) row_pointers[i] = pixmap + (height - 1 - i) * rowbytes;
 
     png_read_image(png_ptr, row_pointers);
@@ -211,7 +211,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
 
     // skip over optional comments
     do {
-      char *ptr = fgets(buffer, 128, fp);
+      (void) fgets(buffer, 128, fp);
     } while (buffer[0] == '#');
 
     int rv = sscanf(buffer, "%d%d", &width, &height);
@@ -619,7 +619,7 @@ void FixGraphicsLabels::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixGraphicsLabels::setup(int vflag)
+void FixGraphicsLabels::setup(int)
 {
   end_of_step();
 }
@@ -679,7 +679,6 @@ void FixGraphicsLabels::end_of_step()
         txt.size = MAX(txt.size, 8.0);
         txt.scale = 0.5;
       }
-
     }
 
     SSFN::ssfn_select(&ctx, SSFN_FAMILY_SANS, nullptr, SSFN_STYLE_REGULAR, (int) (txt.size),
@@ -744,13 +743,13 @@ void FixGraphicsLabels::end_of_step()
         int yoffs = 3 * y * width;
         for (int x = 0; x < width; ++x) {
           if ((y < xhalf) || (y >= height - xhalf) || (x < xhalf) || (x >= width - xhalf)) {
-            txt.pixmap[yoffs + 3 * x] = txt.framecolor[0];
-            txt.pixmap[yoffs + 3 * x + 1] = txt.framecolor[1];
-            txt.pixmap[yoffs + 3 * x + 2] = txt.framecolor[2];
+            txt.pixmap[yoffs + 3 * x] = (int)txt.framecolor[0];
+            txt.pixmap[yoffs + 3 * x + 1] = (int)txt.framecolor[1];
+            txt.pixmap[yoffs + 3 * x + 2] = (int)txt.framecolor[2];
           } else {
-            txt.pixmap[yoffs + 3 * x] = txt.backcolor[0];
-            txt.pixmap[yoffs + 3 * x + 1] = txt.backcolor[1];
-            txt.pixmap[yoffs + 3 * x + 2] = txt.backcolor[2];
+            txt.pixmap[yoffs + 3 * x] = (int)txt.backcolor[0];
+            txt.pixmap[yoffs + 3 * x + 1] = (int)txt.backcolor[1];
+            txt.pixmap[yoffs + 3 * x + 2] = (int)txt.backcolor[2];
           }
         }
       }
@@ -762,7 +761,7 @@ void FixGraphicsLabels::end_of_step()
 
         g = SSFN::ssfn_render(&ctx, c);
         for (int y = 0; y < g->h; ++y) {
-          const int yoffs = (g->h - 1 - y + g->baseline - miny + xspace + xhalf/2) * width * 3;
+          const int yoffs = (g->h - 1 - y + g->baseline - miny + xspace + xhalf / 2) * width * 3;
           for (int x = 0, i = 0, m = 1; x < g->w; ++x, m <<= 1) {
             if (m > 0x80) {
               m = 1;
@@ -770,9 +769,9 @@ void FixGraphicsLabels::end_of_step()
             }
             const int xoffs = (penx + x) * 3;
             if (g->data[y * g->pitch + i] & m) {
-              txt.pixmap[yoffs + xoffs] = txt.fontcolor[0];
-              txt.pixmap[yoffs + xoffs + 1] = txt.fontcolor[1];
-              txt.pixmap[yoffs + xoffs + 2] = txt.fontcolor[2];
+              txt.pixmap[yoffs + xoffs] = (int)txt.fontcolor[0];
+              txt.pixmap[yoffs + xoffs + 1] = (int)txt.fontcolor[1];
+              txt.pixmap[yoffs + xoffs + 2] = (int)txt.fontcolor[2];
             }
           }
         }

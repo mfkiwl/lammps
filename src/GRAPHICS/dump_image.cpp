@@ -68,7 +68,7 @@ using MathConst::DEG2RAD;
 using namespace ImageObjects;
 
 namespace {
-static constexpr double BIG = 1.0e20;
+constexpr double BIG = 1.0e20;
 enum { NUMERIC, ATOM, TYPE, ELEMENT, ATTRIBUTE, CONSTANT, INDEX };
 enum { STATIC, DYNAMIC };
 enum { NO = 0, YES = 1, AUTO = 2 };
@@ -1614,15 +1614,16 @@ void DumpImage::create_image()
         a.draw(image, color, &fixarray[i][1], fixarray[i][7], &fixarray[i][4], fixarray[i][8],
                opacity);
       } else if (fixvec[i] == Graphics::CONE) {
-        ConeObj c(1.0, fixarray[i][7] + ifix.flag2, fixarray[i][8] + ifix.flag2, fixarray[i][9]);
+        ConeObj c(1.0, fixarray[i][7] + ifix.flag2, fixarray[i][8] + ifix.flag2,
+                  (int) fixarray[i][9]);
         c.draw(image, vec3{fixarray[i][1], fixarray[i][2], fixarray[i][3]},
                vec3{fixarray[i][4], fixarray[i][5], fixarray[i][6]}, color, opacity);
       } else if (fixvec[i] == Graphics::PIXMAP) {
-        // get pointer to pixmap buffer and background transparency color
-        auto *pixmap = (const unsigned char *) ubuf(fixarray[i][6]).i;
+        // get pointer to pixmap buffer and get background transparency color
+        const auto *pixmap = (const unsigned char *) ubuf(fixarray[i][6]).i;
         double transcolor[3] = {fixarray[i][7], fixarray[i][8], fixarray[i][9]};
-        image->draw_pixmap(&fixarray[i][1], fixarray[i][4], fixarray[i][5], pixmap, transcolor,
-                           fixarray[i][10], opacity);
+        image->draw_pixmap(&fixarray[i][1], (int) fixarray[i][4], (int) fixarray[i][5], pixmap,
+                           transcolor, fixarray[i][10], opacity);
       } else if (fixvec[i] == Graphics::BOND) {
         int type1 = static_cast<int>(fixarray[i][0] - 1.0) % ntypes + 1;
         int type2 = static_cast<int>(fixarray[i][1] - 1.0) % ntypes + 1;

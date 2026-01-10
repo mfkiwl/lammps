@@ -390,10 +390,6 @@ void FixWallBodyPolyhedron::post_force(int /*vflag*/)
         edge[iefirst+ni][5] = 0;
       }
 
-      int num_contacts;
-      Contact contact_list[MAX_CONTACTS];
-
-      num_contacts = 0;
       facc[0] = facc[1] = facc[2] = 0;
       edge_against_wall(i, wall_pos, vwall, x);
     } // group bit

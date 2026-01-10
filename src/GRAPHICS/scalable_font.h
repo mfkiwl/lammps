@@ -50,7 +50,7 @@
 
 namespace SSFN {
 
-typedef struct {
+using ssfn_font_t = struct _ssfn_font_t {
   uint8_t magic[4];  /* SSFN magic bytes */
   uint32_t size;     /* total size in bytes */
   uint8_t family;    /* font family group */
@@ -67,12 +67,13 @@ typedef struct {
   uint16_t bbox_right;
   uint16_t bbox_bottom;
   uint32_t fragments_offs; /* offset of fragments table relative to magic */
-  uint32_t characters_offs[SSFN_NUMVARIANTS]; /* offset of characters tables per variant relative to magic */
+  uint32_t characters_offs
+      [SSFN_NUMVARIANTS]; /* offset of characters tables per variant relative to magic */
   uint32_t kerning_offs;  /* kerning table offset relative to magic */
-} ssfn_font_t;
+};
 
-  /* returned bitmap struct */
-typedef struct {
+/* returned bitmap struct */
+using ssfn_glyph_t = struct _ssfn_glyph_t {
   uint8_t mode;                /* returned glyph's data format */
   uint8_t baseline;            /* baseline of glyph, scaled to size */
   uint8_t w;                   /* width */
@@ -82,10 +83,10 @@ typedef struct {
   uint16_t pitch;              /* data buffer bytes per line */
   uint32_t *cmap;              /* pointer to color map */
   uint8_t data[SSFN_DATA_MAX]; /* data buffer */
-} ssfn_glyph_t;
+};
 
 /* renderer context */
-typedef struct {
+using ssfn_t = struct _ssfn_t {
   const ssfn_font_t **fnt[5];             /* font registry */
   const ssfn_font_t *s;                   /* explicitly selected font */
   const ssfn_font_t *f;                   /* font selected by best match */
@@ -105,22 +106,26 @@ typedef struct {
   int variant;                            /* required variant */
   int g;                                  /* shift value for grid size */
   int m, ix, u, uix, uax, lx, ly, mx, my; /* helper variables */
-} ssfn_t;
+};
 
 /* normal renderer */
-extern int ssfn_load(ssfn_t *ctx, const ssfn_font_t *font);                                    /* add an SSFN to context */
-extern int ssfn_select(ssfn_t *ctx, int family, char *name, int style, int size, int mode);    /* select font to use */
-extern int ssfn_variant(ssfn_t *ctx, int variant);                                             /* select glyph variant (optional) */
-extern uint32_t ssfn_utf8(char **str);                                                         /* decode UTF-8 sequence */
-extern ssfn_glyph_t *ssfn_render(ssfn_t *ctx, uint32_t unicode);       /* return allocated glyph bitmap */
-extern int ssfn_kern(ssfn_t *ctx, uint32_t unicode, uint32_t nextunicode, int *x, int *y);     /* get kerning values */
-extern int ssfn_bbox(ssfn_t *ctx, char *str, int usekern, int *w, int *h);                     /* get bounding box of a rendered string */
-extern int ssfn_mem(ssfn_t *ctx);                                                              /* return how much memory is used */
-extern void ssfn_free(ssfn_t *ctx);                                                            /* free context */
-#define ssfn_lasterr(ctx) ((ssfn_t*)ctx)->err                                           /* return last error code */
-#define ssfn_error(err) (err>=0&&err<=9?ssfn_errstr[err]:"Unknown error")               /* return string for error code */
+extern int ssfn_load(ssfn_t *ctx, const ssfn_font_t *font); /* add an SSFN to context */
+extern int ssfn_select(ssfn_t *ctx, int family, char *name, int style, int size,
+                       int mode);                  /* select font to use */
+extern int ssfn_variant(ssfn_t *ctx, int variant); /* select glyph variant (optional) */
+extern uint32_t ssfn_utf8(char **str);             /* decode UTF-8 sequence */
+extern ssfn_glyph_t *ssfn_render(ssfn_t *ctx, uint32_t unicode); /* return allocated glyph bitmap */
+extern int ssfn_kern(ssfn_t *ctx, uint32_t unicode, uint32_t nextunicode, int *x,
+                     int *y); /* get kerning values */
+extern int ssfn_bbox(ssfn_t *ctx, char *str, int usekern, int *w,
+                     int *h);                   /* get bounding box of a rendered string */
+extern int ssfn_mem(ssfn_t *ctx);               /* return how much memory is used */
+extern void ssfn_free(ssfn_t *ctx);             /* free context */
+#define ssfn_lasterr(ctx) ((ssfn_t *) ctx)->err /* return last error code */
+#define ssfn_error(err) \
+  (err >= 0 && err <= 9 ? ssfn_errstr[err] : "Unknown error") /* return string for error code */
 extern const char *ssfn_errstr[];
 extern const ssfn_font_t *const ssfn_sans_font;
-}
+}    // namespace SSFN
 
 #endif
