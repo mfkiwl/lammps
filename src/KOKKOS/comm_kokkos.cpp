@@ -1056,7 +1056,7 @@ void CommKokkos::exchange_device()
         DeviceType().fence();
 
         if (nrecv) {
-          if (atom->nextra_grow) {
+          if (atom->nextra_grow || atomKK->avecKK->size_exchange_bonus) {
             if ((int) k_indices.extent(0) < nrecv/data_size)
               MemoryKokkos::realloc_kokkos(k_indices,"comm:indices",nrecv/data_size);
           } else if (k_indices.view_host().data())

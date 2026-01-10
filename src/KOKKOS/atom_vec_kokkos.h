@@ -121,12 +121,11 @@ class AtomVecKokkos : virtual public AtomVec {
                                           ExecutionSpace space) {}
 
   virtual void unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_lr &k_buf,
-                                            int nrecv, int nlocal, int dim,
-                                            double lo, double hi,
+                                            int nrecv,
                                             ExecutionSpace space,
                                             DAT::tdual_int_1d &k_indices) {}
 
-  
+
   // TODO: Think of a way to not have these nlocal_bonus functions
   // Used in CommKokkos::exchange_device() for avecKKEllipsoid
   virtual int get_status_nlocal_bonus() { return 0; }

@@ -2814,7 +2814,7 @@ int AtomVecKokkos::unpack_exchange_kokkos(DAT::tdual_double_2d_lr &k_buf, int nr
   }
 
   if (bonus_flag)
-    unpack_exchange_bonus_kokkos(k_buf,nrecv,nlocal,dim,lo,hi,space,k_indices);
+    unpack_exchange_bonus_kokkos(k_buf,nrecv,space,k_indices);
 
   atomKK->modified(space,datamask_exchange);
 

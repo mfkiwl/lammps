@@ -58,8 +58,7 @@ class AtomVecHybridKokkos : public AtomVecKokkos, public AtomVecHybrid {
                                   ExecutionSpace space) override;
 
   void unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_lr &k_buf,
-                                    int nrecv, int nlocal, int dim,
-                                    double lo, double hi,
+                                    int nrecv,
                                     ExecutionSpace space,
                                     DAT::tdual_int_1d &k_indices) override;
 

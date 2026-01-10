@@ -127,15 +127,13 @@ void AtomVecHybridKokkos::pack_exchange_bonus_kokkos(const int &nsend, DAT::tdua
 /* ---------------------------------------------------------------------- */
 
 void AtomVecHybridKokkos::unpack_exchange_bonus_kokkos(DAT::tdual_double_2d_lr &k_buf,
-                                                       int nrecv, int nlocal, int dim,
-                                                       double lo, double hi,
+                                                       int nrecv,
                                                        ExecutionSpace space,
                                                        DAT::tdual_int_1d &k_indices)
 {
   for (int k = 0; k < nstyles; k++)
     (dynamic_cast<AtomVecKokkos*>(styles[k]))->
-      unpack_exchange_bonus_kokkos(k_buf,nrecv,nlocal,dim,lo,hi,
-                                   space,k_indices);
+      unpack_exchange_bonus_kokkos(k_buf,nrecv,space,k_indices);
 }
 
 /* ---------------------------------------------------------------------- */
