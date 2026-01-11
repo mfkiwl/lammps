@@ -36,7 +36,7 @@ namespace Granular_NS {
     GranSubModDamping(class GranularModel *, class LAMMPS *);
     void init() override;
     virtual double calculate_forces() = 0;
-    double get_damp_prefactor() const { return damp_prefactor; }
+    [[nodiscard]] double get_damp_prefactor() const { return damp_prefactor; }
 
    protected:
     double damp_prefactor;
