@@ -448,7 +448,7 @@ void FitPOD::get_exyz_files(std::vector<std::string> &files, std::vector<std::st
   std::sort(allfiles.begin(), allfiles.end());
   for (const auto &fname : allfiles) {
     if (utils::strmatch(fname, fmt::format(".*\\.{}$", extension))) {
-      files.push_back(datapath + platform::filepathsep + fname);
+      files.push_back(datapath + platform::filepathsep + fname); // NOLINT
       int start_pos_erase = fname.find(extension) - 1;
       std::string substr = fname.substr(0, start_pos_erase);
       group_names.push_back(substr);
