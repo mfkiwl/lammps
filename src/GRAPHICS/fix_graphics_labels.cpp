@@ -272,6 +272,13 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
 
 /* ---------------------------------------------------------------------- */
 
+#define PARSE_VARIABLE(value, name, index)      \
+  if (strstr(arg[index], "v_") == arg[index]) { \
+    varflag = 1;                                \
+    name = utils::strdup(arg[index] + 2);       \
+  } else                                        \
+    value = utils::numeric(FLERR, arg[index], false, lmp)
+
 FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg), imgobjs(nullptr), imgparms(nullptr)
 {
@@ -291,7 +298,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
   int iarg = 4;
   while (iarg < narg) {
     if (strcmp(arg[iarg], "image") == 0) {
-      if (iarg + 5 > narg) utils::missing_cmd_args(FLERR, "fix graphics/labels", error);
+      if (iarg + 5 > narg) utils::missing_cmd_args(FLERR, "fix graphics/labels image", error);
 
       // clang-format off
       PixmapInfo pix{{0.0, 0.0, 0.0}, 0, 0, nullptr, {-1.0, -1.0, -1.0}, 1.0,
@@ -317,23 +324,9 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
 
         utils::logmesg(lmp, "Read image from {} file: {} format\n", arg[iarg + 1], fileinfo);
       }
-
-      if (strstr(arg[iarg + 2], "v_") == arg[iarg + 2]) {
-        varflag = 1;
-        pix.xstr = utils::strdup(arg[iarg + 2] + 2);
-      } else
-        pix.pos[0] = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
-      if (strstr(arg[iarg + 3], "v_") == arg[iarg + 3]) {
-        varflag = 1;
-        pix.ystr = utils::strdup(arg[iarg + 3] + 2);
-      } else
-        pix.pos[1] = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
-      if (strstr(arg[iarg + 4], "v_") == arg[iarg + 4]) {
-        varflag = 1;
-        pix.zstr = utils::strdup(arg[iarg + 4] + 2);
-      } else
-        pix.pos[2] = utils::numeric(FLERR, arg[iarg + 4], false, lmp);
-
+      PARSE_VARIABLE(pix.pos[0], pix.xstr, iarg + 2);
+      PARSE_VARIABLE(pix.pos[1], pix.ystr, iarg + 3);
+      PARSE_VARIABLE(pix.pos[2], pix.zstr, iarg + 4);
       iarg += 5;
 
       // check remaining arguments for optional image arguments
@@ -344,14 +337,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
         if (strcmp(arg[iarg], "scale") == 0) {
           if (iarg + 2 > narg)
             utils::missing_cmd_args(FLERR, "fix graphics/labels image scale", error);
-          if (strstr(arg[iarg + 1], "v_") == arg[iarg + 1]) {
-            varflag = 1;
-            pix.sstr = utils::strdup(arg[iarg + 1] + 2);
-          } else
-            pix.scale = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
-          if (pix.scale <= 0.0)
-            error->all(FLERR, iarg + 1, "Invalid fix graphics/labels image scale value: {}",
-                       pix.scale);
+          PARSE_VARIABLE(pix.scale, pix.sstr, iarg + 1);
           iarg += 2;
         } else if (strcmp(arg[iarg], "transcolor") == 0) {
           if (iarg + 2 > narg)
@@ -384,7 +370,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
       pixmaps.emplace_back(pix);
 
     } else if (strcmp(arg[iarg], "text") == 0) {
-      if (iarg + 5 > narg) utils::missing_cmd_args(FLERR, "fix graphics/labels", error);
+      if (iarg + 5 > narg) utils::missing_cmd_args(FLERR, "fix graphics/labels text", error);
 
       // clang-format off
       TextInfo txt{"", {0.0, 0.0, 0.0}, 0, 0, nullptr, {255.0, 255.0, 255.0},
@@ -395,22 +381,9 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
       txt.text = arg[iarg + 1];
       if (txt.text.find('$') != std::string::npos) varflag = 1;
 
-      if (strstr(arg[iarg + 2], "v_") == arg[iarg + 2]) {
-        varflag = 1;
-        txt.xstr = utils::strdup(arg[iarg + 2] + 2);
-      } else
-        txt.pos[0] = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
-      if (strstr(arg[iarg + 3], "v_") == arg[iarg + 3]) {
-        varflag = 1;
-        txt.ystr = utils::strdup(arg[iarg + 3] + 2);
-      } else
-        txt.pos[1] = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
-      if (strstr(arg[iarg + 4], "v_") == arg[iarg + 4]) {
-        varflag = 1;
-        txt.zstr = utils::strdup(arg[iarg + 4] + 2);
-      } else
-        txt.pos[2] = utils::numeric(FLERR, arg[iarg + 4], false, lmp);
-
+      PARSE_VARIABLE(txt.pos[0], txt.xstr, iarg + 2);
+      PARSE_VARIABLE(txt.pos[1], txt.ystr, iarg + 3);
+      PARSE_VARIABLE(txt.pos[2], txt.zstr, iarg + 4);
       iarg += 5;
 
       // check remaining arguments for optional image arguments
@@ -421,13 +394,10 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
         if (strcmp(arg[iarg], "size") == 0) {
           if (iarg + 2 > narg)
             utils::missing_cmd_args(FLERR, "fix graphics/labels text size", error);
-          if (strstr(arg[iarg + 1], "v_") == arg[iarg + 1]) {
-            varflag = 1;
-            txt.sstr = utils::strdup(arg[iarg + 1] + 2);
-          } else {
-            // text is rendered as 2x2 size pixmap and later scaled down for anti-aliasing
-            txt.size = 2.0 * utils::numeric(FLERR, arg[iarg + 1], false, lmp);
-          }
+          PARSE_VARIABLE(txt.size, txt.sstr, iarg + 1);
+          // for sizes 4 to 64, text is rendered at 2x2 size and scaled down for anti-aliasing.
+          // for larger sizes, the image is rendered at max supported size and scaled as needed.
+          txt.size *= 2.0;
           if ((txt.size < 8.0) || (txt.size > 1024.0))
             error->all(FLERR, iarg + 1, "Invalid fix graphics/labels text size value: {}",
                        txt.size * 0.5);
