@@ -474,6 +474,7 @@ struct AtomVecEllipsoidKokkos_PackExchangeBonus {
   typename AT::t_double_2d_lr_um _buf;
   typename AT::t_int_1d_const _sendlist;
   typename AT::t_int_1d_const _copylist;
+  typename AT::t_int_1d_const _sendlist_bonus;
   typename AT::t_int_1d_const _copylist_bonus;
   const int _size_exchange;
   const int _offset;
@@ -484,6 +485,7 @@ struct AtomVecEllipsoidKokkos_PackExchangeBonus {
     const typename DEllipsoidBonusAT::tdual_bonus_1d &bonus,
     DAT::tdual_int_1d &sendlist,
     DAT::tdual_int_1d &copylist,
+    DAT::tdual_int_1d &sendlist_bonus,
     DAT::tdual_int_1d &copylist_bonus,
     const int &offset):
       _bonus(bonus.template view<DeviceType>()),
@@ -494,6 +496,7 @@ struct AtomVecEllipsoidKokkos_PackExchangeBonus {
       _size_exchange(atomKK->avecKK->size_exchange),
       _sendlist(sendlist.template view<DeviceType>()),
       _copylist(copylist.template view<DeviceType>()),
+      _sendlist_bonus(sendlist_bonus.template view<DeviceType>()),
       _copylist_bonus(copylist_bonus.template view<DeviceType>()),
       _offset(offset) {
     const int maxsendlist = (buf.template view<DeviceType>().extent(0)*
@@ -521,19 +524,20 @@ struct AtomVecEllipsoidKokkos_PackExchangeBonus {
     }
 
     int j = _copylist(mysend);
+    int i_bonus = _sendlist_bonus(mysend);
     int j_bonus = _copylist_bonus(mysend);
 
     if (j_bonus > -1) {
 
       // if I has bonus data, then delete it
 
-      if (_ellipsoid[i] >= 0) {
+      if (i_bonus > -1) {
 
         // copy bonus data from J to I, effectively deleting the I entry
         // also reset ellipsoid that points to J to now point to I
 
-        _ellipsoidw[_bonus[j_bonus].ilocal] = _ellipsoid[i];
-        _bonusw[_ellipsoid[i]] = _bonus[j_bonus];
+        _ellipsoidw[_bonus[j_bonus].ilocal] = i_bonus;
+        _bonusw[i_bonus] = _bonus[j_bonus];
       }
 
       // if atom J has bonus data, reset J’s bonus.ilocal to loc I
@@ -552,6 +556,7 @@ void AtomVecEllipsoidKokkos::pack_exchange_bonus_kokkos(const int &nsend,
                                                         DAT::tdual_double_2d_lr &k_buf,
                                                         DAT::tdual_int_1d k_sendlist,
                                                         DAT::tdual_int_1d k_copylist,
+                                                        DAT::tdual_int_1d k_sendlist_bonus,
                                                         DAT::tdual_int_1d k_copylist_bonus,
                                                         ExecutionSpace space)
 {
@@ -563,14 +568,14 @@ void AtomVecEllipsoidKokkos::pack_exchange_bonus_kokkos(const int &nsend,
     AtomVecEllipsoidKokkos_PackExchangeBonus<LMPHostType> f(atomKK,
       k_buf,k_bonus,
       k_sendlist,k_copylist,
-      k_copylist_bonus,
+      k_sendlist_bonus,k_copylist_bonus,
       offset);
     Kokkos::parallel_for(nsend,f);
   } else {
     AtomVecEllipsoidKokkos_PackExchangeBonus<LMPDeviceType> f(atomKK,
       k_buf,k_bonus,
       k_sendlist,k_copylist,
-      k_copylist_bonus,
+      k_sendlist_bonus,k_copylist_bonus,
       offset);
     Kokkos::parallel_for(nsend,f);
   }
