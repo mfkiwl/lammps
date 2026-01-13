@@ -77,13 +77,14 @@ void get_color(const std::string &color, double *rgb)
 // read image into buffer that is locally allocated with new
 // return null pointer if incompatible format or not supported
 
-unsigned char *read_image(FILE *fp, int &width, int &height, std::string &fileinfo)
+unsigned char *read_image(FILE *fp, int &width, int &height, const std::string &filename,
+                          std::string &info)
 {
   if (!fp) return nullptr;
   unsigned char *pixmap = nullptr;
 
-  if (utils::strmatch(fileinfo, "\\.jpg$") || utils::strmatch(fileinfo, "\\.JPG$") ||
-      utils::strmatch(fileinfo, "\\.jpeg$") || utils::strmatch(fileinfo, "\\.JPEG$")) {
+  if (utils::strmatch(filename, "\\.jpg$") || utils::strmatch(filename, "\\.JPG$") ||
+      utils::strmatch(filename, "\\.jpeg$") || utils::strmatch(filename, "\\.JPEG$")) {
 
 #if defined(LAMMPS_JPEG)
     struct jpeg_decompress_struct cinfo;
@@ -115,13 +116,14 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
     delete[] scanline;
     jpeg_destroy_decompress(&cinfo);
 
-    fileinfo = fmt::format("{}x{} JPEG file, 8-bit RGB", width, height);
+    info = fmt::format("{}x{} JPEG file, 8-bit RGB", width, height);
     return pixmap;
 #else
+    info = "JPEG image format not supported in this LAMMPS binary";
     return nullptr;
 #endif
 
-  } else if (utils::strmatch(fileinfo, "\\.png$") || utils::strmatch(fileinfo, "\\.PNG$")) {
+  } else if (utils::strmatch(filename, "\\.png$") || utils::strmatch(filename, "\\.PNG$")) {
 
 #if defined(LAMMPS_PNG)
     png_structp png_ptr = nullptr;
@@ -160,7 +162,10 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
     width = pngwidth;
     height = pngheight;
 
-    fileinfo = fmt::format("{}x{} PNG file, 8-bit RGB", width, height);
+    if ((bit_depth != 8) || (color_type != PNG_COLOR_TYPE_RGB))
+      info = fmt::format("{}x{} PNG file, Converted to 8-bit RGB", width, height);
+    else
+      info = fmt::format("{}x{} PNG file, 8-bit RGB", width, height);
 
     // convert data to compatible RGB data while reading
     if (color_type == PNG_COLOR_TYPE_PALETTE) png_set_expand(png_ptr);
@@ -192,6 +197,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
 
     return pixmap;
 #else
+    info = "PNG image format not supported in this LAMMPS binary";
     return nullptr;
 #endif
 
@@ -222,8 +228,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
     rv = sscanf(buffer, "%d", &tmp);
     if ((rv != 1) || (tmp != 255)) return nullptr;
 
-    fileinfo =
-        fmt::format("{}x{} PPM {} file, 8-bit RGB", width, height, binary ? "binary" : "text");
+    info = fmt::format("{}x{} PPM {} file, 8-bit RGB", width, height, binary ? "binary" : "text");
     pixmap = new unsigned char[3 * width * height];
     if (binary) {
       // read raw data directly into buffer in the expected order of lines
@@ -266,6 +271,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, std::string &filein
 
     return pixmap;
   }
+  info = "Unknown image file format.";
   return nullptr;
 }
 }    // namespace
@@ -301,28 +307,27 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
       if (iarg + 5 > narg) utils::missing_cmd_args(FLERR, "fix graphics/labels image", error);
 
       // clang-format off
-      PixmapInfo pix{{0.0, 0.0, 0.0}, 0, 0, nullptr, {-1.0, -1.0, -1.0}, 1.0,
+      PixmapInfo pix{"", 0.0, {0.0, 0.0, 0.0}, 0, 0, nullptr, {-1.0, -1.0, -1.0}, 1.0,
         -1, -1, -1, -1, nullptr, nullptr, nullptr, nullptr};
       // clang-format on
 
       // read and store image file with pixmap only on MPI rank 0.
       // must always open in binary mode to avoid data corruption on Windows
       if (comm->me == 0) {
-        std::string fileinfo = arg[iarg + 1];
-        FILE *fp = fopen(fileinfo.c_str(), "rb");
+        pix.filename = arg[iarg + 1];
+        FILE *fp = fopen(pix.filename.c_str(), "rb");
         if (!fp)
-          error->one(FLERR, iarg + 1, "Cannot open fix graphics/labels image file {}: {}", fileinfo,
-                     utils::getsyserror());
-
-        pix.pixmap = read_image(fp, pix.width, pix.height, fileinfo);
+          error->one(FLERR, iarg + 1, "Cannot open fix graphics/labels image file {}: {}",
+                     pix.filename, utils::getsyserror());
+        pix.timestamp = platform::file_write_time(pix.filename);
+        std::string info;
+        pix.pixmap = read_image(fp, pix.width, pix.height, pix.filename, info);
         fclose(fp);
         if (!pix.pixmap)
-          error->one(FLERR, iarg + 1,
-                     "Reading fix graphics/labels image file {} failed.\n"
-                     "                Unsupported file format or broken file",
-                     arg[iarg + 1]);
+          error->one(FLERR, iarg + 1, "Reading fix graphics/labels image file {} failed: {}",
+                     pix.filename, info);
 
-        utils::logmesg(lmp, "Read image from {} file: {} format\n", arg[iarg + 1], fileinfo);
+        utils::logmesg(lmp, "Read image from {} file: {} format\n", pix.filename, info);
       }
       PARSE_VARIABLE(pix.pos[0], pix.xstr, iarg + 2);
       PARSE_VARIABLE(pix.pos[1], pix.ystr, iarg + 3);
@@ -343,9 +348,11 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
           if (iarg + 2 > narg)
             utils::missing_cmd_args(FLERR, "fix graphics/labels image transcolor", error);
           if (strcmp(arg[iarg + 1], "auto") == 0) {
-            pix.transcolor[0] = pix.pixmap[0];
-            pix.transcolor[1] = pix.pixmap[1];
-            pix.transcolor[2] = pix.pixmap[2];
+            if (pix.pixmap) {
+              pix.transcolor[0] = pix.pixmap[0];
+              pix.transcolor[1] = pix.pixmap[1];
+              pix.transcolor[2] = pix.pixmap[2];
+            }
           } else if (strcmp(arg[iarg + 1], "none") == 0) {
             pix.transcolor[0] = -255.0;
             pix.transcolor[1] = -255.0;
@@ -614,6 +621,28 @@ void FixGraphicsLabels::end_of_step()
     if (pix.ystr) pix.pos[1] = input->variable->compute_equal(pix.yvar);
     if (pix.zstr) pix.pos[2] = input->variable->compute_equal(pix.zvar);
     if (pix.sstr) pix.scale = input->variable->compute_equal(pix.svar);
+
+    // if image file has been changed since, free old data and re-read file
+
+    if (comm->me == 0) {
+      auto timestamp = platform::file_write_time(pix.filename);
+      if (pix.timestamp != timestamp) {
+        pix.timestamp = timestamp;
+
+        FILE *fp = fopen(pix.filename.c_str(), "rb");
+        if (!fp)
+          error->one(FLERR, Error::NOLASTLINE, "Cannot open fix graphics/labels image file {}: {}",
+                     pix.filename, utils::getsyserror());
+        std::string info;
+        pix.pixmap = read_image(fp, pix.width, pix.height, pix.filename, info);
+        fclose(fp);
+        if (!pix.pixmap)
+          error->one(FLERR, Error::NOLASTLINE,
+                     "Reading fix graphics/labels image file {} failed: {}", pix.filename, info);
+
+        utils::logmesg(lmp, "Re-read image from {} file: {} format\n", pix.filename, info);
+      }
+    }
 
     imgobjs[n] = Graphics::PIXMAP;
     imgparms[n][0] = 1;
