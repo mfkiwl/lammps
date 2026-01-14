@@ -114,7 +114,7 @@ FixGraphicsObjects::FixGraphicsObjects(LAMMPS *lmp, int narg, char **arg) :
       if ((arrow.ratio < 0.1) || (arrow.ratio > 0.5))
         error->all(FLERR, iarg + 9, "Arrow tip ratio must be between 0.1 and 0.5");
       items.emplace_back(arrow);
-      numobjs += 2;
+      ++numobjs;
       iarg += 10;
     } else if (strcmp(arg[iarg], "cone") == 0) {
       if (iarg + 11 > narg) utils::missing_cmd_args(FLERR, "fix graphics/objects cone", error);
@@ -280,9 +280,9 @@ void FixGraphicsObjects::init()
       CHECK_VARIABLE(gi.arrow.x1var, gi.arrow.x1str);
       CHECK_VARIABLE(gi.arrow.y1var, gi.arrow.y1str);
       CHECK_VARIABLE(gi.arrow.z1var, gi.arrow.z1str);
-      CHECK_VARIABLE(gi.arrow.x2var, gi.arrow.x1str);
-      CHECK_VARIABLE(gi.arrow.y2var, gi.arrow.y1str);
-      CHECK_VARIABLE(gi.arrow.z2var, gi.arrow.z1str);
+      CHECK_VARIABLE(gi.arrow.x2var, gi.arrow.x2str);
+      CHECK_VARIABLE(gi.arrow.y2var, gi.arrow.y2str);
+      CHECK_VARIABLE(gi.arrow.z2var, gi.arrow.z2str);
       CHECK_VARIABLE(gi.arrow.dvar, gi.arrow.dstr);
       imgparms[n][9] = gi.arrow.ratio;
       ++n;
@@ -292,9 +292,9 @@ void FixGraphicsObjects::init()
       CHECK_VARIABLE(gi.cone.x1var, gi.cone.x1str);
       CHECK_VARIABLE(gi.cone.y1var, gi.cone.y1str);
       CHECK_VARIABLE(gi.cone.z1var, gi.cone.z1str);
-      CHECK_VARIABLE(gi.cone.x2var, gi.cone.x1str);
-      CHECK_VARIABLE(gi.cone.y2var, gi.cone.y1str);
-      CHECK_VARIABLE(gi.cone.z2var, gi.cone.z1str);
+      CHECK_VARIABLE(gi.cone.x2var, gi.cone.x2str);
+      CHECK_VARIABLE(gi.cone.y2var, gi.cone.y2str);
+      CHECK_VARIABLE(gi.cone.z2var, gi.cone.z2str);
       CHECK_VARIABLE(gi.cone.d1var, gi.cone.d1str);
       CHECK_VARIABLE(gi.cone.d2var, gi.cone.d2str);
       ++n;
