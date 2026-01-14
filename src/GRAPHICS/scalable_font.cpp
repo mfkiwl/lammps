@@ -884,7 +884,7 @@ ssfn_glyph_t *ssfn_render(ssfn_t *ctx, uint32_t unicode)
   }
   ctx->m = h;
 
-  if (!ctx->h) ctx->h = (uint16_t *) realloc(nullptr, 4096 * 2 * sizeof(uint16_t));
+  if (!ctx->h) ctx->h = (uint16_t *) malloc(4096 * 2 * sizeof(uint16_t));
   if (!ctx->h) goto erralloc;
 
   if (!(ctx->style & SSFN_STYLE_NOHINTING)) {
@@ -917,7 +917,7 @@ ssfn_glyph_t *ssfn_render(ssfn_t *ctx, uint32_t unicode)
   bl = ((((rg[3] & 0x0F) << 8) | rg[8])) << s;
   bt = ((((rg[3] & 0xF0) << 4) | rg[9])) << s;
   i = p * h;
-  ctx->ret = (ssfn_glyph_t *) realloc(nullptr, i + 8 + sizeof(uint8_t *));
+  ctx->ret = (ssfn_glyph_t *) malloc(i + 8 + sizeof(uint8_t *));
   if (!ctx->ret) {
   erralloc:
     ctx->err = SSFN_ERR_ALLOC;
