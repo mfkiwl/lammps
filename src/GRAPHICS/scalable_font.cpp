@@ -716,7 +716,7 @@ namespace {
 
 SSFNException::SSFNException(const std::string &file, int line, int flag)
 {
-  message = fmt::format("In file {}:{} ",truncpath(file),line);
+  message = fmt::format("In file {}:{} ", truncpath(file), line);
   if ((flag < SSFN_OK) || (flag > SSFN_ERR_NOGLYPH)) {
     message.append("Unknown Error");
   } else {
@@ -1000,125 +1000,6 @@ ssfn_glyph_t *ssfn_render(ssfn_t *ctx, uint32_t unicode)
     if (ctx->ret->adv_y) ctx->ret->baseline = ctx->ret->w >> 1;
   }
   return ctx->ret;
-}
-
-/**
-   * Return kerning information
- *
- * @param ctx rendering context
- * @param unicode current unicode character
- * @param nextunicode next unicode character
- * @param *x pointer to an integer
- * @param *y pointer to an integer
- * @return error code, and relative offsets adjusted to *x, *y
- */
-int ssfn_kern(ssfn_t *ctx, uint32_t unicode, uint32_t nextunicode, int *x, int *y)
-{
-  const ssfn_font_t *font;
-  uint32_t i, j, k, l, a, b, c;
-  uint8_t *ptr;
-  int m;
-
-  if (!ctx || !x || !y) throw SSFNException(__FILE__, __LINE__, SSFN_ERR_INVINP);
-  if (!ctx->f && !ctx->s) throw SSFNException(__FILE__, __LINE__, SSFN_ERR_NOFACE);
-  font = ctx->s ? ctx->s : ctx->f;
-  if (unicode && nextunicode && font->kerning_offs) {
-    ptr = (uint8_t *) font + font->kerning_offs;
-    a = font->features & SSFN_FEAT_KBIGLKP ? 4 : 3;
-    b = font->features & SSFN_FEAT_KBIGCHR;
-    c = font->features & SSFN_FEAT_KBIGCRD;
-    for (i = 0; i < 0x110000; i++) {
-      if (ptr[0] & 0x80) {
-        if (ptr[0] & 0x40) {
-          i += ptr[1] | ((ptr[0] & 0x3f) << 8);
-          ptr += 2;
-        } else {
-          i += ptr[0] & 0x3f;
-          ptr++;
-        }
-      } else {
-        m = ptr[0] & 0x7F;
-        if (unicode >= i && unicode <= i + m) {
-          ptr = (uint8_t *) font + font->kerning_offs +
-              ((a == 4 ? (ptr[3] << 16) : 0) | (ptr[2] << 8) | ptr[1]);
-          if (ptr[0] & 0x80) {
-            k = ptr[1] | ((ptr[0] & 0x7f) << 8);
-            ptr += 2;
-          } else {
-            k = ptr[0] & 0x7F;
-            ptr++;
-          }
-          for (m = 0, a = SSFN_ERR_NOGLYPH, i = j = 0; i <= k && j <= nextunicode; i++) {
-            if (b) {
-              j = ptr[0] | (ptr[1] << 8) | ((ptr[2] & 0x7F) << 16);
-              l = ptr[2] & 0x80;
-              ptr += 3;
-            } else {
-              j = ptr[0] | ((ptr[1] & 0x7F) << 8);
-              l = ptr[1] & 0x80;
-              ptr += 2;
-            }
-            if (c) {
-              m = (short) (ptr[0] | (ptr[1] << 8));
-              ptr += 2;
-            } else {
-              m = (signed char) ptr[0];
-              ptr++;
-            }
-            if (j == nextunicode) {
-              a = SSFN_OK;
-              m = (((m) << (16 - ctx->g)) * ctx->m + (1 << 16) - 1) >> 16;
-              if (l)
-                *y += m;
-              else
-                *x += m;
-            }
-          }
-          if (a == SSFN_OK)
-            return a;
-          else
-            throw SSFNException(__FILE__, __LINE__, a);
-        }
-        ptr += a;
-        i += m;
-      }
-    }
-  }
-  throw SSFNException(__FILE__, __LINE__, SSFN_ERR_NOGLYPH);
-  return SSFN_OK;
-}
-
-/**
- * Returns the bounding box of the rendered text
- *
- * @param ctx rendering context
- * @param *str string
- * @param usekern use kerning when calculating size
- * @param *w pointer to an integer, returned width
- * @param *h pointer to an integer, returned height
- */
-void ssfn_bbox(ssfn_t *ctx, char *str, int usekern, int *w, int *h)
-{
-  char *s;
-  int u, v, m;
-
-  if (!ctx) throw SSFNException(__FILE__, __LINE__, SSFN_ERR_INVINP);
-  if (!str || !w || !h) throw SSFNException(__FILE__, __LINE__, SSFN_ERR_INVINP);
-  *w = *h = 0;
-  m = ctx->mode;
-  ctx->mode = SSFN_MODE_NONE;
-  ctx->m = 0;
-  for (s = str, u = _ssfn_utf8(&s); u;) {
-    ssfn_render(ctx, u);
-    *w += ctx->uix;
-    *h += ctx->uax;
-    v = _ssfn_utf8(&s);
-    if (usekern) ssfn_kern(ctx, u, v, w, h);
-    u = v;
-  }
-  if (!*w) *w = ctx->m;
-  if (!*h) *h = ctx->m;
-  ctx->mode = m;
 }
 
 /**

@@ -101,10 +101,6 @@ extern void ssfn_load(ssfn_t *ctx, const ssfn_font_t *font);
 extern void ssfn_select(ssfn_t *ctx, int family, int style, int size);
 // return allocated glyph bitmap
 extern ssfn_glyph_t *ssfn_render(ssfn_t *ctx, uint32_t unicode);
-// get kerning values
-extern int ssfn_kern(ssfn_t *ctx, uint32_t unicode, uint32_t nextunicode, int *x, int *y);
-// get bounding box of a rendered string
-extern void ssfn_bbox(ssfn_t *ctx, char *str, int usekern, int *w, int *h);
 // free context
 extern void ssfn_free(ssfn_t *ctx);
 
