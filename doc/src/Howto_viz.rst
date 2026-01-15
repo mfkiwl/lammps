@@ -54,44 +54,57 @@ these examples may likely cause errors or look differently.
 
 ------------
 
+Complete example inputs
+-----------------------
+
+The discussions below only quote relevant sections of input files to
+show specifically the commands used in the visualizations.  There are
+complete example files in the ``examples/GRAPHICS`` folder of the LAMMPS
+source code distribution.
+
+---------------
+
 Image quality and resolution
 ----------------------------
 
 The image resolution is determined by the *size* keyword.  The default
 setting is to create images with 512x512 pixels.  This is rather low
-resolution.  A typical (non-"retina") computer screen has about 100 dpi
-(= dots-per-inch) so that image to cover an area of a little bit over
-5x5 inches (or about 135x135 millimeters).  So images should generally
-be computed at larger sizes.  When the image is meant for printing, one
-has to consider that many printers have a resolution of 300 dpi or even
-600 dpi which means that images should be created 3x3 or 6x6 times
-larger to utilize the full resolution.  Otherwise images images have to
-be scaled up which can make them look blurry and with ragged edges.
+resolution.  A typical (non-"retina") computer screen at the time of
+writing this howto has about 100 dpi (= dots per inch) so that this
+image covers an area of a bit over 5x5 inches (or about 135x135
+millimeters).  Images for use in presentations, posters, or publications
+should generally be generated at larger sizes.  When the image is meant
+for printing, one has to consider that a printer may have a resolution
+of 300 dpi or even 600 dpi which means that images should be created 3x3
+or 6x6 times larger to utilize the full resolution of the printer and
+show as much details and be as clean as possible.  Otherwise images have
+to be scaled up which can make them look blurry and with ragged edges.
 
 The keywords *fsaa* and *ssao* can be used to further improve the image
-quality at the expense of additional computational cost to render the
-images:
+quality at the expense of significant additional computational cost to
+render the images:
 
 - FSAA stands for `Full Scene Anti-Aliasing
   <https://en.wikipedia.org/wiki/Spatial_anti-aliasing#Super_sampling_/_full-scene_anti-aliasing>`_
   and means in the case of LAMMPS that the image is rendered at four
   times the size (double the width and double the height) and then the
   pixels in the final image are computed by taking the average of 2x2
-  pixel groups.  This will result in smoother edges by blending
-  foreground and background.
+  pixel groups.  This will result in smoother, less ragged edges of
+  objects in the image.
 
 - SSAO stands for `Screen Space Ambient Occlusion
   <https://en.wikipedia.org/wiki/Screen_space_ambient_occlusion>`_ and
   is an image enhancement technique that uses intermediate image data
   (like the information of how close or far away a pixel is to the
-  camera or its neighboring pixels) and brightens or darkens randomly
+  camera and its neighboring pixels) and brightens or darkens randomly
   selected pixels in its neighborhood based on that information.  This
   enhances the depth perception of objects in an image.
 
 Both methods are complementary and thus can be combined for additional
 improvement of the image quality.  The images below show from left to
-right the same render with the default settings, with *fsaa* enabled,
-with *ssao* enabled, and with both features enabled.
+right the same excerpt of a dump image output with the default settings,
+with *fsaa* enabled, with *ssao* enabled, and with both features
+enabled.
 
 .. |imagequality1| image:: JPG/image.default.png
    :width: 24%
@@ -110,16 +123,17 @@ rendered (this number can grow quickly when using fine triangle meshes),
 and the choice of the *fsaa* and *ssao* settings.  For high resolution
 images, a correspondingly large image size has to be chosen.
 
-Since the simulation has to wait for dump image to complete its image
-rendering, creating high resolution, high quality images can slow down a
-simulation significantly with frequent output of images.  On the other
-hand, the image rasterizer in LAMMPS is fairly simple and thus fast
-compared to more advanced image generation tools like ray tracers.
-Also, the method it uses to generate the image allows to have each MPI
-process create images for the data they own and then those images are
-merged in the end with a O(log(N)) scaling process.  At the moment there
-is no GPU acceleration and only limited multi-threading parallelization
-available (e.g. for SSAO processing).
+Since the simulation has to wait for the dump image command to complete
+its image rendering, creating high resolution, high quality images can
+slow down a simulation significantly with frequent output of images.  On
+the other hand, the image rasterizer in LAMMPS is fairly simple and thus
+fast compared to more advanced image generation tools like ray tracers.
+The method it uses to generate the images allows to have each MPI
+process create image data for the atoms and objects they "own" and then
+this image data is merged for the final output with a procedure that has
+O(log(N)) complexity with the number of MPI processes.  At the moment
+there is no GPU acceleration and only limited multi-threading
+parallelization available (e.g. for SSAO post-processing of image data).
 
 --------------------
 
