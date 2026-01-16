@@ -335,7 +335,6 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
   theta = 60.0 * DEG2RAD;
   phi = 30.0 * DEG2RAD;
   zoom = 1.0;
-  persp = 0.0;
   shiny = 1.0;
   ssao = NO;
   fsaa = NO;
