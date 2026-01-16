@@ -370,12 +370,27 @@ bool file_is_readable(const std::string &path);
 
 bool file_is_writable(const std::string &path);
 
-/*! Return free disk space in bytes of file system pointed to by path
+/*! Report a time stamp when a file was last written to
  *
- * Returns -1.0 if the path is invalid or free space reporting not supported.
+ * For increased accuracy and portability, the time stamp is relative
+ * to an arbitrary offset created when loading the LAMMPS library or
+ * launching the executable.  This allows to report the time difference
+ * as a floating point number and not some platform or architecture
+ * specific type requiring to include additional headers.
  *
- * \param path file or folder path in file system
- * \return  */
+ * When two timestamps are the same, the file has not been written to.
+ *
+ * \param path file path
+ * \return time stamp when file was last written to */
+
+double file_write_time(const std::string &path);
+
+  /*! Return free disk space in bytes of file system pointed to by path
+   *
+   * Returns -1.0 if the path is invalid or free space reporting not supported.
+   *
+   * \param path file or folder path in file system
+   * \return  */
 
 double disk_free(const std::string &path);
 
