@@ -2212,6 +2212,17 @@ void DumpImage::unpack_forward_comm(int n, int first, double *buf)
 
 /* ---------------------------------------------------------------------- */
 
+void *DumpImage::extract(const char *str, int &dim)
+{
+  dim=0;
+  if (strcmp(str,"image") == 0) {
+    return image;
+  }
+  return nullptr;
+}
+
+/* ---------------------------------------------------------------------- */
+
 int DumpImage::modify_param(int narg, char **arg)
 {
   int n = DumpCustom::modify_param(narg,arg);
