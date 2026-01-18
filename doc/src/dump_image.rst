@@ -251,6 +251,10 @@ Here are five sample images, rendered as JPEG or PNG files.
 A detailed discussion of advanced graphics settings and workflows
 with examples is provided in the :doc:`Howto_viz` howto.
 
+.. versionadded:: TBD
+
+   support for writing compressed TGA files
+
 Only atoms in the specified group are rendered in the image.  The
 :doc:`dump_modify region and thresh <dump_modify>` commands can also
 alter what atoms are included in the image.  The filename suffix
