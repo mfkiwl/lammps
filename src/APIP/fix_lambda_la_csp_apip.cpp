@@ -127,6 +127,8 @@ FixLambdaLACSPAPIP::~FixLambdaLACSPAPIP()
 {
   memory->destroy(ngh_pairs);
   memory->destroy(f_lambda);
+  memory->destroy(distsq);
+  memory->destroy(nearest);
   if (fixstore && modify->nfix) modify->delete_fix(fixstore->id);
   fixstore = nullptr;
 }
@@ -461,6 +463,10 @@ void FixLambdaLACSPAPIP::pre_force_dyn_pairs()
 
   delete[] pairs_value;
   delete[] pairs_index;
+  delete[] pairs_j;
+  delete[] pairs_k;
+  delete[] pairs_used_now;
+  delete[] pairs_used_prev;
 }
 
 /**
