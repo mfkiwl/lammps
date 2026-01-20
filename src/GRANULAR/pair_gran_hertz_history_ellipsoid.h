@@ -32,7 +32,7 @@ class PairGranHertzHistoryEllipsoid : public PairGranHookeHistoryEllipsoid {
   double single(int, int, int, int, double, double, double, double &) override;
 
  protected:
-  int curvature_model; 
+  int curvature_model;
 };
 
 }    // namespace LAMMPS_NS

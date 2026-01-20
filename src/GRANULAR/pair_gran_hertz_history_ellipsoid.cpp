@@ -36,7 +36,7 @@
 using namespace LAMMPS_NS;
 
 
-static constexpr int NUMSTEP_INITIAL_GUESS = 8;
+static constexpr int NUMSTEP_INITIAL_GUESS = 5;
 
 /* ---------------------------------------------------------------------- */
 
@@ -186,8 +186,8 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
               touching = true;
             else if (status == 1)
               touching = false;
-            else // TODO: Consider making an else if and print warning if LAPACK ok, but NR not converged, instead of error and fail the run ?
-              error->all(FLERR, "Ellipsoid contact detection (old contact) failed with status {} betwen particle {} and particle {} ", status, atom->tag[i], atom->tag[j]);
+            else 
+              error->warning(FLERR, "Ellipsoid contact detection (old contact) failed with status {} betwen particle {} and particle {} ", status, atom->tag[i], atom->tag[j]);
           } else {
             // New contact: Build initial guess incrementally by morphing the particles from spheres to actual shape
 
@@ -223,8 +223,10 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
                 touching = true;
               else if (status == 1)
                 touching = false;
-              else // TODO: Consider making an else if and print warning if LAPACK ok, but NR not converged, instead of error and fail the run ?
-                error->all(FLERR, "Ellipsoid contact detection failed with status {} ", status);
+              else if (iter_ig == NUMSTEP_INITIAL_GUESS){
+                // keep trying until last iteration to avoid erroring out too early
+                error->warning(FLERR, "Ellipsoid contact detection (new contact) failed with status {} betwen particle {} and particle {}", status, atom->tag[i], atom->tag[j]);
+              }  
             }
           }
         }

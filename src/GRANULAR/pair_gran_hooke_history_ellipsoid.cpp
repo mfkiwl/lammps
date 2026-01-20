@@ -11,7 +11,6 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-
 #include "pair_gran_hooke_history_ellipsoid.h"
 
 #include "atom.h"
@@ -22,20 +21,19 @@
 #include "fix_dummy.h"
 #include "fix_neigh_history.h"
 #include "force.h"
+#include "math_extra.h"    // probably needed for some computations
+#include "math_extra_superellipsoids.h"
 #include "memory.h"
 #include "modify.h"
 #include "neigh_list.h"
 #include "neighbor.h"
 #include "update.h"
-#include "math_extra.h" // probably needed for some computations
-#include "math_extra_superellipsoids.h"
 #include <iostream>
 
 #include <cmath>
 #include <cstring>
 
 using namespace LAMMPS_NS;
-
 
 static constexpr int NUMSTEP_INITIAL_GUESS = 5;
 
@@ -48,7 +46,8 @@ PairGranHookeHistoryEllipsoid::PairGranHookeHistoryEllipsoid(LAMMPS *lmp) : Pair
   centroidstressflag = CENTROID_NOTAVAIL;
   finitecutflag = 1;
   use_history = 1;
-  size_history = 8;  // shear[3], contact_point_and_Lagrange_multiplier[4], bounding_box_separating_axis_index
+  size_history =
+      8;    // shear[3], contact_point_and_Lagrange_multiplier[4], bounding_box_separating_axis_index
 
   single_extra = 10;
   svector = new double[10];
@@ -74,7 +73,6 @@ PairGranHookeHistoryEllipsoid::PairGranHookeHistoryEllipsoid(LAMMPS *lmp) : Pair
       modify->add_fix("NEIGH_HISTORY_HH_ELL_DUMMY" + std::to_string(instance_me) + " all DUMMY"));
 
   contact_formulation = MathExtraSuperellipsoids::FORMULATION_ALGEBRAIC;
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -119,7 +117,8 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
   int *touch, **firsttouch;
   double *shear, *X0_prev, *separating_axis, *history, *allhistory, **firsthistory;
 
-  double X0[4], nij[3], shapei[3], blocki[3], shapej[3], blockj[3], Ri[3][3], Rj[3][3], overlap1, overlap2, omegai[3], omegaj[3];
+  double X0[4], nij[3], shapei[3], blocki[3], shapej[3], blockj[3], Ri[3][3], Rj[3][3], overlap1,
+      overlap2, omegai[3], omegaj[3];
   AtomVecEllipsoid::BlockType flagi, flagj;
 
   ev_init(eflag, vflag);
@@ -181,7 +180,6 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
     ztmp = x[i][2];
     radi = radius[i];
 
-
     touch = firsttouch[i];
     allhistory = firsthistory[i];
     jlist = firstneigh[i];
@@ -219,7 +217,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
         if (bounding_box) {
           separating_axis = &allhistory[7 + size_history * jj];
           skip_contact_detection = MathExtraSuperellipsoids::check_oriented_bounding_boxes(
-                                       x[i], Ri, shapei, x[j], Rj, shapej, separating_axis);
+              x[i], Ri, shapei, x[j], Rj, shapej, separating_axis);
         }
         if (skip_contact_detection)
           touching = false;
@@ -235,15 +233,19 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
             X0[3] = X0_prev[3];
             // std::cout << "Using old contact point as initial guess between particle " << atom->tag[i] << " and particle " << atom->tag[j] << " : "
             //           << X0[0] << " " << X0[1] << " " << X0[2] << " Lagrange multiplier mu^2: " << X0[3] << std::endl;
-            int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, flagi,
-                                                                           x[j], Rj, shapej, blockj, flagj,
-                                                                           X0, nij, contact_formulation);
+            int status = MathExtraSuperellipsoids::determine_contact_point(
+                x[i], Ri, shapei, blocki, flagi, x[j], Rj, shapej, blockj, flagj, X0, nij,
+                contact_formulation);
             if (status == 0)
               touching = true;
             else if (status == 1)
               touching = false;
-            else // TODO: Consider making an else if and print warning if LAPACK ok, but NR not converged, instead of error and fail the run ?
-              error->one(FLERR, "Ellipsoid contact detection (old contact) failed with status {} betwen particle {} and particle {} ", status, atom->tag[i], atom->tag[j]);
+            else if (status == 2) {
+              error->warning(FLERR,
+                             "Ellipsoid contact detection (old contact) failed with status {} "
+                             "betwen particle {} and particle {} ",
+                             status, atom->tag[i], atom->tag[j]);
+            }
           } else {
             // New contact: Build initial guess incrementally by morphing the particles from spheres to actual shape
 
@@ -258,13 +260,13 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
             double reqi = std::cbrt(shapei[0] * shapei[1] * shapei[2]);
             double reqj = std::cbrt(shapej[0] * shapej[1] * shapej[2]);
             MathExtra::scaleadd3(reqj / (reqi + reqj), x[i], reqi / (reqi + reqj), x[j], X0);
-            X0[3] = reqj / reqi; // Lagrange multiplier mu^2
-            for (int iter_ig = 1 ; iter_ig <= NUMSTEP_INITIAL_GUESS ; iter_ig++) {
+            X0[3] = reqj / reqi;    // Lagrange multiplier mu^2
+            for (int iter_ig = 1; iter_ig <= NUMSTEP_INITIAL_GUESS; iter_ig++) {
               double frac = iter_ig / double(NUMSTEP_INITIAL_GUESS);
               shapei[0] = shapei[1] = shapei[2] = reqi;
               shapej[0] = shapej[1] = shapej[2] = reqj;
-              MathExtra::scaleadd3(1.0-frac, shapei, frac, bonus[ellipsoid[i]].shape, shapei);
-              MathExtra::scaleadd3(1.0-frac, shapej, frac, bonus[ellipsoid[j]].shape, shapej);
+              MathExtra::scaleadd3(1.0 - frac, shapei, frac, bonus[ellipsoid[i]].shape, shapei);
+              MathExtra::scaleadd3(1.0 - frac, shapej, frac, bonus[ellipsoid[j]].shape, shapej);
               blocki[0] = 2.0 + frac * (bonus[ellipsoid[i]].block[0] - 2.0);
               blocki[1] = 2.0 + frac * (bonus[ellipsoid[i]].block[1] - 2.0);
               blockj[0] = 2.0 + frac * (bonus[ellipsoid[j]].block[0] - 2.0);
@@ -272,22 +274,26 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
 
               // force ellipsoid flag for first initial guess iteration.
               // Avoid incorrect values of n1/n2 - 2 in second derivatives.
-              int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi,
-                                                                             x[j], Rj, shapej, blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj,
-                                                                             X0, nij, contact_formulation);
+              int status = MathExtraSuperellipsoids::determine_contact_point(
+                  x[i], Ri, shapei, blocki,
+                  iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi, x[j], Rj, shapej,
+                  blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj, X0, nij,
+                  contact_formulation);
               if (status == 0)
                 touching = true;
               else if (status == 1)
                 touching = false;
-              else if (iter_ig == NUMSTEP_INITIAL_GUESS){
+              else if (iter_ig == NUMSTEP_INITIAL_GUESS) {
                 // keep trying until last iteration to avoid erroring out too early
-                error->warning(FLERR, "Ellipsoid contact detection (new contact) failed with status {} betwen particle {} and particle {}", status, atom->tag[i], atom->tag[j]);
+                error->warning(FLERR,
+                               "Ellipsoid contact detection (new contact) failed with status {} "
+                               "betwen particle {} and particle {}",
+                               status, atom->tag[i], atom->tag[j]);
               }
             }
           }
         }
       }
-
 
       if (!touching) {
         // unset non-touching neighbors
@@ -304,32 +310,34 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
         X0_prev[2] = X0[2] - x[ref_index][2];
         X0_prev[3] = X0[3];
 
-        double nji[3] = { -nij[0], -nij[1], -nij[2] };
+        double nji[3] = {-nij[0], -nij[1], -nij[2]};
         // compute overlap depth along normal direction for each grain
         // overlap is positive for both grains
-        overlap1 = MathExtraSuperellipsoids::compute_overlap_distance(shapei, blocki, Ri, flagi, X0, nij, x[i]);
-        overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]);
+        overlap1 = MathExtraSuperellipsoids::compute_overlap_distance(shapei, blocki, Ri, flagi, X0,
+                                                                      nij, x[i]);
+        overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0,
+                                                                      nji, x[j]);
 
-        // branch vectors 
+        // branch vectors
         double cr1[3], cr2[3];
         MathExtra::sub3(X0, x[i], cr1);
         MathExtra::sub3(X0, x[j], cr2);
 
         // we need to take the cross product of omega
 
-        double ex_space[3],ey_space[3],ez_space[3];
-        MathExtra::q_to_exyz(bonus[ellipsoid[i]].quat,ex_space,ey_space,ez_space);
-        MathExtra::angmom_to_omega(angmom[i],ex_space,ey_space,ez_space,
-                                   bonus[ellipsoid[i]].inertia,omegai);
-        MathExtra::q_to_exyz(bonus[ellipsoid[j]].quat,ex_space,ey_space,ez_space);
-        MathExtra::angmom_to_omega(angmom[j],ex_space,ey_space,ez_space,
-                                   bonus[ellipsoid[j]].inertia,omegaj);
+        double ex_space[3], ey_space[3], ez_space[3];
+        MathExtra::q_to_exyz(bonus[ellipsoid[i]].quat, ex_space, ey_space, ez_space);
+        MathExtra::angmom_to_omega(angmom[i], ex_space, ey_space, ez_space,
+                                   bonus[ellipsoid[i]].inertia, omegai);
+        MathExtra::q_to_exyz(bonus[ellipsoid[j]].quat, ex_space, ey_space, ez_space);
+        MathExtra::angmom_to_omega(angmom[j], ex_space, ey_space, ez_space,
+                                   bonus[ellipsoid[j]].inertia, omegaj);
 
         double omega_cross_r1[3], omega_cross_r2[3];
         MathExtra::cross3(omegai, cr1, omega_cross_r1);
         MathExtra::cross3(omegaj, cr2, omega_cross_r2);
 
-        // relative translational velocity 
+        // relative translational velocity
         // compute directly the sum of relative translational velocity at contact point
         // since rotational velocity contribution is different for superellipsoids
         double cv1[3], cv2[3];
@@ -349,11 +357,11 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
 
         // normal component
 
-        vn1 = nij[0] * vr1; // dot product 
+        vn1 = nij[0] * vr1;    // dot product
         vn2 = nij[1] * vr2;
         vn3 = nij[2] * vr3;
 
-        vnnr = vr1 * nij[0] + vr2 * nij[1] + vr3 * nij[2]; // magnitu
+        vnnr = vr1 * nij[0] + vr2 * nij[1] + vr3 * nij[2];    // magnitu
 
         // tangential component
 
@@ -382,7 +390,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
         // normal forces = Hookian contact + normal velocity damping
 
         damp = meff * gamman * vnnr;
-        ccel = kn * (overlap1 + overlap2) + damp; // assuming we get the overlap depth
+        ccel = kn * (overlap1 + overlap2) + damp;    // assuming we get the overlap depth
         if (limit_damping && (ccel < 0.0)) ccel = 0.0;
 
         // shear history effects
@@ -438,7 +446,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
         fx = nji[0] * ccel + fs1;
         fy = nji[1] * ccel + fs2;
         fz = nji[2] * ccel + fs3;
-        fx *= factor_lj; // I think factor lj is just 1 except for special bonds
+        fx *= factor_lj;    // I think factor lj is just 1 except for special bonds
         fy *= factor_lj;
         fz *= factor_lj;
         f[i][0] += fx;
@@ -449,7 +457,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
 
         tor1 = cr1[1] * fz - cr1[2] * fy;
         tor2 = cr1[2] * fx - cr1[0] * fz;
-        tor3 = cr1[0] * fy - cr1[1] * fx; 
+        tor3 = cr1[0] * fy - cr1[1] * fx;
 
         tor1 *= factor_lj;
         tor2 *= factor_lj;
@@ -462,17 +470,19 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
           f[j][0] -= fx;
           f[j][1] -= fy;
           f[j][2] -= fz;
-          
+
           tor1 = cr2[1] * fz - cr2[2] * fy;
           tor2 = cr2[2] * fx - cr2[0] * fz;
-          tor3 = cr2[0] * fy - cr2[1] * fx; 
+          tor3 = cr2[0] * fy - cr2[1] * fx;
 
           torque[j][0] -= tor1;
           torque[j][1] -= tor2;
           torque[j][2] -= tor3;
         }
 
-        if (evflag) ev_tally_xyz(i, j, nlocal, newton_pair, 0.0, 0.0, fx, fy, fz, delx, dely, delz); // Correct even for non-spherical particles
+        if (evflag)
+          ev_tally_xyz(i, j, nlocal, newton_pair, 0.0, 0.0, fx, fy, fz, delx, dely,
+                       delz);    // Correct even for non-spherical particles
       }
     }
   }
@@ -527,7 +537,7 @@ void PairGranHookeHistoryEllipsoid::settings(int narg, char **arg)
 
   limit_damping = 0;
   bounding_box = 0;
-  for (int iarg = 6 ; iarg < narg ; iarg++) {
+  for (int iarg = 6; iarg < narg; iarg++) {
     if (strcmp(arg[iarg], "limit_damping") == 0)
       limit_damping = 1;
     else if (strcmp(arg[iarg], "bounding_box") == 0)
@@ -538,7 +548,7 @@ void PairGranHookeHistoryEllipsoid::settings(int narg, char **arg)
       error->all(FLERR, "Illegal pair_style command");
   }
 
-  size_history = 8; // reset to default for safety
+  size_history = 8;    // reset to default for safety
   if (bounding_box == 0) size_history--;
 
   if (kn < 0.0 || kt < 0.0 || gamman < 0.0 || gammat < 0.0 || xmu < 0.0 || xmu > 10000.0 ||
@@ -581,7 +591,9 @@ void PairGranHookeHistoryEllipsoid::init_style()
   // error and warning checks
 
   if (!atom->radius_flag || !atom->rmass_flag || !atom->angmom_flag || !atom->ellipsoid_flag)
-    error->all(FLERR, "Pair gran/h/ellipsoid* requires atom attributes radius, rmass, angmom and ellipdoid flag");
+    error->all(
+        FLERR,
+        "Pair gran/h/ellipsoid* requires atom attributes radius, rmass, angmom and ellipdoid flag");
   if (comm->ghost_velocity == 0)
     error->all(FLERR, "Pair gran/h/ellipsoid* requires ghost atoms store velocity");
 
@@ -599,7 +611,8 @@ void PairGranHookeHistoryEllipsoid::init_style()
   // this is so its order in the fix list is preserved
 
   if (use_history && (fix_history == nullptr)) {
-    auto cmd = fmt::format("NEIGH_HISTORY_HH_ELL{} all NEIGH_HISTORY {}", instance_me, size_history);
+    auto cmd =
+        fmt::format("NEIGH_HISTORY_HH_ELL{} all NEIGH_HISTORY {}", instance_me, size_history);
     fix_history = dynamic_cast<FixNeighHistory *>(
         modify->replace_fix("NEIGH_HISTORY_HH_ELL_DUMMY" + std::to_string(instance_me), cmd, 1));
     fix_history->pair = this;
@@ -770,7 +783,8 @@ void PairGranHookeHistoryEllipsoid::reset_dt()
 /* ---------------------------------------------------------------------- */
 
 double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*jtype*/, double rsq,
-                                             double /*factor_coul*/, double /*factor_lj*/, double &fforce)
+                                             double /*factor_coul*/, double /*factor_lj*/,
+                                             double &fforce)
 {
   double radi, radj, radsum;
   double vr1, vr2, vr3, vnnr, vn1, vn2, vn3, vt1, vt2, vt3;
@@ -816,9 +830,10 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
   MathExtra::quat_to_mat(bonus[ellipsoid[i]].quat, Ri);
   MathExtra::quat_to_mat(bonus[ellipsoid[j]].quat, Rj);
   if (bounding_box) {
-    double separating_axis = allhistory[7 + size_history * neighprev]; // Copy: no update of history in single
+    double separating_axis =
+        allhistory[7 + size_history * neighprev];    // Copy: no update of history in single
     bool no_bouding_box_contact = MathExtraSuperellipsoids::check_oriented_bounding_boxes(
-                                      x[i], Ri, shapei, x[j], Rj, shapej, &separating_axis);
+        x[i], Ri, shapei, x[j], Rj, shapej, &separating_axis);
     if (no_bouding_box_contact) {
       fforce = 0.0;
       for (int m = 0; m < single_extra; m++) svector[m] = 0.0;
@@ -830,7 +845,7 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
   AtomVecEllipsoid::BlockType flagi, flagj;
   flagi = bonus[ellipsoid[i]].type;
   flagj = bonus[ellipsoid[j]].type;
-  double* X0_prev = &allhistory[3 + size_history * neighprev];
+  double *X0_prev = &allhistory[3 + size_history * neighprev];
   if (touch[neighprev] == 1) {
     int ref_index = (atom->tag[i] < atom->tag[j]) ? i : j;
     // Continued contact: use grain true shape and last contact point
@@ -842,23 +857,23 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
                                                                    x[j], Rj, shapej, blockj, flagj,
                                                                    X0, nij, contact_formulation);
     if (status == 1) {
-        fforce = 0.0;
-        for (int m = 0; m < single_extra; m++) svector[m] = 0.0;
-        return 0.0;
+      fforce = 0.0;
+      for (int m = 0; m < single_extra; m++) svector[m] = 0.0;
+      return 0.0;
     }
     if (status != 0)
-        error->one(FLERR, "Ellipsoid contact detection failed with status {} ", status);
+      error->one(FLERR, "Ellipsoid contact detection failed with status {} ", status);
   } else {
     double reqi = std::cbrt(shapei[0] * shapei[1] * shapei[2]);
     double reqj = std::cbrt(shapej[0] * shapej[1] * shapej[2]);
     MathExtra::scaleadd3(reqj / (reqi + reqj), x[i], reqi / (reqi + reqj), x[j], X0);
-    X0[3] = reqj / reqi; // Lagrange multiplier mu^2
-    for (int iter_ig = 1 ; iter_ig <= NUMSTEP_INITIAL_GUESS ; iter_ig++) {
+    X0[3] = reqj / reqi;    // Lagrange multiplier mu^2
+    for (int iter_ig = 1; iter_ig <= NUMSTEP_INITIAL_GUESS; iter_ig++) {
       double frac = iter_ig / double(NUMSTEP_INITIAL_GUESS);
       shapei[0] = shapei[1] = shapei[2] = reqi;
       shapej[0] = shapej[1] = shapej[2] = reqj;
-      MathExtra::scaleadd3(1.0-frac, shapei, frac, bonus[ellipsoid[i]].shape, shapei);
-      MathExtra::scaleadd3(1.0-frac, shapej, frac, bonus[ellipsoid[j]].shape, shapej);
+      MathExtra::scaleadd3(1.0 - frac, shapei, frac, bonus[ellipsoid[i]].shape, shapei);
+      MathExtra::scaleadd3(1.0 - frac, shapej, frac, bonus[ellipsoid[j]].shape, shapej);
       blocki[0] = 2.0 + frac * (bonus[ellipsoid[i]].block[0] - 2.0);
       blocki[1] = 2.0 + frac * (bonus[ellipsoid[i]].block[1] - 2.0);
       blockj[0] = 2.0 + frac * (bonus[ellipsoid[j]].block[0] - 2.0);
@@ -866,9 +881,10 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
 
       // force ellipsoid flag for first initial guess iteration.
       // Avoid incorrect values of n1/n2 - 2 in second derivatives.
-      int status = MathExtraSuperellipsoids::determine_contact_point(x[i], Ri, shapei, blocki, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi,
-                                                                     x[j], Rj, shapej, blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj,
-                                                                     X0, nij, contact_formulation);
+      int status = MathExtraSuperellipsoids::determine_contact_point(
+          x[i], Ri, shapei, blocki, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi,
+          x[j], Rj, shapej, blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj,
+          X0, nij, contact_formulation);
       if (status == 1) {
         fforce = 0.0;
         for (int m = 0; m < single_extra; m++) svector[m] = 0.0;
@@ -879,22 +895,24 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
     }
   }
   double overlap1, overlap2, omegai[3], omegaj[3];
-  double nji[3] = { -nij[0], -nij[1], -nij[2] };
-  overlap1 = MathExtraSuperellipsoids::compute_overlap_distance(shapei, blocki, Ri, flagi, X0, nij, x[i]);
-  overlap2 = MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]);
+  double nji[3] = {-nij[0], -nij[1], -nij[2]};
+  overlap1 =
+      MathExtraSuperellipsoids::compute_overlap_distance(shapei, blocki, Ri, flagi, X0, nij, x[i]);
+  overlap2 =
+      MathExtraSuperellipsoids::compute_overlap_distance(shapej, blockj, Rj, flagj, X0, nji, x[j]);
 
   double cr1[3], cr2[3];
   MathExtra::sub3(X0, x[i], cr1);
   MathExtra::sub3(X0, x[j], cr2);
 
-  double ex_space[3],ey_space[3],ez_space[3];
+  double ex_space[3], ey_space[3], ez_space[3];
   double **angmom = atom->angmom;
-  MathExtra::q_to_exyz(bonus[ellipsoid[i]].quat,ex_space,ey_space,ez_space);
-  MathExtra::angmom_to_omega(angmom[i],ex_space,ey_space,ez_space,
-                             bonus[ellipsoid[i]].inertia,omegai);
-  MathExtra::q_to_exyz(bonus[ellipsoid[j]].quat,ex_space,ey_space,ez_space);
-  MathExtra::angmom_to_omega(angmom[j],ex_space,ey_space,ez_space,
-                             bonus[ellipsoid[j]].inertia,omegaj);
+  MathExtra::q_to_exyz(bonus[ellipsoid[i]].quat, ex_space, ey_space, ez_space);
+  MathExtra::angmom_to_omega(angmom[i], ex_space, ey_space, ez_space, bonus[ellipsoid[i]].inertia,
+                             omegai);
+  MathExtra::q_to_exyz(bonus[ellipsoid[j]].quat, ex_space, ey_space, ez_space);
+  MathExtra::angmom_to_omega(angmom[j], ex_space, ey_space, ez_space, bonus[ellipsoid[j]].inertia,
+                             omegaj);
 
   double omega_cross_r1[3], omega_cross_r2[3];
   MathExtra::cross3(omegai, cr1, omega_cross_r1);
@@ -923,11 +941,11 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
 
   // normal component
 
-  vn1 = nij[0] * vr1; // dot product
+  vn1 = nij[0] * vr1;    // dot product
   vn2 = nij[1] * vr2;
   vn3 = nij[2] * vr3;
 
-  vnnr = vr1 * nij[0] + vr2 * nij[1] + vr3 * nij[2]; // magnitu
+  vnnr = vr1 * nij[0] + vr2 * nij[1] + vr3 * nij[2];    // magnitu
 
   // tangential component
 
@@ -958,9 +976,8 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
   // normal forces = Hookian contact + normal velocity damping
 
   damp = meff * gamman * vnnr;
-  ccel = kn * (overlap1 + overlap2) + damp; // assuming we get the overlap depth
+  ccel = kn * (overlap1 + overlap2) + damp;    // assuming we get the overlap depth
   if (limit_damping && (ccel < 0.0)) ccel = 0.0;
-
 
   double *shear = &allhistory[size_history * neighprev];
   shrmag = sqrt(shear[0] * shear[0] + shear[1] * shear[1] + shear[2] * shear[2]);
@@ -1008,8 +1025,8 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
 
 /* ---------------------------------------------------------------------- */
 
-int PairGranHookeHistoryEllipsoid::pack_forward_comm(int n, int *list, double *buf, int /*pbc_flag*/,
-                                            int * /*pbc*/)
+int PairGranHookeHistoryEllipsoid::pack_forward_comm(int n, int *list, double *buf,
+                                                     int /*pbc_flag*/, int * /*pbc*/)
 {
   int i, j, m;
 
@@ -1042,7 +1059,8 @@ double PairGranHookeHistoryEllipsoid::memory_usage()
   return bytes;
 }
 
-void PairGranHookeHistoryEllipsoid::transfer_history(double *source, double *target, int /*itype*/, int /*jtype*/)
+void PairGranHookeHistoryEllipsoid::transfer_history(double *source, double *target, int /*itype*/,
+                                                     int /*jtype*/)
 {
   // Simple direct copy of all history variables (shear, contact point, axis)
   for (int i = 0; i < size_history; i++) {

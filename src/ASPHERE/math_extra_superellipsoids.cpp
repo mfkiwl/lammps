@@ -562,8 +562,6 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
       }
       MathExtra::matvec(Rj, tmp_v, gradj);
 
-
-
       norm = compute_residual(shapefunc[0], gradi, shapefunc[1], gradj, X_line[3], residual, formulation, (avg_radius_i + avg_radius_j)/2.0);
 
       if ((norm <= TOL_NR_RES) &&

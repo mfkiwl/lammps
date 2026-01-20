@@ -69,14 +69,17 @@ class PairGranHookeHistoryEllipsoid : public Pair {
   int nmax;                // allocated size of mass_rigid
 
   int contact_formulation;
-  
+
   void allocate();
 
  private:
-
   // Below not implemented. Placeholder if we decide not to compute local hessian in line search
-  static double shape_and_gradient_local(const double*, const double*, const double*, double*); // would return a vector of temporary variables
-  static double hessian_local(const double*, const double*, const double*, double*); // would use the above vector of temporary variables to compute local hessian
+  static double
+  shape_and_gradient_local(const double *, const double *, const double *,
+                           double *);    // would return a vector of temporary variables
+  static double hessian_local(
+      const double *, const double *, const double *,
+      double *);    // would use the above vector of temporary variables to compute local hessian
 };
 
 }    // namespace LAMMPS_NS

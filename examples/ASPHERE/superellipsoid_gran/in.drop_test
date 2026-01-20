@@ -47,8 +47,8 @@ set             type 2 shape 2.0 1.0 1.0
 
 # Initialize Superquadric "Blockiness" to 2.0 (Ellipsoid) 
 # Necessary to prevent division-by-zero in the dump variables below
-set             type 1 block 4.0 4.0 
-set             type 2 block 4.0 4.0 
+set             type 1 block 5.0 5.0 
+set             type 2 block 5.0 5.0 
 
 # 5. Define Groups
 group           wall type 1
@@ -57,7 +57,7 @@ group           mobile type 2
 
 # 6. Interaction / Pair Style
 # Kept exactly as requested
-pair_style      gran/hooke/history/ellipsoid 1e4 0.0 10.0 0.0 0.5 0 bounding_box
+pair_style      gran/hooke/history/ellipsoid 1e4 0.0 10.0 0.0 0.5 0 bounding_box geometric
 pair_coeff      * *
 
 # 7. Computes and Output
