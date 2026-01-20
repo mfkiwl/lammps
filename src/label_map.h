@@ -40,19 +40,24 @@ class LabelMap : protected Pointers {
 
   // infer interaction types from standard hyphen-delimited format
 
-  int infer_bondtype(int, int);                      // infer bond type from two atom types
-  int infer_bondtype(std::vector<std::string>);      // infer bond type from two atom type labels
+  // infer bond type from two numeric atom types or type labels
+  int infer_bondtype(int, int);
+  int infer_bondtype(const std::vector<std::string> &);
 
-  int infer_angletype(int, int, int);                // infer angle type from three atom types
-  int infer_angletype(std::vector<std::string>);     // infer angle type from three atom type labels
+  // infer angle type from three numeric atom types or type labels
+  int infer_angletype(int, int, int);
+  int infer_angletype(const std::vector<std::string> &);
 
-  int infer_dihedraltype(int, int, int, int);        // infer dihedral type from four atom types
-  int infer_dihedraltype(std::vector<std::string>);  // infer dihedral type from four atom type labels
+  // infer dihedral type from four numeric atom types or type labels
+  int infer_dihedraltype(int, int, int, int);
+  int infer_dihedraltype(const std::vector<std::string> &);
 
-  int infer_impropertype(int, int, int, int);        // infer improper type from four atom types
-  int infer_impropertype(std::vector<std::string>);  // infer improper type from four atom type labels
+  // infer improper type from four numeric atom types or type labels
+  int infer_impropertype(int, int, int, int);
+  int infer_impropertype(const std::vector<std::string> &);
 
-  int parse_typelabel(int, std::string, std::vector<std::string> &); // get strings within hyphen delimiters
+  // get strings within hyphen delimiters
+  int parse_typelabel(int, const std::string &, std::vector<std::string> &);
 
   // input/output for atom class label map
 
@@ -60,7 +65,7 @@ class LabelMap : protected Pointers {
   void read_restart(FILE *fp);
   void write_restart(FILE *);
 
-protected:
+ protected:
   int natomtypes, nbondtypes, nangletypes, ndihedraltypes, nimpropertypes;
   std::vector<std::string> typelabel, btypelabel, atypelabel;
   std::vector<std::string> dtypelabel, itypelabel;

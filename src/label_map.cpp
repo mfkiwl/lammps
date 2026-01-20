@@ -390,7 +390,7 @@ int LabelMap::infer_bondtype(int type1, int type2)
   mytypes[1] = typelabel[type2-1];
   if (mytypes[0].empty() || mytypes[1].empty()) return -1;
 
-  return infer_bondtype(std::move(mytypes));
+  return infer_bondtype(mytypes);
 }
 
 /* ----------------------------------------------------------------------
@@ -398,7 +398,7 @@ int LabelMap::infer_bondtype(int type1, int type2)
    assumes bond types are of the form "a-b" for atom types 'a' and 'b'
 ------------------------------------------------------------------------- */
 
-int LabelMap::infer_bondtype(std::vector<std::string> mytypes)
+int LabelMap::infer_bondtype(const std::vector<std::string> &mytypes)
 {
   // search for matching bond type label with symmetry considerations
 
@@ -430,7 +430,7 @@ int LabelMap::infer_angletype(int type1, int type2, int type3)
   for (size_t i = 0; i < 3; i++)
     if (mytypes[i].empty()) return -1;
 
-  return infer_angletype(std::move(mytypes));
+  return infer_angletype(mytypes);
 }
 
 /* ----------------------------------------------------------------------
@@ -439,7 +439,7 @@ int LabelMap::infer_angletype(int type1, int type2, int type3)
    assumes angle types of the form "a-b-c" for atom types 'a', 'b', 'c'
 ------------------------------------------------------------------------- */
 
-int LabelMap::infer_angletype(std::vector<std::string> mytypes)
+int LabelMap::infer_angletype(const std::vector<std::string> &mytypes)
 {
   // search for matching angle type label, with symmetry considerations
 
@@ -473,7 +473,7 @@ int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
   for (size_t i = 0; i < 4; i++)
     if (mytypes[i].empty()) return -1;
 
-  return infer_dihedraltype(std::move(mytypes));
+  return infer_dihedraltype(mytypes);
 }
 
 /* ----------------------------------------------------------------------
@@ -482,7 +482,7 @@ int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
    assumes dihedral types of the form "a-b-c-d"
 ------------------------------------------------------------------------- */
 
-int LabelMap::infer_dihedraltype(std::vector<std::string> mytypes)
+int LabelMap::infer_dihedraltype(const std::vector<std::string> &mytypes)
 {
   // search for matching dihedral type label
 
@@ -518,7 +518,7 @@ int LabelMap::infer_impropertype(int type1, int type2, int type3, int type4)
   for (int i = 0; i < 4; i++)
     if (mytypes[i].empty()) return -1;
 
-  return infer_impropertype(std::move(mytypes));
+  return infer_impropertype(mytypes);
 }
 
 /* ----------------------------------------------------------------------
@@ -528,7 +528,7 @@ int LabelMap::infer_impropertype(int type1, int type2, int type3, int type4)
    the symmetry of the improper is encoded in improper.symmatoms
 ------------------------------------------------------------------------- */
 
-int LabelMap::infer_impropertype(std::vector<std::string> mytypes)
+int LabelMap::infer_impropertype(const std::vector<std::string> &mytypes)
 {
   // search for matching improper type label
 
