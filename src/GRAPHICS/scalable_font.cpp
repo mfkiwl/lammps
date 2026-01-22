@@ -1057,7 +1057,7 @@ void ScalableFont::select_font(int family, int style, int size)
 
 unsigned char *ScalableFont::create_pixmap(const std::string &text, int &width, int &height,
                                            const unsigned char *font, const unsigned char *frame,
-                                           const unsigned char *back)
+                                           const unsigned char *back, bool horizontal)
 {
   auto *ctxptr = (ssfn_t *) ctx;
   ssfn_glyph_t *g;
@@ -1139,6 +1139,21 @@ unsigned char *ScalableFont::create_pixmap(const std::string &text, int &width, 
     }
     penx += g->adv_x;
     free(g);
+  }
+
+  // for vertical text copy the rotated pixmap accordingly and swap width and height
+  if (!horizontal) {
+    auto *flipped = new unsigned char[width * height * 3];
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < width; ++x) {
+        for (int i = 0; i < 3; ++i) {
+          flipped[x * 3 * height + 3 * (height - 1 - y) + i] = pixmap[y * 3 * width + 3 * x + i];
+        }
+      }
+    }
+    delete[] pixmap;
+    pixmap = flipped;
+    std::swap(width, height);
   }
   return pixmap;
 }

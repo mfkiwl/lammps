@@ -35,7 +35,7 @@ Syntax
         x, y, z  = position where the center of the text is located in the visualization
         any of x, y, or z can be a variable (see below)
 
-        keyword = *fontcolor* or *framecolor* or *backcolor* or *transcolor* or *size*
+        keyword = *fontcolor* or *framecolor* or *backcolor* or *transcolor* or *size* or *horizontal* or *vertical*
           *fontcolor* arg = select color for text: *white* (default) or *black* or *r/g/b*
              *white* = uses white
              *black* = uses black
@@ -60,6 +60,8 @@ Syntax
              *none* = disables transparency
              *r/g/b* = provide three integers in the range 0 to 255
           *size* value = set the size of the characters (default 24), can be a variable (see below)
+          *horizontal* = create horizontal text label
+          *vertical* = create vertical text label
 
 Examples
 """"""""
@@ -170,8 +172,13 @@ are required arguments.  Optional keyword / value pairs may be added:
     processing.
 
   When rendering text with transparent background it is recommended to
-  select a similar color but slightly darker or brighter color as background.
-  This will reduce unwanted color effects at the edges due to anti-aliasing.
+  select a similar color but slightly darker or brighter color as
+  background.  This will reduce unwanted color effects at the edges due
+  to anti-aliasing.
+
+  The *horizontal* keyword selects creating a horizontal text label
+  (this is the default setting).  The *vertical* keyword selects
+  creating a vertical text label instead.
 
 There may be multiple *image* or *text* keywords with their arguments
 in a single fix *graphics/labels* command.
@@ -325,4 +332,4 @@ Related commands
 Default
 """""""
 
-transcolor = "none" for *image* and "silver" for *text*, scale = 1.0, fontcolor = white, backcolor = silver, framecolor = silver, size = 24
+transcolor = "none" for *image* and "silver" for *text*, scale = 1.0, fontcolor = white, backcolor = silver, framecolor = silver, size = 24, horizontal

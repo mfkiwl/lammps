@@ -263,8 +263,6 @@ unsigned char *read_image(FILE *fp, int &width, int &height, const std::string &
     if (header.idlength) info += id;
     delete[] id;
 
-    fprintf(stderr, "'%s'\n", info.c_str());
-
     pixmap = new unsigned char[3 * width * height];
     if (compressed) {
       unsigned char len;
@@ -458,7 +456,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
 
       // check remaining arguments for optional image arguments
       while (iarg < narg) {
-        // next argument is next keyword; exit loop
+        // if next argument is next keyword; exit loop
         if ((strcmp(arg[iarg], "image") == 0) || (strcmp(arg[iarg], "text") == 0)) break;
 
         if (strcmp(arg[iarg], "scale") == 0) {
@@ -503,7 +501,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
 
       // clang-format off
       TextInfo txt{"", {0.0, 0.0, 0.0}, 0, 0, nullptr, {255, 255, 255}, {192, 192, 192},
-                   {192, 192, 192}, {192, 192, 192}, false, 48.0, 0.5,
+                   {192, 192, 192}, {192, 192, 192}, false, true, 48.0, 0.5,
                    -1, -1, -1, -1, nullptr, nullptr, nullptr, nullptr};
       // clang-format on
 
@@ -517,7 +515,7 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
 
       // check remaining arguments for optional image arguments
       while (iarg < narg) {
-        // next argument is next keyword; exit loop
+        // if next argument is next keyword; exit loop
         if ((strcmp(arg[iarg], "image") == 0) || (strcmp(arg[iarg], "text") == 0)) break;
 
         if (strcmp(arg[iarg], "size") == 0) {
@@ -581,6 +579,12 @@ FixGraphicsLabels::FixGraphicsLabels(LAMMPS *lmp, int narg, char **arg) :
             }
           }
           iarg += 2;
+        } else if (strcmp(arg[iarg], "horizontal") == 0) {
+          txt.horizontal = true;
+          ++iarg;
+        } else if (strcmp(arg[iarg], "vertical") == 0) {
+          txt.horizontal = false;
+          ++iarg;
         } else {
           error->all(FLERR, iarg, "Unknown fix graphics/labels text keyword: {}", arg[iarg]);
         }
@@ -822,7 +826,7 @@ void FixGraphicsLabels::end_of_step()
 
         delete[] txt.pixmap;
         txt.pixmap = renderfont.create_pixmap(expanded, txt.width, txt.height, txt.fontcolor,
-                                              txt.framecolor, txt.backcolor);
+                                              txt.framecolor, txt.backcolor, txt.horizontal);
       }
       imgobjs[n] = Graphics::PIXMAP;
       imgparms[n][0] = 1;

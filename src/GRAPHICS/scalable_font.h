@@ -37,7 +37,7 @@ class ScalableFont {
   void select_font(int family, int style, int size);
   unsigned char *create_pixmap(const std::string &text, int &width, int &height,
                                const unsigned char *font, const unsigned char *frame,
-                               const unsigned char *back);
+                               const unsigned char *back, bool horizontal = true);
 
  private:
   void *ctx;
