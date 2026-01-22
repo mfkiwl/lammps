@@ -1639,8 +1639,12 @@ void DumpImage::create_image()
         // get pointer to pixmap buffer and get background transparency color
         const auto *pixmap = (const unsigned char *) ubuf(fixarray[i][6]).i;
         double transcolor[3] = {fixarray[i][7], fixarray[i][8], fixarray[i][9]};
-        image->draw_pixmap(&fixarray[i][1], (int) fixarray[i][4], (int) fixarray[i][5], pixmap,
-                           transcolor, fixarray[i][10], opacity);
+        if (ifix.flag1 == 0.0)    // coordinates are in box coordinates
+          image->draw_pixmap(&fixarray[i][1], (int) fixarray[i][4], (int) fixarray[i][5], pixmap,
+                             transcolor, fixarray[i][10], opacity);
+        else    // coordinates are in image coordinates, ignore z
+          image->draw_pixmap((int) fixarray[i][1], (int) fixarray[i][2], (int) fixarray[i][4],
+                             (int) fixarray[i][5], pixmap, transcolor, fixarray[i][10], opacity);
       } else if (fixvec[i] == Graphics::BOND) {
         int type1 = static_cast<int>(fixarray[i][0] - 1.0) % ntypes + 1;
         int type2 = static_cast<int>(fixarray[i][1] - 1.0) % ntypes + 1;

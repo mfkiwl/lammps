@@ -79,11 +79,14 @@ Description
 This fix allows to add either images or text as "labels" to :doc:`dump
 image <dump_image>` created images by using the *fix* keyword.  This can
 be useful to augment images with additional graphics or text directly
-and without having to post-process the images.  Since the positioning
-uses the coordinate system of the simulation and because the graphics
-objects use the depth buffer of the image rasterizer, atoms and other
-graphics in the "scene" can be located before or behind any text or
-image label.
+and without having to post-process the images.  The positions can be
+either interpreted as coordinates in the simulation box or as
+coordinates in the coordinate system of the image.  The selection is
+made by setting a flag in the :doc:`dump image fix <dump_image>` command
+(see below).  When the positioning uses the coordinate system of the
+simulation the distance of the graphics objects from the camera is
+determined and atoms or other graphics objects in the "scene" can be
+located in front of or behind any text or image label.
 
 The *group-id* is ignored by this fix.
 
@@ -200,7 +203,16 @@ The color style setting for the fix in the :doc:`dump image
 transparency is by default fully opaque and can be changed with
 *dump\_modify ftrans*\ .
 
-The *fflag1* and *fflag2* settings of *dump image fix* are ignored.
+The *fflag1* setting of *dump image fix* determines how the coordinates
+for the location of the center of the image or the center of the text
+label are interpreted.  Setting *fflag1* to 0 uses the simulation box
+coordinate system (x, y, and z) while setting *fflag1* to 1 uses the
+image coordinate system where (0,0) is the location of the lower left
+corner and (<image width>, <image height>) the upper right corner.  In
+the latter case, the z-coordinate is ignored and the image or label is
+placed on top of everything.
+
+The *fflag2* settings of *dump image fix* is ignored.
 
 --------------
 
