@@ -57,7 +57,6 @@ irregular(nullptr), set(nullptr)
   end_flag = 1;
   need_flip_change = 0;
   allow_flip_change = 1;
-  couple_erate = 0;
 
   nevery = utils::inumeric(FLERR, arg[3], false, lmp);
   if (nevery < 0) error->all(FLERR, "Fix {} Nevery must be >= 0", style);
@@ -189,6 +188,11 @@ irregular(nullptr), set(nullptr)
         set[index].style = ERATE;
         set[index].rate = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
         iarg += 3;
+      } else if (strcmp(arg[iarg + 1], "erate/rescale") == 0) {
+        if (iarg + 3 > narg) utils::missing_cmd_args(FLERR, thiscmd + " erate/rescale", error);
+        set[index].style = ERATERS;
+        set[index].rate = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
+        iarg += 3;
       } else if (strcmp(arg[iarg + 1], "trate") == 0) {
         if (iarg + 3 > narg) utils::missing_cmd_args(FLERR, thiscmd + " trate", error);
         set[index].style = TRATE;
@@ -270,20 +274,6 @@ irregular(nullptr), set(nullptr)
     error->all(FLERR, "Cannot use fix {} tilt on a shrink-wrapped 2nd dim", style);
   if (set[5].style && (domain->boundary[1][0] >= 2 || domain->boundary[1][1] >= 2))
     error->all(FLERR, "Cannot use fix {} tilt on a shrink-wrapped 2nd dim", style);
-
-  // warn about couple/erate=yes when x/y/z is not TRATE or xy/xz/yz is not ERATE
-
-  if (couple_erate && comm->me == 0) {
-    bool warn = false;
-    int i = 0;
-    for (; i < 3 && !warn; i++)
-      warn = !(set[i].style == TRATE || set[i].style == NONE);
-    for (; i < 6 && !warn; i++)
-      warn = !(set[i].style == ERATE || set[i].style == NONE);
-    if (warn)
-      error->warning(FLERR, "fix {} couple yes only handles coupling between "
-                     "x/y/z trate and xy/xz/yz erate .", style);
-  }
 
   // apply scaling to FINAL,DELTA,VEL,WIGGLE since they have dist/vel units
 
@@ -526,45 +516,12 @@ void FixDeform::init()
     } else if (set[i].style == VEL) {
       set[i].tilt_stop = set[i].tilt_start + delt * set[i].vel;
     } else if (set[i].style == ERATE) {
-      // Account for effect of TRATE elongation on shearing if required
-      double arate = 0.0, brate = 0.0, h_bb;
-      if (i == 3) {
-        if (couple_erate) {
-          if (set[1].style == TRATE) arate = set[1].rate;
-          if (set[2].style == TRATE) brate = set[2].rate;
-        }
-        h_bb = set[2].hi_start - set[2].lo_start;
-      }
-      if (i == 4) {
-        if (couple_erate) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          if (set[2].style == TRATE) brate = set[2].rate;
-        }
-        h_bb = set[2].hi_start - set[2].lo_start;
-      }
-      if (i == 5) {
-        if (couple_erate) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          if (set[1].style == TRATE) brate = set[1].rate;
-        }
-        h_bb = set[1].hi_start - set[1].lo_start;
-      }
-      // TODO: set up/use a nearly_equal function for
-      //       floating point comparisons?
-      if (arate == 0.0) {
-        if (brate == 0.0)
-          set[i].tilt_stop = set[i].rate * h_bb * delt;   // Always the case if couple_erate == 0
-        else
-          set[i].tilt_stop = set[i].rate * h_bb / brate * (exp(brate * delt)-1.0);
-      } else {
-        if (brate == 0.0)
-          set[i].tilt_stop = set[i].rate * h_bb / arate * (exp(arate * delt)-1.0);
-        else if (arate == brate)
-          set[i].tilt_stop = set[i].rate * h_bb * delt * exp(arate * delt);
-        else
-          set[i].tilt_stop = set[i].rate * h_bb / (brate - arate) * (exp(brate * delt) - exp(arate * delt));
-      }
-      set[i].tilt_stop += set[i].tilt_start * exp(arate * delt);
+      if (i == 3) set[i].tilt_stop = set[i].tilt_start +
+                    delt * set[i].rate * (set[2].hi_start - set[2].lo_start);
+      if (i == 4) set[i].tilt_stop = set[i].tilt_start +
+                    delt * set[i].rate * (set[2].hi_start - set[2].lo_start);
+      if (i == 5) set[i].tilt_stop = set[i].tilt_start +
+                    delt * set[i].rate * (set[1].hi_start - set[1].lo_start);
     } else if (set[i].style == TRATE) {
       set[i].tilt_stop = set[i].tilt_start * exp(set[i].rate * delt);
     } else if (set[i].style == WIGGLE) {
@@ -611,23 +568,22 @@ void FixDeform::init()
     if (set[i].style == TRATE && set[i].tilt_start == 0.0)
       error->all(FLERR, "Cannot use fix {} trate on a box with zero tilt", style);
 
-  // if yz changes and will cause box flip, then xy cannot be changing
-  // yz = [3], xy = [5]
+  // if yz [3] changes and will cause box flip, then xy [5] cannot be changing
+  // unless xz[4] style is ERATERS
   // this is b/c the flips would induce continuous changes in xz
   //   in order to keep the edge vectors of the flipped shape matrix
   //   an integer combination of the edge vectors of the unflipped shape matrix
-  // VARIABLE for yz is error, since no way to calculate if box flip occurs
+  // VARIABLE or ERATERS for yz is error, since no way to calculate if box flip occurs
   // WIGGLE lo/hi flip test is on min/max oscillation limit, not tilt_stop
   // only trigger actual errors if flipflag is set
-  // ERATE is accounted for if xz is also ERATE, so allow in that case
 
-  if (set[3].style && set[5].style &&
-    !(couple_erate && set[3].style == ERATE && set[4].style == ERATE)
-  ) {
+  if (set[3].style && set[5].style && set[4].style != ERATERS) {
     int flag = 0;
     double lo,hi;
     if (flipflag && set[3].style == VARIABLE)
-      error->all(FLERR, "Fix {} cannot use yz variable with xy", style);
+      error->all(FLERR, "Fix {} cannot use yz variable with xy unless xz is erate/rescale", style);
+    if (flipflag && set[3].style == ERATERS)
+      error->all(FLERR, "Fix {} cannot use yz erate/rescale with xy if xz is not erate/rescale", style);
     if (set[3].style == WIGGLE) {
       lo = set[3].tilt_min;
       hi = set[3].tilt_max;
@@ -640,14 +596,15 @@ void FixDeform::init()
             hi / (set[1].hi_stop - set[1].lo_stop) > 0.5) flag = 1;
       }
       if (flag)
-        error->all(FLERR, "Fix {} is changing yz too much with xy", style);
+        error->all(FLERR, "Fix {} is changing yz too much with xy. This can be accounted for by setting xz style to erate/rescale.", style);
     }
   }
 
   // set domain->h_rate values for use by domain and other fixes/computes
-  // initialize all rates to 0.0
+  // initialize all rates to 0.0, except if TRATE
   // cannot set here for VOLUME,WIGGLE,VARIABLE since not constant
-  // TRATE also not constant, but is known at init
+  // TRATE also not constant, but is known at init and needs to be set for
+  //  velocity kick in fix nvt/sllod to be correct
 
   h_rate = domain->h_rate;
   h_ratelo = domain->h_ratelo;
@@ -670,41 +627,54 @@ void FixDeform::init()
     }
   }
 
-  for (int i = 3; i < 6; i++) {
+  // Set tilt rates in reverse order since xy [5] needs
+  // to be set before xz [4] to calculate correction
+  // ERATE and ERATERS not set to 0 even if delt is 0 since
+  //  needed for velocity kick in fix nvt/sllod
+
+  for (int i = 5; i >= 3; i--) {
     h_rate[i] = 0.0;
     if (set[i].style == FINAL || set[i].style == DELTA ||
-        set[i].style == VEL || (!couple_erate && set[i].style == ERATE)) {
+        set[i].style == VEL) {
       if (delt != 0.0)
         h_rate[i] = (set[i].tilt_stop - set[i].tilt_start) / delt;
       else h_rate[i] = 0.0;
     } else if (set[i].style == ERATE) {
-        double arate = 0.0, h_bb;
-        if (i == 3) {
-          if (set[1].style == TRATE) arate = set[1].rate;
-          h_bb = set[2].hi_start - set[2].lo_start;
-        }
-        if (i == 4) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          h_bb = set[2].hi_start - set[2].lo_start;
-        }
-        if (i == 5) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          h_bb = set[1].hi_start - set[1].lo_start;
-        }
-        h_rate[i] = set[i].rate*h_bb + set[i].tilt_start*arate;
+      int b = i == 5 ? 1 : 2;   // x for xy/xz, y for yz
+      h_rate[i] = set[i].rate * (set[b].hi_start - set[b].lo_start);
+    } else if (set[i].style == ERATERS) {
+      int b = i == 5 ? 1 : 2;   // y for xy, z for xz/yz
+      double L = set[b].hi_start - set[b].lo_start;
+
+      h_rate[i] = set[i].rate * L;
+      if (i == 4) {
+        // xz correction = xy rate * yz tilt
+        // Could be slightly more accurate by solving analytically in cases
+        // with x/y/z == TRATE, but would become messy
+        h_rate[i] += h_rate[5] * domain->yz / (set[1].hi_start - set[1].lo_start);
+      }
     } else if (set[i].style == TRATE) {
       h_rate[i] = set[i].rate*set[i].tilt_start;
     }
   }
 
-  // Account for xy shear with yz tilt
+  // add correction for stretching in first dim
+  // separate from above so that xz correction can recover the xy rate
 
-  if (couple_erate && set[5].style == ERATE &&
-    set[5].rate != 0.0 && set[4].style == ERATE)
-  {
-    h_rate[4] += set[5].rate*set[3].tilt_start;
-    set[4].tilt_stop += calc_xz_correction(delt);
+  for (int i = 3; i < 6; i++) {
+    if (set[i].style == ERATERS) {
+      int a = i == 3 ? 1 : 0;   // x for xy/xz, y for yz
+      double rate_a = h_rate[a] / (set[a].hi_start - set[a].lo_start);
+      h_rate[i] += rate_a * set[i].tilt_start;
+    }
   }
+
+  // reset cumulative counters to match resetting "start" variables
+
+  for (int i = 0; i < 6; i++) {
+    set[i].cumulative_shift = 0.0;
+  }
+
 
   // variables/computes may not be valid during post_integrate,
   // so require end_flag for VARIABLE style
@@ -749,33 +719,40 @@ void FixDeform::pre_exchange()
 {
   if (flip == 0) return;
 
+  if (dimflag[3]) domain->yz = set[3].tilt_target = set[3].tilt_flip;
+  if (dimflag[4]) domain->xz = set[4].tilt_target = set[4].tilt_flip;
+  if (dimflag[5]) domain->xy = set[5].tilt_target = set[5].tilt_flip;
+
+  domain->set_global_box();
+  domain->set_local_box();
+
   // account for effect of box flip on h_rate
-  if (couple_erate) {
-    for (int i = 3; i < 6; i++) {
-      if (set[i].style == ERATE) {
-        double arate = 0.0;
-        if (i == 3) {
-          if (set[1].style == TRATE) arate = set[1].rate;
-        }
-        if (i == 4) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-        }
-        if (i == 5) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-        }
-        h_rate[i] += arate * (set[i].tilt_flip - set[i].tilt_target);
+
+  for (int i = 5; i >= 3; i--) {
+    if (set[i].style == ERATERS) {
+      int b = i == 5 ? 1 : 2;   // y for xy, z for xz/yz
+      double L = set[b].hi_target - set[b].lo_target;
+
+      h_rate[i] = set[i].rate * L;
+      if (i == 4) {
+        // xz correction = xy rate * yz tilt
+        // Could be slightly more accurate by solving analytically in cases
+        // with x/y/z == TRATE, but would become messy
+        h_rate[i] += h_rate[5] * domain->yz / domain->prd[1];
       }
-    }
-    if (set[5].style == ERATE && set[5].rate != 0.0 && set[4].style == ERATE) {
-      h_rate[4] += set[5].rate*(set[3].tilt_flip - set[3].tilt_target);
     }
   }
 
-  domain->yz = set[3].tilt_target = set[3].tilt_flip;
-  domain->xz = set[4].tilt_target = set[4].tilt_flip;
-  domain->xy = set[5].tilt_target = set[5].tilt_flip;
-  domain->set_global_box();
-  domain->set_local_box();
+  // add correction for stretching in first dim
+  // separate from above so that xz correction can recover the xy rate
+
+  for (int i = 3; i < 6; i++) {
+    if (set[i].style == ERATERS) {
+      int a = i == 3 ? 1 : 0;   // x for xy/xz, y for yz
+      double rate_a = h_rate[a] / domain->prd[a];
+      h_rate[i] += rate_a * set[i].tilt_target;
+    }
+  }
 
   domain->image_flip(flipxy, flipxz, flipyz);
   domain->remap_all();
@@ -829,13 +806,13 @@ void FixDeform::post_integrate_respa(int ilevel, int iloop) {
     // don't change nsteps, nsteps_total, dt since positions haven't been
     //  integrated yet.
     allow_flip_change = 1;
-    update_box();
+    update_domain();
+    if (kspace_flag) force->kspace->setup();
     allow_flip_change = 0;
     need_flip_change = 0;
   }
 
-  // box is changing every inner step, so kspace->setup() must be called
-  //  on kspace level
+  // box is changing every inner step, so call kspace->setup() on kspace level
   if (kspace_flag && ilevel == kspace_level_respa) force->kspace->setup();
 }
 
@@ -872,6 +849,40 @@ void FixDeform::update_box()
 
 void FixDeform::apply_strain()
 {
+  // Half-step correction for coupling before strain components are updated
+  // xz last since it depends on xy rate + yz tilt
+  // Do xz [4] first so we can use domain->yz in the correction
+
+  double dthalf = 0.5*dt;
+
+  if (triclinic) {
+    for (auto i : {4, 3, 5}) {
+      if (set[i].style == ERATERS) {
+        int a = i == 3 ? 1 : 0;   // x for xy/xz, y for yz
+        int b = i == 5 ? 1 : 2;   // y for xy, z for xz/yz
+        double rate_a = h_rate[a] / domain->prd[a];
+        double L = domain->prd[b];
+        double dtilt = 0;
+        double target = set[i].tilt_start + set[i].cumulative_shift;
+        if (set[a].style == TRATE) {
+          dtilt = target * (exp(dthalf * rate_a) - 1.);
+        } else {
+          dtilt = rate_a * target * dthalf;
+        }
+
+        h_rate[i] = set[i].rate * L;
+        if (i == 4) {
+          // xz correction = xy rate * yz tilt
+          // Could be slightly more accurate by solving analytically in cases
+          // with x/y/z == TRATE, but would become messy
+          h_rate[i] += h_rate[5] * domain->yz / domain->prd[1];
+        }
+        set[i].cumulative_shift += dtilt + dthalf * h_rate[i];
+        set[i].tilt_target = set[i].tilt_start + set[i].cumulative_shift;
+      }
+    }
+  }
+
   // for NONE, target is current box size
   // for TRATE, set target directly based on current time, also set h_rate
   // for WIGGLE, set target directly based on current time, also set h_rate
@@ -916,58 +927,48 @@ void FixDeform::apply_strain()
 
   // for triclinic, set new box shape
   // for NONE, target is current tilt
-  // for TRATE, set target directly based on current time. set h_rate later after box flips
-  // for ERATE, set target accounting for other deformation rates. set h_rate later after box flips
+  // for TRATE, set target directly based on current time. also set h_rate
+  // for ERATERS, do 2nd half step integration accounting for deformation in other directions.
+  // also partly calculate h_rate so xz correction can be calculated. h_rate overwritten after box flips
   // for WIGGLE, set target directly based on current time. also set h_rate
   // for VARIABLE, set target directly via variable eval. also set h_rate
   // for other styles, target is linear value between start and stop values
 
   if (triclinic) {
-    for (int i = 3; i < 6; i++) {
+    for (int i : {5, 3, 4}) {
       if (set[i].style == NONE) {
         if (i == 5) set[i].tilt_target = domain->xy;
         else if (i == 4) set[i].tilt_target = domain->xz;
         else if (i == 3) set[i].tilt_target = domain->yz;
       } else if (set[i].style == TRATE) {
-        double delt = (update->ntimestep - update->beginstep) * update->dt;
+        double delt = nsteps * dt;
         set[i].tilt_target = set[i].tilt_start * exp(set[i].rate * delt);
         h_rate[i] = set[i].rate * domain->h[i];
-      } else if (couple_erate && set[i].style == ERATE) {
-        // solve ODE for a,b,c box vectors accounting for elongation caused by TRATE
-        // this is needed for correct velocity remapping and correct calculation of
-        //  the velocity gradient tensor from (h_rate * h_inv) under mixed flow.
-        double delt = nsteps * dt;
-        double arate = 0.0, brate = 0.0, h_bb;
-        if (i == 3) {
-          if (set[1].style == TRATE) arate = set[1].rate;
-          if (set[2].style == TRATE) brate = set[2].rate;
-          h_bb = set[2].hi_start - set[2].lo_start;
-        }
-        if (i == 4) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          if (set[2].style == TRATE) brate = set[2].rate;
-          h_bb = set[2].hi_start - set[2].lo_start;
-        }
-        if (i == 5) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          if (set[1].style == TRATE) brate = set[1].rate;
-          h_bb = set[1].hi_start - set[1].lo_start;
-        }
-        // TODO: nearly_equal function for floating point comparisons?
-        if (arate == 0.0) {
-          if (brate == 0.0)
-            set[i].tilt_target = set[i].rate*h_bb*delt;
-          else
-            set[i].tilt_target = set[i].rate*h_bb/brate * (exp(brate*delt)-1.0);
+      } else if (set[i].style == ERATERS) {
+        // 2nd half step in reverse order
+        int a = i == 3 ? 1 : 0;   // x for xy/xz, y for yz
+        int b = i == 5 ? 1 : 2;   // y for xy, z for xz/yz
+        double rate_a = h_rate[a] / (set[a].hi_target - set[a].lo_target);
+        double L = domain->prd[b];
+        double dtilt = 0;
+        double target = set[i].tilt_start + set[i].cumulative_shift;
+        if (set[a].style == TRATE) {
+          dtilt = target * (exp(dthalf * rate_a) - 1.);
         } else {
-          if (brate == 0.0)
-            set[i].tilt_target = set[i].rate*h_bb/arate * (exp(arate*delt)-1.0);
-          else if (arate == brate)
-            set[i].tilt_target = set[i].rate*h_bb*delt * exp(arate*delt);
-          else
-            set[i].tilt_target = set[i].rate*h_bb/(brate-arate) * (exp(brate*delt)-exp(arate*delt));
+          dtilt = rate_a * target * dthalf;
         }
-        set[i].tilt_target += set[i].tilt_start*exp(arate*delt);
+
+        h_rate[i] = set[i].rate * L;
+        if (i == 4) {
+          // xz correction = xy rate * yz tilt
+          // Could be slightly more accurate by solving analytically in cases
+          // with x/y/z == TRATE, but would become messy
+          // set[3].tilt_target already includes set_extra[3].cumulative_shift,
+          double yz_target = set[3].tilt_target;
+          h_rate[i] += h_rate[5] * yz_target / (set[1].hi_target - set[1].lo_target);
+        }
+        set[i].cumulative_shift += dtilt + dthalf * h_rate[i];
+        set[i].tilt_target = set[i].tilt_start + set[i].cumulative_shift;
       } else if (set[i].style == WIGGLE) {
         double delt = nsteps * dt;
         set[i].tilt_target = set[i].tilt_start +
@@ -981,13 +982,6 @@ void FixDeform::apply_strain()
       } else {
         set[i].tilt_target = set[i].tilt_start + delta * (set[i].tilt_stop - set[i].tilt_start);
       }
-    }
-
-    // correct for effects of deformation on xz tilt
-    if (couple_erate && set[5].style == ERATE &&
-      set[5].rate != 0.0 && set[4].style == ERATE)
-    {
-      set[4].tilt_target += calc_xz_correction(nsteps * dt);
     }
   }
 }
@@ -1036,15 +1030,15 @@ void FixDeform::update_domain()
   // tilt_target can be large positive or large negative value
   // add/subtract box lengths until tilt_target is closest to current value
   // need to know final xy tilt first since yz adjusts c vector by multiple of b vector
-  // adjust xz last to account for adjustments made by yz
+  // adjust xz last to account for adjustments made to it by yz flips
 
 
   if (triclinic) {
     double *h = domain->h;
+    double xz_remap = 0.;
     for (int i : {5, 3, 4}) {
-      int idenom = 0;
+      int idenom = 0;         // xz || xy
       if (i == 3) idenom = 1; // yz
-      else idenom = 0;        // xz || xy
       double denom = set[idenom].hi_target - set[idenom].lo_target;
       double denom_inv = 1.0 / denom;
 
@@ -1053,53 +1047,53 @@ void FixDeform::update_domain()
       while (set[i].tilt_target * denom_inv - current > 0.0) {
         set[i].tilt_target -= denom;
         if (i == 3) set[4].tilt_target -= set[5].tilt_target;
+        if (set[i].style == ERATERS) {
+          set[i].cumulative_shift -= denom;
+          if (i == 3) set[4].cumulative_shift -= set[5].tilt_target;
+        }
       }
       while (set[i].tilt_target * denom_inv - current < 0.0) {
         set[i].tilt_target += denom;
         if (i == 3) set[4].tilt_target += set[5].tilt_target;
+        if (set[i].style == ERATERS) {
+          set[i].cumulative_shift += denom;
+          if (i == 3) set[4].cumulative_shift += set[5].tilt_target;
+        }
       }
       if (fabs(set[i].tilt_target * denom_inv - 1.0 - current) <
           fabs(set[i].tilt_target * denom_inv - current)) {
         set[i].tilt_target -= denom;
         if (i == 3) set[4].tilt_target -= set[5].tilt_target;
+        if (set[i].style == ERATERS) {
+          set[i].cumulative_shift -= denom;
+          if (i == 3) set[4].cumulative_shift -= set[5].tilt_target;
+        }
       }
     }
 
 
-    // for styles with h_rate dependence on xy/xz/yz, need to set h_rate after
+    // for ERATERS, need to set h_rate after
     //  tilt adjustments so that the correct streaming velocity can be recovered by
     //  fix nvt/sllod and compute temp/deform
     // effects of box flip handled in pre_exchange so h_rate stays in sync with h
 
     for (int i = 3; i < 6; i++) {
-      if (set[i].style == TRATE) {
-        h_rate[i] = set[i].rate * domain->h[i];
-      } else if (couple_erate && set[i].style == ERATE) {
-        // solve ODE for a,b,c box vectors accounting for elongation caused by TRATE
-        // this is needed for correct velocity remapping and correct calculation of
-        //  the velocity gradient tensor from (h_rate * h_inv) under mixed flow.
-        // TODO: do other elongation styles need to be accounted for where possible?
-        double h_bb, arate = 0.0;
-        if (i == 3) {
-          if (set[1].style == TRATE) arate = set[1].rate;
-          h_bb = set[2].hi_target - set[2].lo_target;
-        }
+      if (set[i].style == ERATERS) {
+        int a = i == 3 ? 1 : 0;   // x for xy/xz, y for yz
+        int b = i == 5 ? 1 : 2;   // y for xy, z for xz/yz
+        double rate_a = h_rate[a] / (set[a].hi_target - set[a].lo_target);
+        double L = domain->prd[b];
+
+        h_rate[i] = set[i].rate * L;
         if (i == 4) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          h_bb = set[2].hi_target - set[2].lo_target;
+          // Could be slightly more accurate by solving analytically in cases
+          // with x/y/z == TRATE, but would become messy
+          // h_rate[5] doesn't include the rate_a * set[i].tilt_target part yet
+          // so that h_rate[5] / prd[1] gives just the xy component of the strain rate tensor
+          h_rate[i] += h_rate[5] * set[3].tilt_target / (set[1].hi_target - set[1].lo_target);
         }
-        if (i == 5) {
-          if (set[0].style == TRATE) arate = set[0].rate;
-          h_bb = set[1].hi_target - set[1].lo_target;
-        }
-        h_rate[i] = set[i].rate * h_bb + arate * set[i].tilt_target;
+        h_rate[i] += rate_a * set[i].tilt_target;
       }
-    }
-    // TODO: use nearly_equal for check on set[5].rate?
-    if (couple_erate && set[5].style == ERATE &&
-      set[5].rate != 0.0 && set[4].style == ERATE)
-    {
-      h_rate[4] += set[5].rate*set[3].tilt_target;
     }
   }
 
@@ -1219,140 +1213,6 @@ void FixDeform::update_domain()
 }
 
 /* ----------------------------------------------------------------------
-   calculate correction to xz tilt due to xy shear with yz tilt.
-   NOTE: only considers xx, yy, zz deformation with TRATE
-    and xy, xz, yz with ERATE. (i.e. constant velocity gradient tensor)
-   assumes non-zero xy rate and xz.style == ERATE.
-   requires xz style of ERATE. If xz style is NONE then changes aren't
-    tracked properly (e.g. if there is pressure control on the xz tilt).
-------------------------------------------------------------------------- */
-double FixDeform::calc_xz_correction(double delt) {
-  // solve ODE for xy component of xz tilt factor
-  // TODO: use nearly_equal when checking for equality?
-  double g_xy = set[5].rate;
-  double g_yz = set[3].rate;
-  double h_yz0 = set[3].tilt_start;
-  if (set[3].style == ERATE && g_yz != 0.0) {
-    double e_xx = 0.0, e_yy = 0.0, e_zz = 0.0;
-    if (set[0].style == TRATE) e_xx = set[0].rate;
-    if (set[1].style == TRATE) e_yy = set[1].rate;
-    if (set[2].style == TRATE) e_zz = set[2].rate;
-    double h_zz0 = set[2].hi_start - set[2].lo_start;
-    if (e_xx == e_zz) {
-      if (e_xx == 0.0) {
-        if (e_yy == 0.0) {
-          // e_xx = e_yy = e_zz = 0
-          // (pure shear)
-          return g_xy * (h_yz0 * delt + 0.5 * g_yz * h_zz0 * delt * delt);
-        } else {
-          // e_xx = e_zz = 0, e_yy != 0
-          // (shear + y extension - non vol. preserving)
-          double yyfac = (exp(e_yy * delt) - 1.0) / e_yy;
-          return g_xy * g_yz * h_zz0 / e_yy * (yyfac - delt) + g_xy * h_yz0 * yyfac;
-        }
-      } else {
-        if(e_yy == 0.0) {
-          // e_xx = e_zz != 0, e_yy = 0
-          // (shear + x,z extension - non vol. preserving)
-          double xfac = exp(e_xx*delt);
-          return g_xy * g_yz * h_zz0 / e_zz * (delt * xfac - (xfac - 1.0) / e_xx)
-                 + g_xy * h_yz0 * ((xfac - 1.0) / e_xx);
-        } else if (e_yy == e_zz) {
-          // e_xx = e_yy = e_zz != 0
-          // (shear + x,y,z extension - non vol. preserving)
-          return g_xy * (h_yz0 * delt + 0.5 * g_xy * g_yz * h_zz0 * delt * delt) * exp(e_xx * delt);
-        } else {
-          // e_xx = e_zz != 0, e_yy != e_xx, e_yy != 0
-          // (shear + x,y,z extension - possibly vol. preserving)
-          double xfac = exp(e_xx * delt);
-          double yfac = exp(e_yy * delt);
-          double xyfac = (yfac - xfac) / (e_yy - e_xx);
-          return g_xy * g_yz * h_zz0 / (e_zz - e_yy) * (delt * xfac - xyfac)
-                 + g_xy * h_yz0 * xyfac;
-        }
-      }
-    } else if (e_xx == 0.0) {
-      if (e_yy == 0.0) {
-        // e_xx = e_yy = 0, e_zz != 0
-        // (shear + z extension - non vol. preserving)
-        return g_xy * g_yz * h_zz0 / e_zz * ((exp(e_zz * delt) - 1.0) / e_zz - delt)
-               + g_xy * h_yz0 * delt;
-      } else if (e_yy == e_zz) {
-        // e_xx = 0, e_yy = e_zz != 0
-        // (shear + y,z extension - non vol. preserving)
-        double yfac = exp(e_yy*delt);
-        return g_xy * g_yz * h_zz0 / e_yy * (delt * yfac - (yfac - 1.0) / e_yy)
-               + g_xy * h_yz0 * ((yfac - 1.0) / e_yy);
-      } else {
-        // e_xx = 0, e_yy != 0, e_zz != 0, e_yy != e_zz
-        // (shear + y,z extension - possibly vol. preserving)
-        double yfac = (exp(e_yy * delt) - 1.0) / e_yy;
-        double zfac = (exp(e_zz * delt) - 1.0) / e_zz;
-        return g_xy * g_yz * h_zz0 / (e_zz - e_yy) * (zfac - yfac)
-               + g_xy*h_yz0*yfac;
-      }
-    } else if (e_zz == 0.0) {
-      if (e_yy == 0.0) {
-        // e_xx != 0, e_yy = e_zz = 0
-        // (shear + x extension - non vol. preserving)
-        double xfac = (exp(e_xx * delt) - 1.0) / e_xx;
-        return g_xy * g_yz * h_zz0 / e_xx * (xfac - delt) + g_xy * h_yz0 * xfac;
-      } else if (e_xx == e_yy) {
-        // e_xx = e_yy != 0, e_zz = 0
-        // (shear + x,y extension - non vol. preserving)
-        double xfac = exp(e_xx * delt);
-        return g_xy * g_yz * h_zz0 / e_xx * ((1.0 - xfac) / e_xx + delt * xfac)
-               + g_xy * h_yz0 * (delt * xfac);
-      } else {
-        // e_xx != 0, e_yy != 0, e_xx != e_yy, e_zz = 0
-        // (shear + x,y extension - possibly vol. preserving)
-        double xfac = exp(e_xx * delt);
-        double yfac = exp(e_yy * delt);
-        double xyfac = (yfac - xfac) / (e_yy - e_xx);
-        return g_xy * g_yz * h_zz0 / e_yy * (xyfac + (1.0 - xfac) / e_xx)
-               + g_xy * h_yz0 * xyfac;
-      }
-    } else {
-      if (e_yy == 0.0) {
-        // e_xx != 0, e_zz != 0, e_xx != e_zz, e_yy = 0
-        // (shear + x,z extension - possibly vol. preserving)
-        double xfac = exp(e_xx * delt);
-        double zfac = exp(e_zz * delt);
-        return g_xy * g_yz * h_zz0 / e_zz * ((zfac - xfac) / (e_zz - e_xx)
-               + (1.0 - xfac) / e_xx) + g_xy * h_yz0 * ((1.0 - xfac) / e_xx);
-      } else if (e_yy == e_zz) {
-        // e_xx != 0, e_yy != 0, e_zz = e_yy, e_xx != e_zz
-        // (shear + x,y,z extension - possibly vol. preserving)
-        double xfac = exp(e_xx*delt);
-        double yfac = exp(e_yy*delt);
-        double xyfac = (yfac - xfac) / (e_yy - e_xx);
-        return g_xy * g_yz * h_zz0 / (e_yy - e_xx) * (delt * yfac - xyfac)
-               + g_xy * h_yz0 * xyfac;
-      } else if (e_yy == e_xx) {
-        // e_xx != 0, e_yy = e_xx, e_zz != 0, e_xx != e_zz
-        // (shear + x,y,z extension - possibly vol. preserving)
-        double xfac = exp(e_xx * delt);
-        double zfac = exp(e_zz * delt);
-        return g_xy * g_yz * h_zz0 / (e_zz - e_yy) * ((zfac - xfac) / (e_zz - e_xx)
-               - delt * xfac) + g_xy * h_yz0 * (delt * xfac);
-      } else {
-        // e_xx != 0, e_yy != 0, e_zz != 0, e_xx != e_zz, e_xx != e_yy, e_yy != e_zz
-        // (shear + x,y,z extension - possibly vol. preserving)
-        double xfac = exp(e_xx * delt);
-        double yfac = exp(e_yy * delt);
-        double zfac = exp(e_zz * delt);
-        double xzfac = (zfac - xfac) / (e_zz - e_xx);
-        double xyfac = (yfac - xfac) / (e_yy - e_xx);
-        return g_xy * g_yz * h_zz0 / (e_zz - e_yy) * (xzfac - xyfac) + g_xy * h_yz0 * xyfac;
-      }
-    }
-  } else {
-    // h_yz is constant
-    return g_xy * h_yz0 * delt;
-  }
-}
-
-/* ----------------------------------------------------------------------
    write Set data to restart file
 ------------------------------------------------------------------------- */
 
@@ -1436,10 +1296,6 @@ void FixDeform::options(int narg, char **arg)
         utils::missing_cmd_args(FLERR, fmt::format("fix {} {}", style, arg[iarg]), error);
       for (int i = 0; i < nskip; i++) leftover_iarg.push_back(iarg + i);
       iarg += nskip;
-    } else if (strcmp(arg[iarg], "couple/erate") == 0) {
-      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, thiscmd + " couple/erate", error);
-      couple_erate = utils::logical(FLERR, arg[iarg+1], false, lmp);
-      iarg += 2;
     } else error->all(FLERR, "Unknown fix {} keyword: {}", style, arg[iarg]);
   }
 }

@@ -138,23 +138,23 @@ void FixNVTSllod::init()
         for (int j = 0; j < 3; ++j) {
           if (f->set[j].style && f->set[j].style != FixDeform::TRATE)
             error->warning(FLERR,"Using non-constant strain rate with fix {}. "
-                           "Expect the trate style for x/y/z deformation", style);
+                           "The Sllod algorithm expects the trate style for x/y/z deformation", style);
         }
 
         for (int j = 3; j < 6; ++j) {
-          if (f->set[j].style && f->set[j].style != FixDeform::ERATE)
+          if (f->set[j].style && (f->set[j].style == FixDeform::TRATE ||
+                                  f->set[j].style == FixDeform::WIGGLE ||
+                                  f->set[j].style == FixDeform::VARIABLE ||
+                                  f->set[j].style == FixDeform::PRESSURE)
+          )
             error->warning(FLERR,"Using non-constant shear rate with fix {}. "
-                           "Expect the erate style for xy/xz/yz deformation", style);
+                           "The Sllod algorithm expects the shear rate to be constant", style);
         }
 
-        bool xy_shear_yz_tilt = (f->set[5].style && f->set[5].rate != 0.0 && (f->set[3].style || domain->yz != 0.0));
-        if (xy_shear_yz_tilt &&
-            (f->set[4].style != FixDeform::ERATE ||
-             f->set[5].style != FixDeform::ERATE ||
-             (f->set[3].style && f->set[3].style != FixDeform::ERATE)))
-        {
+        bool xy_shear_yz_tilt = (f->set[5].style && (f->set[3].style || domain->yz != 0.0));
+        if (xy_shear_yz_tilt && f->set[4].style != FixDeform::ERATERS) {
           error->warning(FLERR,"fix {} only handles shearing xy with a yz tilt correctly "
-              "if fix {} uses the erate style for xy, xz and yz.", style, f->style);
+              "if fix {} uses the erate/rescale style for xz.", style, f->style);
         }
 
         // warn when not using fix deform couple yes in situations where it is
@@ -165,25 +165,29 @@ void FixNVTSllod::init()
         //  - elongation of y or z with yz shear
         //  - elongation of x with possible xy or xz tilt
         //  - elongation of y with possible yz tilt
-        if (!f->couple_erate) {
-          if (xy_shear_yz_tilt)
-            error->warning(FLERR,"fix {} requires fix {} to use the couple yes option "
-                           "when xy is shearing with yz tilt or shear", style, f->style);
-          if (f->set[0].style && (domain->xy != 0.0 || domain->xz != 0.0 || f->set[4].style || f->set[5].style))
-            error->warning(FLERR,"fix {} requires fix {} to use the couple yes option "
-                           "under x elongation with xy or xz tilt or shear", style, f->style);
-          if (f->set[1].style && (domain->yz != 0.0 || f->set[3].style || f->set[5].style))
-            error->warning(FLERR,"fix {} requires fix {} to use the couple yes option "
-                           "under y elongation with xy shear or yz tilt or shear", style, f->style);
-          if (f->set[2].style && (f->set[3].style || f->set[4].style))
-            error->warning(FLERR,"fix {} requires fix {} to use the couple yes option "
-                           "under y elongation with xz or yz shear", style, f->style);
+        if (f->set[0].style) {
+          if (f->set[4].style && f->set[4].style != FixDeform::ERATERS)
+            error->warning(FLERR,"fix {} expects the erate/rescale style for xz when x is changing", style);
+          if (f->set[5].style && f->set[5].style != FixDeform::ERATERS)
+            error->warning(FLERR,"fix {} expects the erate/rescale style for xy when x is changing", style);
+        }
+        if (f->set[1].style) {
+          if (f->set[3].style && f->set[3].style != FixDeform::ERATERS)
+            error->warning(FLERR,"fix {} expects the erate/rescale style for yz when y is changing", style);
+          if (f->set[5].style && f->set[5].style != FixDeform::ERATERS)
+            error->warning(FLERR,"fix {} expects the erate/rescale style for xy when y is changing", style);
+        }
+        if (f->set[2].style) {
+          if (f->set[3].style && f->set[3].style != FixDeform::ERATERS)
+            error->warning(FLERR,"fix {} expects the erate/rescale style for yz when z is changing", style);
+          if (f->set[4].style && f->set[4].style != FixDeform::ERATERS)
+            error->warning(FLERR,"fix {} expects the erate/rescale style for xz when z is changing", style);
         }
 
         if (f->end_flag)
           error->warning(FLERR,"fix {} requires box deformation to occur with "
               "position updates to be strictly correct. Set the N parameter of "
-              "fix deform to 0 to enable this.", style);
+              "fix {} to 0 to enable this.", style, f->style);
       }
     }
 
@@ -258,9 +262,6 @@ void FixNVTSllod::nve_x()
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit) {
       // first half sllod update
-      v[i][0] *= vfac[0];
-      v[i][1] *= vfac[1];
-      v[i][2] *= vfac[2];
       if (psllod_flag) {
         v[i][2] -= dthalf*grad_u[2]*grad_u[2]*x[i][2];
         v[i][1] -= dthalf*grad_u[3]*v[i][2] + dthalf*grad_u[1]*grad_u[1]*x[i][1];
@@ -270,12 +271,15 @@ void FixNVTSllod::nve_x()
         v[i][1] -= dthalf*grad_u[3]*v[i][2];
         v[i][0] -= dthalf*(grad_u[5]*v[i][1] + grad_u[4]*v[i][2]);
       }
+      v[i][0] *= vfac[0];
+      v[i][1] *= vfac[1];
+      v[i][2] *= vfac[2];
 
+      x[i][1] += dthalf * grad_u[3]*(x[i][2] - xlo[2]);
+      x[i][0] += dthalf * (grad_u[5]*(x[i][1] - xlo[1]) + grad_u[4]*(x[i][2] - xlo[2]));
       x[i][0] = xmid[0] + (x[i][0] - xmid[0])*xfac[0];
       x[i][1] = xmid[1] + (x[i][1] - xmid[1])*xfac[1];
       x[i][2] = xmid[2] + (x[i][2] - xmid[2])*xfac[2];
-      x[i][1] += dthalf * grad_u[3]*(x[i][2] - xlo[2]);
-      x[i][0] += dthalf * (grad_u[5]*(x[i][1] - xlo[1]) + grad_u[4]*(x[i][2] - xlo[2]));
 
       // nve position update
       x[i][0] += dtv * v[i][0];
@@ -283,14 +287,17 @@ void FixNVTSllod::nve_x()
       x[i][2] += dtv * v[i][2];
 
       // 2nd half sllod update
-      x[i][0] += dthalf * (grad_u[5]*(x[i][1] - ylo2) + grad_u[4]*(x[i][2] - zlo2));
-      x[i][1] += dthalf * grad_u[3]*(x[i][2] - zlo2);
       x[i][0] = xmid[0] + (x[i][0] - xmid[0])*xfac[0];
       x[i][1] = xmid[1] + (x[i][1] - xmid[1])*xfac[1];
       x[i][2] = xmid[2] + (x[i][2] - xmid[2])*xfac[2];
+      x[i][0] += dthalf * (grad_u[5]*(x[i][1] - ylo2) + grad_u[4]*(x[i][2] - zlo2));
+      x[i][1] += dthalf * grad_u[3]*(x[i][2] - zlo2);
 
       // second half sllod velocity step
       // apply here so streaming component matches x when storing in lab frame
+      v[i][0] *= vfac[0];
+      v[i][1] *= vfac[1];
+      v[i][2] *= vfac[2];
       if (psllod_flag) {
         v[i][0] -= dthalf*(grad_u[5]*v[i][1] + grad_u[4]*v[i][2])
                    + dthalf*grad_u[0]*grad_u[0]*x[i][0];
@@ -300,9 +307,6 @@ void FixNVTSllod::nve_x()
         v[i][0] -= dthalf*(grad_u[5]*v[i][1] + grad_u[4]*v[i][2]);
         v[i][1] -= dthalf*grad_u[3]*v[i][2];
       }
-      v[i][0] *= vfac[0];
-      v[i][1] *= vfac[1];
-      v[i][2] *= vfac[2];
     }
   }
 

@@ -53,7 +53,6 @@ class FixDeform : public Fix {
   int end_flag;                  // 1 = box update at end of step, 0 = post integrate
   int need_flip_change;          // 1 if box needs to be flipped
   int allow_flip_change;         // 1 if box flip is allowed (prevent flip mid respa step)
-  int couple_erate;              // 1 if coupling effects between x/y/z TRATE and xy/xz/yz ERATE should be handled
   std::vector<Fix *> rfix;       // pointers to rigid fixes
   class Irregular *irregular;    // for migrating atoms after box flips
 
@@ -73,6 +72,7 @@ class FixDeform : public Fix {
     double tilt_initial, tilt_start, tilt_stop, tilt_target, tilt_flip;
     double tilt_min, tilt_max;
     double vol_initial, vol_start;
+    double cumulative_shift;
     int fixed, dynamic1, dynamic2;
     char *hstr, *hratestr;
     int hvar, hratevar;
@@ -83,11 +83,10 @@ class FixDeform : public Fix {
   int iarg_options_start;
 
   void options(int, char **);
-  void update_box();
+  void virtual update_box();
   void virtual apply_volume();
   void apply_strain();
   void update_domain();
-  double calc_xz_correction(double);
 
   // allow fix nvt/sllod to check deform parameters for correctness
   friend class FixNVTSllod;

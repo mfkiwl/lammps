@@ -365,6 +365,8 @@ void ComputeTempDeform::restore_deform_bias_all()
 /* ----------------------------------------------------------------------
    add in deform velocity bias to all atoms based on x
    does not require remove_deform_bias_all() to be previously called
+   approximately propagate boxlo by dtv for velocity calculation since
+   shear velocity is relative to lower corner
 ------------------------------------------------------------------------- */
 
 void ComputeTempDeform::apply_deform_bias_all(double dtv)
