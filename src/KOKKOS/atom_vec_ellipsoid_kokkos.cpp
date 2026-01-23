@@ -470,9 +470,9 @@ struct AtomVecEllipsoidKokkos_PackBorderBonus {
     const int j_bonus = _ellipsoid(j);
     int m = _offset;
     if (j_bonus < 0) {
-      _buf(i,m) = d_ubuf(j_bonus).d;
+      _buf(i,m) = d_ubuf(0).d;
     } else {
-      _buf(i,m++) = d_ubuf(j_bonus).d;
+      _buf(i,m++) = d_ubuf(1).d;
       _buf(i,m++) = _bonus(j_bonus).shape[0];
       _buf(i,m++) = _bonus(j_bonus).shape[1];
       _buf(i,m++) = _bonus(j_bonus).shape[2];
