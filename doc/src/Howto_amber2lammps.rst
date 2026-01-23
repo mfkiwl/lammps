@@ -1,34 +1,33 @@
-.. _howto_amber2lammps:
-.. _howto_amber_to_lammps:
+AMBER to LAMMPS Tutorial
+========================
 
-How-to: AMBER2LAMMPS
-====================
+.. versionadded:: TBD
 
-AMBER2LAMMPS is a modern Python utility for converting AMBER molecular dynamics files to LAMMPS data format, replacing the legacy scripts in the ``amber2lmp`` folder shipped with LAMMPS with enhanced features and improved usability.
+**written by Arun Sridhar**
 
-**Original Project:** https://github.com/askforarun/AMBER2LAMMPS
+This document describes how to convert AMBER topology files (.prmtop),
+MOL2 coordinate files, and force field parameter files (.frcmod) into
+LAMMPS data and parameter formats using the `AMBER2LAMMPS Python utility
+<amber2lammps_>`_.  The tools that used to be distributed with LAMMPS in
+the ``tools/amber2lmp`` folder have been removed because they were
+unmaintained and depended on Python 2.
 
-Overview
---------
+.. _amber2lammps: https://github.com/askforarun/AMBER2LAMMPS
 
-AMBER2LAMMPS converts AMBER topology files (.prmtop), MOL2 coordinate files, and force field parameter files (.frcmod) into LAMMPS data and parameter formats. This tool provides enhanced features including charge normalization, separate output files, and improved error handling compared to the legacy scripts in the ``amber2lmp`` folder shipped with LAMMPS.
+.. contents::
+   :local:
+   :depth: 1
 
-Key improvements over the legacy tool:
+-----------------------
 
-* **Charge normalization** - Automatically normalizes atomic charges to ensure zero net charge
-* **Separate data and parameter files** - Generates distinct LAMMPS data file and parameter file for better organization
-* **Professional CLI** - Comprehensive command-line interface with proper error handling
-* **Verbose output** - Detailed debugging and monitoring information
-* **Cross-platform** - Works on Linux, macOS, and Windows
-
-Installation
-------------
+Installation of AMBER2LAMMPS
+----------------------------
 
 Prerequisites
 """""""""""""
 
 * Python 3.6 or higher
-* pip package manager
+* `pip package manager <https://pip.pypa.io/>`_ or `conda package manager <https://conda.io/>`_
 
 Required Dependencies
 """""""""""""""""""""
@@ -50,7 +49,7 @@ Obtaining AMBER2LAMMPS
 """"""""""""""""""""""
 
 AMBER2LAMMPS is developed and maintained outside the LAMMPS repository.
-Download it from the upstream project:
+You can download it from the upstream project:
 
 .. code-block:: bash
 
@@ -60,11 +59,14 @@ Download it from the upstream project:
 AmberTools (Optional)
 """""""""""""""""""""
 
-If you have AMBERTools installed, you can activate the environment:
+If you have AMBERTools installed via conda, you can activate the
+environment:
 
 .. code-block:: bash
 
    conda activate Ambertools23  # or your AMBERTools version
+
+-----------------------
 
 Platform Compatibility
 ----------------------
@@ -76,6 +78,8 @@ AMBER2LAMMPS has been validated and tested on:
 * **Windows** (Windows 10/11 with WSL2 and native Python) - Tested with WSL2 and native Python
 
 WSL2 is recommended for Windows users for best compatibility.
+
+-----------------------
 
 Usage
 -----
@@ -115,6 +119,8 @@ Example
 .. code-block:: bash
 
    python3 amber_to_lammps.py system.data system.param system.prmtop system.mol2 system.frcmod -b 4.0 --verbose
+
+-----------------------
 
 Python API
 """"""""""
@@ -171,8 +177,10 @@ Advanced Usage
    else:
        print("Conversion failed!")
 
+-----------------------
+
 Generating AMBER Input Files
----------------------------
+----------------------------
 
 If you need to generate AMBER input files from PDB, use this workflow:
 
@@ -207,12 +215,14 @@ If you need to generate AMBER input files from PDB, use this workflow:
 * Input PDB file: ``molecule.pdb``
 * Output files: ``molecule.prmtop``, ``molecule.crd``, ``molecule.mol2``, ``molecule.frcmod``
 
-Using in LAMMPS
----------------
+-----------------------
+
+Using generated files in LAMMPS
+-------------------------------
 
 After conversion, you can use the generated files in your LAMMPS simulation:
 
-.. code-block:: lammps
+.. code-block:: LAMMPS
 
    # LAMMPS Input Script for Converted AMBER System
 
@@ -228,7 +238,7 @@ After conversion, you can use the generated files in your LAMMPS simulation:
 
    # --------------------- Force Field Settings ---------------------
    pair_style      lj/cut/coul/long 9 9
-   kspace_style    pppm 1.0e-8
+   kspace_style    pppm 1.0e-6
    pair_modify     tail yes
    bond_style      harmonic
    angle_style      harmonic
@@ -244,6 +254,8 @@ After conversion, you can use the generated files in your LAMMPS simulation:
    # --------------------- Energy Test ---------------------
    # Run 0 steps to check energy and system setup
    run 0
+
+-----------------------
 
 Troubleshooting
 ---------------
@@ -275,6 +287,8 @@ Common Issues
 * Verify that the MOL2 file contains charge information
 * Use the ``--verbose`` flag to debug charge normalization
 
+-----------------------
+
 Validation
 """"""""""
 
@@ -285,6 +299,8 @@ AMBER2LAMMPS has been validated against InterMol output for accuracy:
 * **Angle parameters** - Properly converted to LAMMPS format
 * **Dihedral parameters** - Accurately translated from AMBER
 
+-----------------------
+
 Getting Help
 """"""""""""
 
@@ -294,6 +310,8 @@ For additional help, bug reports, feature requests, or questions about AMBER2LAM
 * **Feature Requests:** Use GitHub Issues or Discussions
 * **Questions:** Use GitHub Discussions or Issues
 
+-----------------------
+
 Citation
 --------
 
@@ -301,7 +319,13 @@ If you use this software in your research, please cite it as:
 
 **DOI:** 10.5281/zenodo.18114886
 
+-----------------------
+
 License
 -------
 
-AMBER2LAMMPS is MIT licensed (external).
+AMBER2LAMMPS is distributed under the MIT license.
+
+.. raw:: latex
+
+   \clearpage
