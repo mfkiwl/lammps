@@ -826,7 +826,7 @@ void Image::draw_pixmap(const double *x, int pixwidth, int pixheight, const unsi
   xc += width / 2;
   yc += height / 2;
 
-  // convert back to non-FSAA image coordinates, so we can re-use the pixmap draing code
+  // convert back to non-FSAA image coordinates, so we can re-use the pixmap drawing code
   if (fsaa) {
     xc /= 2;
     yc /= 2;
@@ -1754,7 +1754,7 @@ int Image::map_minmax(int index, double mindynamic, double maxdynamic)
 }
 
 /* ----------------------------------------------------------------------
-   set min/max bounds of dynamic color map index
+   get min/max bounds of dynamic color map index and return 1 if dynamic
 ------------------------------------------------------------------------- */
 
 int Image::map_info(int index, double &min, double &max)

@@ -63,9 +63,9 @@ Syntax
           *horizontal* = create horizontal text label
           *vertical* = create vertical text label
 
-     *colorscale* dump-ID titletext x y z keyword args = display text in visualization
-        labeltext = text for the label, must be quoted if it contains whitespace
-        x, y, z  = position where the center of the text is located in the visualization
+     *colorscale* dump-ID titletext x y z keyword args = display a colormap label in visualization
+        labeltext = text for the legend of the colormap label, must be quoted if it contains whitespace
+        x, y, z  = position where the center of the colormap label is located in the visualization
         any of x, y, or z can be a variable (see below)
 
         keyword = *fontcolor* or *framecolor* or *backcolor* or *transcolor* or *size* or *horizontal* or *vertical*
@@ -242,7 +242,7 @@ may be added:
   default value is 24. The size of the colorbar follows the size of the
   text.
 
-  The *ticks* value determines how many "ticks" or lines separating the
+  The *tics* value determines how many "tics" or lines separating the
   colors are drawn.  This can simplify determining which value a
   specific color corresponds to.
 
@@ -254,7 +254,7 @@ may be added:
   The default *backcolor* value is *silver*.
 
   - *fontcolor* selects the color for the text, the border of the
-    colorbar and the ticks. default is *white*
+    colorbar and the tics. default is *white*
   - *backcolor* selects the color for the background, default is
     *silver*
   - *framecolor* selects the color for the frame around the background,

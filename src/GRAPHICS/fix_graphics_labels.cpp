@@ -235,7 +235,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, const std::string &
     bool compressed = false;
     if (header.datatypecode == 10) compressed = true;
     if ((header.datatypecode != 2) && (header.datatypecode != 10)) {
-      info = "Unsupportd TGA file type";
+      info = "Unsupported TGA file type";
       return nullptr;
     }
     width = (int) header.width[0] + ((int) header.width[1]) * 256;
@@ -250,13 +250,13 @@ unsigned char *read_image(FILE *fp, int &width, int &height, const std::string &
       return nullptr;
     }
     char *id = nullptr;
-    if (header.idlength) {
-      id = new char[header.idlength];
+    if (header.idlength > 0) {
+      id = new char[header.idlength + 1];
       if (fread(id, header.idlength, 1, fp) != 1) {
         delete[] id;
         return nullptr;
       }
-      id[header.idlength - 1] = '\0';
+      id[header.idlength] = '\0';
     }
 
     info = fmt::format("{}x{} TGA file, {}-bit RGB", width, height, (int) header.bitsperpixel / 3);
@@ -277,7 +277,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, const std::string &
           ++len;
           for (int j = 0; j < len; ++j) {
             int y = (fromtop) ? (height - 1 - i / (3 * width)) : i / (3 * width);
-            int x = (right2left) ? (height - 1 - (i - 3 * y * width) / 3) : (i - 3 * y * width) / 3;
+            int x = (right2left) ? (width - 1 - (i - 3 * y * width) / 3) : (i - 3 * y * width) / 3;
             if (fread(pix, sizeof(unsigned char), 3, fp) != 3) {
               delete[] pixmap;
               info = "Short TGA file";
@@ -297,7 +297,7 @@ unsigned char *read_image(FILE *fp, int &width, int &height, const std::string &
           }
           for (int j = 0; j < len; ++j) {
             int y = (fromtop) ? (height - 1 - i / (3 * width)) : i / (3 * width);
-            int x = (right2left) ? (height - 1 - (i - 3 * y * width) / 3) : (i - 3 * y * width) / 3;
+            int x = (right2left) ? (width - 1 - (i - 3 * y * width) / 3) : (i - 3 * y * width) / 3;
             pixmap[y * 3 * width + 3 * x] = pix[2];
             pixmap[y * 3 * width + 3 * x + 1] = pix[1];
             pixmap[y * 3 * width + 3 * x + 2] = pix[0];
