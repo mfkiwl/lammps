@@ -53,7 +53,6 @@ void MinFireKokkos::setup_style() {
     l_v(i,0) = l_v(i,1) = l_v(i,2) = 0.0;
   });
   atomKK->modified(Device, V_MASK);
-  flagv0 = 1;
 }
 
 void MinFireKokkos::reset_vectors() {
@@ -87,7 +86,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
 
   alpha_final = 0.0;
   auto l_dt = update->dt;
-  int flagv0 = 0;
+  int flagv0 = 1;
 
   if (INTEGRATOR == LEAPFROG) {
     energy_force(0);
