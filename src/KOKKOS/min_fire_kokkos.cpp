@@ -19,6 +19,7 @@
 #include "update.h"
 #include "timer.h"
 #include "error.h"
+#include "output.h"
 #include "universe.h"
 #include <cmath>
 
