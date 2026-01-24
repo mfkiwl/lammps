@@ -29,7 +29,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr double EPS_ENERGY = 1.0e-8;
+static constexpr KK_FLOAT EPS_ENERGY = 1.0e-8;
 
 MinFireKokkos::MinFireKokkos(LAMMPS *lmp) : MinKokkos(lmp) {
   atomKK = (AtomKokkos *) atom;
@@ -84,9 +84,9 @@ int MinFireKokkos::iterate(int maxiter) {
 
 template <int INTEGRATOR, bool ABCFLAG>
 int MinFireKokkos::run_iterate(int maxiter) {
-  double vdotf_local, vdotfall, vdotv_local, vdotvall, fdotf_local, fdotfall;
-  double scale1, scale2;
-  double dtv;
+  KK_FLOAT vdotf_local, vdotfall, vdotv_local, vdotvall, fdotf_local, fdotfall;
+  KK_FLOAT scale1, scale2;
+  KK_FLOAT dtv;
 
   alpha_final = 0.0;
   auto l_dt = update->dt;
@@ -104,7 +104,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
     auto dtf = -0.5 * l_dt * force->ftm2v;
 
     Kokkos::parallel_for("min_fire/leapfrog_init", atom->nlocal, LAMMPS_LAMBDA(const int i) {
-      double dtfm = dtf / (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
+      KK_FLOAT dtfm = dtf / (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
       l_v(i,0) = dtfm * l_f(i,0);
       l_v(i,1) = dtfm * l_f(i,1);
       l_v(i,2) = dtfm * l_f(i,2);
@@ -131,7 +131,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
     int nlocal = atom->nlocal;
 
     vdotf_local = 0.0;
-    Kokkos::parallel_reduce("min_fire/vdotf", nlocal, LAMMPS_LAMBDA(const int i, double &vdf) {
+    Kokkos::parallel_reduce("min_fire/vdotf", nlocal, LAMMPS_LAMBDA(const int i, KK_FLOAT &vdf) {
       vdf += l_v(i,0)*l_f(i,0) + l_v(i,1)*l_f(i,1) + l_v(i,2)*l_f(i,2);
     }, vdotf_local);
     MPI_Allreduce(&vdotf_local, &vdotfall, 1, MPI_DOUBLE, MPI_SUM, world);
@@ -144,10 +144,10 @@ int MinFireKokkos::run_iterate(int maxiter) {
     if (vdotfall > 0.0) {
       vdotv_local = 0.0;
       fdotf_local = 0.0;
-      Kokkos::parallel_reduce("min_fire/norms", nlocal, LAMMPS_LAMBDA(const int i, double &vv) {
+      Kokkos::parallel_reduce("min_fire/norms", nlocal, LAMMPS_LAMBDA(const int i, KK_FLOAT &vv) {
         vv += l_v(i,0)*l_v(i,0) + l_v(i,1)*l_v(i,1) + l_v(i,2)*l_v(i,2);
       }, vdotv_local);
-      Kokkos::parallel_reduce("min_fire/fnorms", nlocal, LAMMPS_LAMBDA(const int i, double &ff) {
+      Kokkos::parallel_reduce("min_fire/fnorms", nlocal, LAMMPS_LAMBDA(const int i, KK_FLOAT &ff) {
         ff += l_f(i,0)*l_f(i,0) + l_f(i,1)*l_f(i,1) + l_f(i,2)*l_f(i,2);
       }, fdotf_local);
 
@@ -155,7 +155,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
       MPI_Allreduce(&fdotf_local, &fdotfall, 1, MPI_DOUBLE, MPI_SUM, world);
 
       if (update->multireplica == 1) {
-        double dot_tmp = vdotvall;
+        KK_FLOAT dot_tmp = vdotvall;
         MPI_Allreduce(&dot_tmp, &vdotvall, 1, MPI_DOUBLE, MPI_SUM, universe->uworld);
         dot_tmp = fdotfall;
         MPI_Allreduce(&dot_tmp, &fdotfall, 1, MPI_DOUBLE, MPI_SUM, universe->uworld);
@@ -163,7 +163,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
 
       if (ABCFLAG) {
         if (alpha < 1e-10) alpha = 1e-10;
-        double abc = (1.0 - pow(1.0 - alpha, (double)(ntimestep - last_negative)));
+        KK_FLOAT abc = (1.0 - pow(1.0 - alpha, (KK_FLOAT)(ntimestep - last_negative)));
         scale1 = (1.0 - alpha) / abc;
         scale2 = (fdotfall <= 1e-20) ? 0.0 : (alpha * sqrt(vdotvall / fdotfall)) / abc;
       } else {
@@ -207,9 +207,9 @@ int MinFireKokkos::run_iterate(int maxiter) {
     if (!ABCFLAG && flagv0) {
       energy_force(0);
       neval++;
-      double dtf_init = l_dt * force->ftm2v;
+      KK_FLOAT dtf_init = l_dt * force->ftm2v;
       Kokkos::parallel_for("min_fire/v_init", nlocal, LAMMPS_LAMBDA(const int i) {
-        double dtfm = dtf_init / (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
+        KK_FLOAT dtfm = dtf_init / (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
         l_v(i,0) = dtfm * l_f(i,0);
         l_v(i,1) = dtfm * l_f(i,1);
         l_v(i,2) = dtfm * l_f(i,2);
@@ -217,17 +217,17 @@ int MinFireKokkos::run_iterate(int maxiter) {
       atomKK->modified(Device, V_MASK);
     }
 
-    double dtvone = l_dt;
+    KK_FLOAT dtvone = l_dt;
     if (!ABCFLAG) {
       auto l_dmax = dmax;
-      Kokkos::parallel_reduce("min_fire/dtv_limit", nlocal, LAMMPS_LAMBDA(const int i, double &dtmin_local) {
-        double vmax = fmax(fabs(l_v(i,0)), fmax(fabs(l_v(i,1)), fabs(l_v(i,2))));
+      Kokkos::parallel_reduce("min_fire/dtv_limit", nlocal, LAMMPS_LAMBDA(const int i, KK_FLOAT &dtmin_local) {
+        KK_FLOAT vmax = fmax(fabs(l_v(i,0)), fmax(fabs(l_v(i,1)), fabs(l_v(i,2))));
         if (dtmin_local * vmax > l_dmax) dtmin_local = l_dmax / vmax;
-      }, Kokkos::Min<double>(dtvone));
+      }, Kokkos::Min<KK_FLOAT>(dtvone));
     }
     MPI_Allreduce(&dtvone, &dtv, 1, MPI_DOUBLE, MPI_MIN, world);
     if (update->multireplica == 1) {
-      double dtv_tmp = dtv;
+      KK_FLOAT dtv_tmp = dtv;
       MPI_Allreduce(&dtv_tmp, &dtv, 1, MPI_DOUBLE, MPI_MIN, universe->uworld);
     }
 
@@ -237,13 +237,13 @@ int MinFireKokkos::run_iterate(int maxiter) {
       });
     }
 
-    double dtf_final = dtv * force->ftm2v;
-    double dtf_half = 0.5 * dtf_final;
+    KK_FLOAT dtf_final = dtv * force->ftm2v;
+    KK_FLOAT dtf_half = 0.5 * dtf_final;
 
     Kokkos::parallel_for("min_fire/integrate", nlocal, LAMMPS_LAMBDA(const int i) {
-      double mass_val = (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
-      double dtfm = dtf_final / mass_val;
-      double dtfm_half = dtf_half / mass_val;
+      KK_FLOAT mass_val = (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
+      KK_FLOAT dtfm = dtf_final / mass_val;
+      KK_FLOAT dtfm_half = dtf_half / mass_val;
 
       if (INTEGRATOR == EULERIMPLICIT || INTEGRATOR == LEAPFROG) {
         l_v(i,0) += dtfm * l_f(i,0);
@@ -292,7 +292,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
     if (INTEGRATOR == VERLET) {
       atomKK->sync(Device, V_MASK | F_MASK);
       Kokkos::parallel_for("min_fire/verlet_v_final", nlocal, LAMMPS_LAMBDA(const int i) {
-        double dtfm_half = dtf_half / (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
+        KK_FLOAT dtfm_half = dtf_half / (l_rmass.data() ? l_rmass(i) : l_mass(l_type(i)));
         l_v(i,0) += dtfm_half * l_f(i,0);
         l_v(i,1) += dtfm_half * l_f(i,1);
         l_v(i,2) += dtfm_half * l_f(i,2);
@@ -313,7 +313,7 @@ int MinFireKokkos::run_iterate(int maxiter) {
     }
 
     if (update->ftol > 0.0) {
-      double fdotf = (normstyle == MAX) ? fnorm_max() : (normstyle == INF ? fnorm_inf() : fnorm_sqr());
+      KK_FLOAT fdotf = (normstyle == MAX) ? fnorm_max() : (normstyle == INF ? fnorm_inf() : fnorm_sqr());
       if (fdotf < update->ftol * update->ftol) {
         if (update->multireplica == 0) return FTOL;
         int flag = 0, flagall;
