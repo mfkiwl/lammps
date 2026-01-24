@@ -187,8 +187,10 @@ int MinFireKokkos::run_iterate(int maxiter) {
       vdotf_negatif++;
       if (max_vdotf_negatif > 0 && vdotf_negatif > max_vdotf_negatif) return MAXVDOTF;
 
+      auto l_halfstepback_flag = halfstepback_flag;
+
       Kokkos::parallel_for("min_fire/inertia_reset", nlocal, LAMMPS_LAMBDA(const int i) {
-        if (halfstepback_flag) {
+        if (l_halfstepback_flag) {
           l_x(i,0) -= 0.5 * l_dt * l_v(i,0);
           l_x(i,1) -= 0.5 * l_dt * l_v(i,1);
           l_x(i,2) -= 0.5 * l_dt * l_v(i,2);
