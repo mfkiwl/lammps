@@ -223,19 +223,6 @@ void PairMBX::compute(int eflag, int vflag)
     pvector[8] = mbx_ele;
     pvector[9] = mbx_total_energy;
 
-    // // for debugging
-
-    // pvector[14] = mbx_disp_real;
-    // pvector[15] = mbx_disp_pme;
-
-    // // for comparison with MBX
-
-    // pvector[16] = mbx_virial[0];
-    // pvector[17] = mbx_virial[1];
-    // pvector[18] = mbx_virial[2];
-    // pvector[19] = mbx_virial[3];
-    // pvector[20] = mbx_virial[4];
-    // pvector[21] = mbx_virial[5];
   }
 }
 

@@ -500,9 +500,6 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     MPI_Bcast(&json_settings[0], size + 1, MPI_CHAR, 0, world);
   }
 
-  // if (screen && universe->iworld == 0 && comm->me == 0)
-  //   std::cout << "[" << me << "] json_settings= " << json_settings << std::endl;
-
   memory->create(mbxt_count, FixMBX::MBXT_LABELS::NUM_TIMERS, "fixmbx:mbxt_count");
   memory->create(mbxt_time, FixMBX::MBXT_LABELS::NUM_TIMERS, "fixmbx:mbxt_time");
   memory->create(mbxt_time_start, FixMBX::MBXT_LABELS::NUM_TIMERS, "fixmbx:mbxt_time_start");
@@ -860,20 +857,9 @@ void FixMBX::pre_exchange()
 
   if (mbx_num_atoms_local == 0) { return; }
 
-  // for(int i=0; i<nlocal; ++i) {
-  //   printf("i= %i  tag= %i  xyz= %f %f %f\n",i,atom->tag[i],x[i][0]+10.,x[i][1]+10.,x[i][2]+10.);
-  // }
-
-  // following debug only works if all ranks contribute
-
   for (int h = 0; h < aspc_num_hist; ++h) {
     std::vector<double> mbx_dip_history = mbx_impl->ptr_mbx_local->GetDipoleHistory(h);
 
-    // printf("\nh= %i  mbx_dip_history.size()= %lu\n",h,mbx_dip_history.size());
-    // for(int i=0; i<mbx_num_atoms_local; ++i) {
-    //   printf("i= %i  mbx_dip_history= %f %f
-    //   %f\n",i,mbx_dip_history[i*3],mbx_dip_history[i*3+1],mbx_dip_history[i*3+2]);
-    // }
 
     int indx = 0;
     for (int i = 0; i < nall; ++i) {
@@ -952,13 +938,6 @@ void FixMBX::mbx_get_dipoles_local()
 
     mbx_impl->ptr_mbx_local->GetMolecularDipoles(mu_perm, mu_ind);
 
-    // printf("GetMolecularDipoles: sizes:: mu_perm= %lu  mu_ind= %lu\n",mu_perm.size(), mu_ind.size());
-
-    // for(int i=0; i<mu_perm.size()/3; ++i) {
-    //   printf("  -- i= %i  mu_perm= %f %f %f   mu_ind= %f %f
-    //   %f\n",i,mu_perm[i*3],mu_perm[i*3+1],mu_perm[i*3+2],mu_ind[i*3],mu_ind[i*3+1],mu_ind[i*3+2]);
-    // }
-
     int indx = 0;
     for (int i = 0; i < nall; ++i) {
       if (mol_anchor[i] && mol_local[i]) {
@@ -992,8 +971,6 @@ void FixMBX::mbx_get_dipoles_local()
             mbx_dip[ii][7] = mbx_dip[ii][1] + mbx_dip[ii][4];
             mbx_dip[ii][8] = mbx_dip[ii][2] + mbx_dip[ii][5];
 
-            // printf("  -- ii= %i  tag= %i  indx= %i  mu_perm= %f %f %f   mu_ind= %f %f
-            // %f\n",ii,anchor+j,indx,mu_perm[indx*3],mu_perm[indx*3+1],mu_perm[indx*3+2],mu_ind[indx*3],mu_ind[indx*3+1],mu_ind[indx*3+2]);
             indx++;
           }
         }
