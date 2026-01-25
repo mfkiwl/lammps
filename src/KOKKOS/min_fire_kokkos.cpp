@@ -237,8 +237,9 @@ int MinFireKokkos::run_iterate(int maxiter) {
     }
 
     double dtvone = dt;
+    auto l_dmax = dmax;
+    
     if constexpr (!ABCFLAG) {
-      auto l_dmax = dmax;
       Kokkos::parallel_reduce("min_fire/dtv_limit", nlocal, LAMMPS_LAMBDA(const int i, KK_FLOAT &dtmin_local) {
         KK_FLOAT vmax = fmax(fabs(l_v(i,0)), fmax(fabs(l_v(i,1)), fabs(l_v(i,2))));
         if (dtmin_local * vmax > l_dmax) dtmin_local = l_dmax / vmax;
@@ -273,6 +274,12 @@ int MinFireKokkos::run_iterate(int maxiter) {
           l_v(i,0) = scale1 * l_v(i,0) + scale2 * l_f(i,0);
           l_v(i,1) = scale1 * l_v(i,1) + scale2 * l_f(i,1);
           l_v(i,2) = scale1 * l_v(i,2) + scale2 * l_f(i,2);
+          if constexpr (ABCFLAG) {
+            // make sure that the displacement is not larger than dmax
+            if (fabs(l_v(i,0)*dtv) > l_dmax) l_v(i,0) = l_dmax/dtv * l_v(i,0)/fabs(l_v(i,0));
+            if (fabs(l_v(i,1)*dtv) > l_dmax) l_v(i,1) = l_dmax/dtv * l_v(i,1)/fabs(l_v(i,1));
+            if (fabs(l_v(i,2)*dtv) > l_dmax) l_v(i,2) = l_dmax/dtv * l_v(i,2)/fabs(l_v(i,2));
+          }
         }
         l_x(i,0) += dtv * l_v(i,0);
         l_x(i,1) += dtv * l_v(i,1);
@@ -285,6 +292,12 @@ int MinFireKokkos::run_iterate(int maxiter) {
           l_v(i,0) = scale1 * l_v(i,0) + scale2 * l_f(i,0);
           l_v(i,1) = scale1 * l_v(i,1) + scale2 * l_f(i,1);
           l_v(i,2) = scale1 * l_v(i,2) + scale2 * l_f(i,2);
+          if constexpr (ABCFLAG) {
+            // make sure that the displacement is not larger than dmax
+            if (fabs(l_v(i,0)*dtv) > l_dmax) l_v(i,0) = l_dmax/dtv * l_v(i,0)/fabs(l_v(i,0));
+            if (fabs(l_v(i,1)*dtv) > l_dmax) l_v(i,1) = l_dmax/dtv * l_v(i,1)/fabs(l_v(i,1));
+            if (fabs(l_v(i,2)*dtv) > l_dmax) l_v(i,2) = l_dmax/dtv * l_v(i,2)/fabs(l_v(i,2));
+          }
         }
         l_x(i,0) += dtv * l_v(i,0);
         l_x(i,1) += dtv * l_v(i,1);
@@ -294,6 +307,12 @@ int MinFireKokkos::run_iterate(int maxiter) {
           l_v(i,0) = scale1 * l_v(i,0) + scale2 * l_f(i,0);
           l_v(i,1) = scale1 * l_v(i,1) + scale2 * l_f(i,1);
           l_v(i,2) = scale1 * l_v(i,2) + scale2 * l_f(i,2);
+          if constexpr (ABCFLAG) {
+            // make sure that the displacement is not larger than dmax
+            if (fabs(l_v(i,0)*dtv) > l_dmax) l_v(i,0) = l_dmax/dtv * l_v(i,0)/fabs(l_v(i,0));
+            if (fabs(l_v(i,1)*dtv) > l_dmax) l_v(i,1) = l_dmax/dtv * l_v(i,1)/fabs(l_v(i,1));
+            if (fabs(l_v(i,2)*dtv) > l_dmax) l_v(i,2) = l_dmax/dtv * l_v(i,2)/fabs(l_v(i,2));
+          }
         }
         l_x(i,0) += dtv * l_v(i,0);
         l_x(i,1) += dtv * l_v(i,1);
