@@ -635,7 +635,7 @@ commands are in the :doc:`Howto_viz` howto.
 
 .. versionchanged:: TBD
 
-   draw style *transparency* was added
+   draw style *transparent* was added
 
 The *region* keyword can be used to create a graphical representation of
 a :doc:`region <region>`.  This can be helpful in debugging the location
@@ -645,7 +645,7 @@ region-ID, the color for drawing the region, the draw style, and
 possible additional arguments as required by the draw style.
 
 Four draw styles of representing a region are available: *filled*\,
-*transparency*\, *frame*\, and *points*.  With draw style *filled* the
+*transparent*\, *frame*\, and *points*.  With draw style *filled* the
 surface of the region is triangulated and drawn.  For region styles that
 support open faces, surfaces for such open faces are skipped.  The style
 *transparent* is like *filled* but takes an additional parameter in the
