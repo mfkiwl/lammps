@@ -228,10 +228,23 @@ and expanded at every *Nevery* time step.  The text is shown in the
 center of and above the colormap.  To the left from the text is the
 lower boundary value and to the right the upper boundary value.  The
 colors are created by a linear interpolation between the lower and upper
-boundary value.  When using a dynamic color map with "min" or "max" the
-upper and lower values will be determined every time the fix is executed
-and the text updated accordingly.  For creating movies it is generally
-recommended to use a fixed range.
+boundary value and writing out pixels in the corresponding color.  The
+fix will receive the actual values from the dump with the given
+*dump-ID*.
+
+.. admonition:: Dynamic color maps
+   :class: note
+
+  When using a dynamic color map with "min" or "max" as the upper or
+  lower range values of the map, the dump will execute only *after* the
+  fix, and thus the upper and lower boundary values will be those from
+  the *previous* step where the dump created an image. will be
+  determined every time the fix is executed and the numbers updated
+  accordingly.  Thus when adding a *colorscale* label with this fix it
+  is generally recommended to use a map with a fixed range. This is
+  especially true when creating movies as a fixed range prevents the
+  color scale label to shrink or grow due to the different width of
+  characters.
 
 When using the *colorscale* keyword, the dump-ID, text and its position
 in the "scene" are required arguments.  Optional keyword / value pairs
