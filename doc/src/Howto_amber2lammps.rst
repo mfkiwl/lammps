@@ -52,6 +52,16 @@ Download it from the upstream project and clone from GitHub:
 Requirements
 ------------
 
+**Platform Compatibility**
+
+AMBER2LAMMPS works on all major platforms:
+
+* **Linux**: Full support (Ubuntu, CentOS, Fedora, etc.)
+* **macOS**: Full support (Intel and Apple Silicon)
+* **Windows**: Support via WSL2 or Git Bash
+
+**System Requirements**
+
 * **Structure**: PDB file (or SMILES string, you can convert to PDB).
 * **AmberTools utilities**: ``antechamber``, ``parmchk2``, ``tleap`` to
   build ``.prmtop``, ``.mol2``, and ``.frcmod``.
