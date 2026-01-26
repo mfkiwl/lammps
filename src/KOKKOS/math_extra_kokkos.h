@@ -23,68 +23,68 @@ namespace MathExtraKokkos {
 
   // 3 vector operations
 
-  KOKKOS_INLINE_FUNCTION void norm3(double *v);
-  KOKKOS_INLINE_FUNCTION void normalize3(const double *v, double *ans);
-  KOKKOS_INLINE_FUNCTION void snormalize3(const double, const double *v, double *ans);
-  KOKKOS_INLINE_FUNCTION void negate3(double *v);
-  KOKKOS_INLINE_FUNCTION void scale3(double s, double *v);
-  KOKKOS_INLINE_FUNCTION void scale3(double s, const double *v, double *ans);
-  KOKKOS_INLINE_FUNCTION void add3(const double *v1, const double *v2, double *ans);
-  KOKKOS_INLINE_FUNCTION void sub3(const double *v1, const double *v2, double *ans);
-  KOKKOS_INLINE_FUNCTION double len3(const double *v);
-  KOKKOS_INLINE_FUNCTION double lensq3(const double *v);
-  KOKKOS_INLINE_FUNCTION double dot3(const double *v1, const double *v2);
-  KOKKOS_INLINE_FUNCTION void cross3(const double *v1, const double *v2, double *ans);
+  KOKKOS_INLINE_FUNCTION void norm3(KK_FLOAT *v);
+  KOKKOS_INLINE_FUNCTION void normalize3(const KK_FLOAT *v, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void snormalize3(const KK_FLOAT, const KK_FLOAT *v, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void negate3(KK_FLOAT *v);
+  KOKKOS_INLINE_FUNCTION void scale3(KK_FLOAT s, KK_FLOAT *v);
+  KOKKOS_INLINE_FUNCTION void scale3(KK_FLOAT s, const KK_FLOAT *v, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void add3(const KK_FLOAT *v1, const KK_FLOAT *v2, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void sub3(const KK_FLOAT *v1, const KK_FLOAT *v2, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION KK_FLOAT len3(const KK_FLOAT *v);
+  KOKKOS_INLINE_FUNCTION KK_FLOAT lensq3(const KK_FLOAT *v);
+  KOKKOS_INLINE_FUNCTION KK_FLOAT dot3(const KK_FLOAT *v1, const KK_FLOAT *v2);
+  KOKKOS_INLINE_FUNCTION void cross3(const KK_FLOAT *v1, const KK_FLOAT *v2, KK_FLOAT *ans);
 
   // 3x3 matrix operations
 
-  KOKKOS_INLINE_FUNCTION double det3(const double mat[3][3]);
-  KOKKOS_INLINE_FUNCTION void diag_times3(const double *diagonal, const double mat[3][3],
-                          double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void plus3(const double m[3][3], const double m2[3][3],
-                    double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void times3(const double m[3][3], const double m2[3][3],
-                     double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void transpose_times3(const double mat1[3][3],
-                               const double mat2[3][3],
-                               double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void times3_transpose(const double mat1[3][3],
-                               const double mat2[3][3],
-                               double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void invert3(const double mat[3][3], double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void matvec(const double mat[3][3], const double*vec, double *ans);
-  KOKKOS_INLINE_FUNCTION void matvec(const double *ex, const double *ey, const double *ez,
-                     const double *vec, double *ans);
-  KOKKOS_INLINE_FUNCTION void transpose_matvec(const double mat[3][3], const double*vec,
-                               double *ans);
-  KOKKOS_INLINE_FUNCTION void transpose_matvec(const double *ex, const double *ey,
-                               const double *ez, const double *v,
-                               double *ans);
-  KOKKOS_INLINE_FUNCTION void transpose_diag3(const double mat[3][3], const double*vec,
-                              double ans[3][3]);
-  KOKKOS_INLINE_FUNCTION void vecmat(const double *v, const double m[3][3], double *ans);
-  KOKKOS_INLINE_FUNCTION void scalar_times3(const double f, double m[3][3]);
+  KOKKOS_INLINE_FUNCTION KK_FLOAT det3(const KK_FLOAT mat[3][3]);
+  KOKKOS_INLINE_FUNCTION void diag_times3(const KK_FLOAT *diagonal, const KK_FLOAT mat[3][3],
+                          KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void plus3(const KK_FLOAT m[3][3], const KK_FLOAT m2[3][3],
+                    KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void times3(const KK_FLOAT m[3][3], const KK_FLOAT m2[3][3],
+                     KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void transpose_times3(const KK_FLOAT mat1[3][3],
+                               const KK_FLOAT mat2[3][3],
+                               KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void times3_transpose(const KK_FLOAT mat1[3][3],
+                               const KK_FLOAT mat2[3][3],
+                               KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void invert3(const KK_FLOAT mat[3][3], KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void matvec(const KK_FLOAT mat[3][3], const KK_FLOAT*vec, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void matvec(const KK_FLOAT *ex, const KK_FLOAT *ey, const KK_FLOAT *ez,
+                     const KK_FLOAT *vec, KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void transpose_matvec(const KK_FLOAT mat[3][3], const KK_FLOAT*vec,
+                               KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void transpose_matvec(const KK_FLOAT *ex, const KK_FLOAT *ey,
+                               const KK_FLOAT *ez, const KK_FLOAT *v,
+                               KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void transpose_diag3(const KK_FLOAT mat[3][3], const KK_FLOAT*vec,
+                              KK_FLOAT ans[3][3]);
+  KOKKOS_INLINE_FUNCTION void vecmat(const KK_FLOAT *v, const KK_FLOAT m[3][3], KK_FLOAT *ans);
+  KOKKOS_INLINE_FUNCTION void scalar_times3(const KK_FLOAT f, KK_FLOAT m[3][3]);
 
-  KOKKOS_INLINE_FUNCTION void richardson(double *q, double *m, double *w, double *moments, double dtq);
+  KOKKOS_INLINE_FUNCTION void richardson(KK_FLOAT *q, KK_FLOAT *m, KK_FLOAT *w, KK_FLOAT *moments, KK_FLOAT dtq);
 
   // quaternion operations
-  KOKKOS_INLINE_FUNCTION void qnormalize(double *q);
-  KOKKOS_INLINE_FUNCTION void qconjugate(double *q, double *qc);
-  KOKKOS_INLINE_FUNCTION void vecquat(double *a, double *b, double *c);
-  KOKKOS_INLINE_FUNCTION void axisangle_to_quat(const double *v, const double angle,
-                                double *quat);
+  KOKKOS_INLINE_FUNCTION void qnormalize(KK_FLOAT *q);
+  KOKKOS_INLINE_FUNCTION void qconjugate(KK_FLOAT *q, KK_FLOAT *qc);
+  KOKKOS_INLINE_FUNCTION void vecquat(KK_FLOAT *a, KK_FLOAT *b, KK_FLOAT *c);
+  KOKKOS_INLINE_FUNCTION void axisangle_to_quat(const KK_FLOAT *v, const KK_FLOAT angle,
+                                KK_FLOAT *quat);
 
-  KOKKOS_INLINE_FUNCTION void mq_to_omega(double *m, double *q, double *moments, double *w);
-  KOKKOS_INLINE_FUNCTION void quat_to_mat(const double *quat, double mat[3][3]);
+  KOKKOS_INLINE_FUNCTION void mq_to_omega(KK_FLOAT *m, KK_FLOAT *q, KK_FLOAT *moments, KK_FLOAT *w);
+  KOKKOS_INLINE_FUNCTION void quat_to_mat(const KK_FLOAT *quat, KK_FLOAT mat[3][3]);
 }
 
 /* ----------------------------------------------------------------------
    normalize a vector in place
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::norm3(double *v)
+void MathExtraKokkos::norm3(KK_FLOAT *v)
 {
-  double scale = 1.0/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+  KK_FLOAT scale = 1.0/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   v[0] *= scale;
   v[1] *= scale;
   v[2] *= scale;
@@ -95,9 +95,9 @@ void MathExtraKokkos::norm3(double *v)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::normalize3(const double *v, double *ans)
+void MathExtraKokkos::normalize3(const KK_FLOAT *v, KK_FLOAT *ans)
 {
-  double scale = 1.0/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+  KK_FLOAT scale = 1.0/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   ans[0] = v[0]*scale;
   ans[1] = v[1]*scale;
   ans[2] = v[2]*scale;
@@ -108,9 +108,9 @@ void MathExtraKokkos::normalize3(const double *v, double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::snormalize3(const double length, const double *v, double *ans)
+void MathExtraKokkos::snormalize3(const KK_FLOAT length, const KK_FLOAT *v, KK_FLOAT *ans)
 {
-  double scale = length/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+  KK_FLOAT scale = length/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   ans[0] = v[0]*scale;
   ans[1] = v[1]*scale;
   ans[2] = v[2]*scale;
@@ -121,7 +121,7 @@ void MathExtraKokkos::snormalize3(const double length, const double *v, double *
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::negate3(double *v)
+void MathExtraKokkos::negate3(KK_FLOAT *v)
 {
   v[0] = -v[0];
   v[1] = -v[1];
@@ -133,7 +133,7 @@ void MathExtraKokkos::negate3(double *v)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::scale3(double s, double *v)
+void MathExtraKokkos::scale3(KK_FLOAT s, KK_FLOAT *v)
 {
   v[0] *= s;
   v[1] *= s;
@@ -145,7 +145,7 @@ void MathExtraKokkos::scale3(double s, double *v)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::scale3(double s, const double *v, double *ans)
+void MathExtraKokkos::scale3(KK_FLOAT s, const KK_FLOAT *v, KK_FLOAT *ans)
 {
   ans[0] = s*v[0];
   ans[1] = s*v[1];
@@ -157,7 +157,7 @@ void MathExtraKokkos::scale3(double s, const double *v, double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::add3(const double *v1, const double *v2, double *ans)
+void MathExtraKokkos::add3(const KK_FLOAT *v1, const KK_FLOAT *v2, KK_FLOAT *ans)
 {
   ans[0] = v1[0] + v2[0];
   ans[1] = v1[1] + v2[1];
@@ -169,7 +169,7 @@ void MathExtraKokkos::add3(const double *v1, const double *v2, double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::sub3(const double *v1, const double *v2, double *ans)
+void MathExtraKokkos::sub3(const KK_FLOAT *v1, const KK_FLOAT *v2, KK_FLOAT *ans)
 {
   ans[0] = v1[0] - v2[0];
   ans[1] = v1[1] - v2[1];
@@ -181,7 +181,7 @@ void MathExtraKokkos::sub3(const double *v1, const double *v2, double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-double MathExtraKokkos::len3(const double *v)
+KK_FLOAT MathExtraKokkos::len3(const KK_FLOAT *v)
 {
   return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
@@ -191,7 +191,7 @@ double MathExtraKokkos::len3(const double *v)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-double MathExtraKokkos::lensq3(const double *v)
+KK_FLOAT MathExtraKokkos::lensq3(const KK_FLOAT *v)
 {
   return v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 }
@@ -201,7 +201,7 @@ double MathExtraKokkos::lensq3(const double *v)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-double MathExtraKokkos::dot3(const double *v1, const double *v2)
+KK_FLOAT MathExtraKokkos::dot3(const KK_FLOAT *v1, const KK_FLOAT *v2)
 {
   return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
 }
@@ -211,7 +211,7 @@ double MathExtraKokkos::dot3(const double *v1, const double *v2)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::cross3(const double *v1, const double *v2, double *ans)
+void MathExtraKokkos::cross3(const KK_FLOAT *v1, const KK_FLOAT *v2, KK_FLOAT *ans)
 {
   ans[0] = v1[1]*v2[2] - v1[2]*v2[1];
   ans[1] = v1[2]*v2[0] - v1[0]*v2[2];
@@ -223,9 +223,9 @@ void MathExtraKokkos::cross3(const double *v1, const double *v2, double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-double MathExtraKokkos::det3(const double m[3][3])
+KK_FLOAT MathExtraKokkos::det3(const KK_FLOAT m[3][3])
 {
-  double ans = m[0][0]*m[1][1]*m[2][2] - m[0][0]*m[1][2]*m[2][1] -
+  KK_FLOAT ans = m[0][0]*m[1][1]*m[2][2] - m[0][0]*m[1][2]*m[2][1] -
     m[1][0]*m[0][1]*m[2][2] + m[1][0]*m[0][2]*m[2][1] +
     m[2][0]*m[0][1]*m[1][2] - m[2][0]*m[0][2]*m[1][1];
   return ans;
@@ -236,8 +236,8 @@ double MathExtraKokkos::det3(const double m[3][3])
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::diag_times3(const double *d, const double m[3][3],
-                            double ans[3][3])
+void MathExtraKokkos::diag_times3(const KK_FLOAT *d, const KK_FLOAT m[3][3],
+                            KK_FLOAT ans[3][3])
 {
   ans[0][0] = d[0]*m[0][0];
   ans[0][1] = d[0]*m[0][1];
@@ -255,8 +255,8 @@ void MathExtraKokkos::diag_times3(const double *d, const double m[3][3],
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::plus3(const double m[3][3], const double m2[3][3],
-                      double ans[3][3])
+void MathExtraKokkos::plus3(const KK_FLOAT m[3][3], const KK_FLOAT m2[3][3],
+                      KK_FLOAT ans[3][3])
 {
   ans[0][0] = m[0][0]+m2[0][0];
   ans[0][1] = m[0][1]+m2[0][1];
@@ -274,8 +274,8 @@ void MathExtraKokkos::plus3(const double m[3][3], const double m2[3][3],
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::times3(const double m[3][3], const double m2[3][3],
-                       double ans[3][3])
+void MathExtraKokkos::times3(const KK_FLOAT m[3][3], const KK_FLOAT m2[3][3],
+                       KK_FLOAT ans[3][3])
 {
   ans[0][0] = m[0][0]*m2[0][0] + m[0][1]*m2[1][0] + m[0][2]*m2[2][0];
   ans[0][1] = m[0][0]*m2[0][1] + m[0][1]*m2[1][1] + m[0][2]*m2[2][1];
@@ -293,8 +293,8 @@ void MathExtraKokkos::times3(const double m[3][3], const double m2[3][3],
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::transpose_times3(const double m[3][3], const double m2[3][3],
-                                 double ans[3][3])
+void MathExtraKokkos::transpose_times3(const KK_FLOAT m[3][3], const KK_FLOAT m2[3][3],
+                                 KK_FLOAT ans[3][3])
 {
   ans[0][0] = m[0][0]*m2[0][0] + m[1][0]*m2[1][0] + m[2][0]*m2[2][0];
   ans[0][1] = m[0][0]*m2[0][1] + m[1][0]*m2[1][1] + m[2][0]*m2[2][1];
@@ -312,8 +312,8 @@ void MathExtraKokkos::transpose_times3(const double m[3][3], const double m2[3][
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::times3_transpose(const double m[3][3], const double m2[3][3],
-                                 double ans[3][3])
+void MathExtraKokkos::times3_transpose(const KK_FLOAT m[3][3], const KK_FLOAT m2[3][3],
+                                 KK_FLOAT ans[3][3])
 {
   ans[0][0] = m[0][0]*m2[0][0] + m[0][1]*m2[0][1] + m[0][2]*m2[0][2];
   ans[0][1] = m[0][0]*m2[1][0] + m[0][1]*m2[1][1] + m[0][2]*m2[1][2];
@@ -332,9 +332,9 @@ void MathExtraKokkos::times3_transpose(const double m[3][3], const double m2[3][
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::invert3(const double m[3][3], double ans[3][3])
+void MathExtraKokkos::invert3(const KK_FLOAT m[3][3], KK_FLOAT ans[3][3])
 {
-  double den = m[0][0]*m[1][1]*m[2][2]-m[0][0]*m[1][2]*m[2][1];
+  KK_FLOAT den = m[0][0]*m[1][1]*m[2][2]-m[0][0]*m[1][2]*m[2][1];
   den += -m[1][0]*m[0][1]*m[2][2]+m[1][0]*m[0][2]*m[2][1];
   den += m[2][0]*m[0][1]*m[1][2]-m[2][0]*m[0][2]*m[1][1];
 
@@ -354,7 +354,7 @@ void MathExtraKokkos::invert3(const double m[3][3], double ans[3][3])
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::matvec(const double m[3][3], const double *v, double *ans)
+void MathExtraKokkos::matvec(const KK_FLOAT m[3][3], const KK_FLOAT *v, KK_FLOAT *ans)
 {
   ans[0] = m[0][0]*v[0] + m[0][1]*v[1] + m[0][2]*v[2];
   ans[1] = m[1][0]*v[0] + m[1][1]*v[1] + m[1][2]*v[2];
@@ -366,8 +366,8 @@ void MathExtraKokkos::matvec(const double m[3][3], const double *v, double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::matvec(const double *ex, const double *ey, const double *ez,
-                       const double *v, double *ans)
+void MathExtraKokkos::matvec(const KK_FLOAT *ex, const KK_FLOAT *ey, const KK_FLOAT *ez,
+                       const KK_FLOAT *v, KK_FLOAT *ans)
 {
   ans[0] = ex[0]*v[0] + ey[0]*v[1] + ez[0]*v[2];
   ans[1] = ex[1]*v[0] + ey[1]*v[1] + ez[1]*v[2];
@@ -379,8 +379,8 @@ void MathExtraKokkos::matvec(const double *ex, const double *ey, const double *e
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::transpose_matvec(const double m[3][3], const double *v,
-                                 double *ans)
+void MathExtraKokkos::transpose_matvec(const KK_FLOAT m[3][3], const KK_FLOAT *v,
+                                 KK_FLOAT *ans)
 {
   ans[0] = m[0][0]*v[0] + m[1][0]*v[1] + m[2][0]*v[2];
   ans[1] = m[0][1]*v[0] + m[1][1]*v[1] + m[2][1]*v[2];
@@ -392,9 +392,9 @@ void MathExtraKokkos::transpose_matvec(const double m[3][3], const double *v,
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::transpose_matvec(const double *ex, const double *ey,
-                                 const double *ez, const double *v,
-                                 double *ans)
+void MathExtraKokkos::transpose_matvec(const KK_FLOAT *ex, const KK_FLOAT *ey,
+                                 const KK_FLOAT *ez, const KK_FLOAT *v,
+                                 KK_FLOAT *ans)
 {
   ans[0] = ex[0]*v[0] + ex[1]*v[1] + ex[2]*v[2];
   ans[1] = ey[0]*v[0] + ey[1]*v[1] + ey[2]*v[2];
@@ -406,8 +406,8 @@ void MathExtraKokkos::transpose_matvec(const double *ex, const double *ey,
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::transpose_diag3(const double m[3][3], const double *d,
-                                double ans[3][3])
+void MathExtraKokkos::transpose_diag3(const KK_FLOAT m[3][3], const KK_FLOAT *d,
+                                KK_FLOAT ans[3][3])
 {
   ans[0][0] = m[0][0]*d[0];
   ans[0][1] = m[1][0]*d[1];
@@ -425,7 +425,7 @@ void MathExtraKokkos::transpose_diag3(const double m[3][3], const double *d,
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::vecmat(const double *v, const double m[3][3], double *ans)
+void MathExtraKokkos::vecmat(const KK_FLOAT *v, const KK_FLOAT m[3][3], KK_FLOAT *ans)
 {
   ans[0] = v[0]*m[0][0] + v[1]*m[1][0] + v[2]*m[2][0];
   ans[1] = v[0]*m[0][1] + v[1]*m[1][1] + v[2]*m[2][1];
@@ -437,7 +437,7 @@ void MathExtraKokkos::vecmat(const double *v, const double m[3][3], double *ans)
 ------------------------------------------------------------------------- */
 
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::scalar_times3(const double f, double m[3][3])
+void MathExtraKokkos::scalar_times3(const KK_FLOAT f, KK_FLOAT m[3][3])
 {
   m[0][0] *= f; m[0][1] *= f; m[0][2] *= f;
   m[1][0] *= f; m[1][1] *= f; m[1][2] *= f;
@@ -450,14 +450,14 @@ void MathExtraKokkos::scalar_times3(const double f, double m[3][3])
    also returns updated omega at 1/2 step
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::richardson(double *q, double *m, double *w, double *moments, double dtq)
+void MathExtraKokkos::richardson(KK_FLOAT *q, KK_FLOAT *m, KK_FLOAT *w, KK_FLOAT *moments, KK_FLOAT dtq)
 {
   // full update from dq/dt = 1/2 w q
 
-  double wq[4];
+  KK_FLOAT wq[4];
   MathExtraKokkos::vecquat(w,q,wq);
 
-  double qfull[4];
+  KK_FLOAT qfull[4];
   qfull[0] = q[0] + dtq * wq[0];
   qfull[1] = q[1] + dtq * wq[1];
   qfull[2] = q[2] + dtq * wq[2];
@@ -466,7 +466,7 @@ void MathExtraKokkos::richardson(double *q, double *m, double *w, double *moment
 
   // 1st half update from dq/dt = 1/2 w q
 
-  double qhalf[4];
+  KK_FLOAT qhalf[4];
   qhalf[0] = q[0] + 0.5*dtq * wq[0];
   qhalf[1] = q[1] + 0.5*dtq * wq[1];
   qhalf[2] = q[2] + 0.5*dtq * wq[2];
@@ -500,9 +500,9 @@ void MathExtraKokkos::richardson(double *q, double *m, double *w, double *moment
    normalize a quaternion
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::qnormalize(double *q)
+void MathExtraKokkos::qnormalize(KK_FLOAT *q)
 {
-  double norm = 1.0 / sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+  KK_FLOAT norm = 1.0 / sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
   q[0] *= norm;
   q[1] *= norm;
   q[2] *= norm;
@@ -514,7 +514,7 @@ void MathExtraKokkos::qnormalize(double *q)
    assume q is of unit length
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::qconjugate(double *q, double *qc)
+void MathExtraKokkos::qconjugate(KK_FLOAT *q, KK_FLOAT *qc)
 {
   qc[0] = q[0];
   qc[1] = -q[1];
@@ -526,7 +526,7 @@ void MathExtraKokkos::qconjugate(double *q, double *qc)
    vector-quaternion multiply: c = a*b, where a = (0,a)
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::vecquat(double *a, double *b, double *c)
+void MathExtraKokkos::vecquat(KK_FLOAT *a, KK_FLOAT *b, KK_FLOAT *c)
 {
   c[0] = -a[0] * b[1] - a[1] * b[2] - a[2] * b[3];
   c[1] = b[0] * a[0] + a[1] * b[3] - a[2] * b[2];
@@ -539,11 +539,11 @@ void MathExtraKokkos::vecquat(double *a, double *b, double *c)
    v MUST be a unit vector
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::axisangle_to_quat(const double *v, const double angle,
-                                  double *quat)
+void MathExtraKokkos::axisangle_to_quat(const KK_FLOAT *v, const KK_FLOAT angle,
+                                  KK_FLOAT *quat)
 {
-  double halfa = 0.5*angle;
-  double sina = sin(halfa);
+  KK_FLOAT halfa = 0.5*angle;
+  KK_FLOAT sina = sin(halfa);
   quat[0] = cos(halfa);
   quat[1] = v[0]*sina;
   quat[2] = v[1]*sina;
@@ -558,10 +558,10 @@ void MathExtraKokkos::axisangle_to_quat(const double *v, const double angle,
      and divide by principal moments
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::mq_to_omega(double *m, double *q, double *moments, double *w)
+void MathExtraKokkos::mq_to_omega(KK_FLOAT *m, KK_FLOAT *q, KK_FLOAT *moments, KK_FLOAT *w)
 {
-  double wbody[3];
-  double rot[3][3];
+  KK_FLOAT wbody[3];
+  KK_FLOAT rot[3][3];
 
   MathExtraKokkos::quat_to_mat(q,rot);
   MathExtraKokkos::transpose_matvec(rot,m,wbody);
@@ -579,18 +579,18 @@ void MathExtraKokkos::mq_to_omega(double *m, double *q, double *moments, double 
    quat = [w i j k]
 ------------------------------------------------------------------------- */
 KOKKOS_INLINE_FUNCTION
-void MathExtraKokkos::quat_to_mat(const double *quat, double mat[3][3])
+void MathExtraKokkos::quat_to_mat(const KK_FLOAT *quat, KK_FLOAT mat[3][3])
 {
-  double w2 = quat[0]*quat[0];
-  double i2 = quat[1]*quat[1];
-  double j2 = quat[2]*quat[2];
-  double k2 = quat[3]*quat[3];
-  double twoij = 2.0*quat[1]*quat[2];
-  double twoik = 2.0*quat[1]*quat[3];
-  double twojk = 2.0*quat[2]*quat[3];
-  double twoiw = 2.0*quat[1]*quat[0];
-  double twojw = 2.0*quat[2]*quat[0];
-  double twokw = 2.0*quat[3]*quat[0];
+  KK_FLOAT w2 = quat[0]*quat[0];
+  KK_FLOAT i2 = quat[1]*quat[1];
+  KK_FLOAT j2 = quat[2]*quat[2];
+  KK_FLOAT k2 = quat[3]*quat[3];
+  KK_FLOAT twoij = 2.0*quat[1]*quat[2];
+  KK_FLOAT twoik = 2.0*quat[1]*quat[3];
+  KK_FLOAT twojk = 2.0*quat[2]*quat[3];
+  KK_FLOAT twoiw = 2.0*quat[1]*quat[0];
+  KK_FLOAT twojw = 2.0*quat[2]*quat[0];
+  KK_FLOAT twokw = 2.0*quat[3]*quat[0];
 
   mat[0][0] = w2+i2-j2-k2;
   mat[0][1] = twoij-twokw;

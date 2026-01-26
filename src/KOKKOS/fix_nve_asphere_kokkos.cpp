@@ -93,12 +93,12 @@ void FixNVEAsphereKokkos<DeviceType>::initial_integrate_item(const int i) const
   // set timestep here since dt may have changed or come via rRESPA
 
   const KK_FLOAT dtq = 0.5 * dtv;
-  double inertia[3], omega[3];
-  double *shape, *quat;
-  double angm[3];
+  KK_FLOAT inertia[3], omega[3];
+  KK_FLOAT *shape, *quat;
+  KK_FLOAT angm[3];
 
   if (mask(i) & groupbit) {
-    const double dtfm = dtf / rmass(i);
+    const KK_FLOAT dtfm = dtf / rmass(i);
     v(i,0) += dtfm * f(i,0);
     v(i,1) += dtfm * f(i,1);
     v(i,2) += dtfm * f(i,2);
@@ -166,7 +166,7 @@ KOKKOS_INLINE_FUNCTION
 void FixNVEAsphereKokkos<DeviceType>::final_integrate_item(const int i) const
 {
   if (mask(i) & groupbit) {
-    const double dtfm = dtf / rmass(i);
+    const KK_FLOAT dtfm = dtf / rmass(i);
     v(i,0) += dtfm * f(i,0);
     v(i,1) += dtfm * f(i,1);
     v(i,2) += dtfm * f(i,2);
@@ -213,12 +213,12 @@ KOKKOS_INLINE_FUNCTION
 void FixNVEAsphereKokkos<DeviceType>::fused_integrate_item(const int i) const
 {
   const KK_FLOAT dtq = 0.5 * dtv;
-  double inertia[3], omega[3];
-  double *shape, *quat;
-  double angm[3];
+  KK_FLOAT inertia[3], omega[3];
+  KK_FLOAT *shape, *quat;
+  KK_FLOAT angm[3];
 
   if (mask(i) & groupbit) {
-    const double dtfm = 2.0 * dtf / rmass(i);
+    const KK_FLOAT dtfm = 2.0 * dtf / rmass(i);
     v(i,0) += dtfm * f(i,0);
     v(i,1) += dtfm * f(i,1);
     v(i,2) += dtfm * f(i,2);
