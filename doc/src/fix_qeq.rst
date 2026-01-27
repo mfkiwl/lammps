@@ -43,8 +43,8 @@ Syntax
   .. parsed-literal::
 
        *alpha* value = Slater type orbital exponent (qeq/slater only). Can be followed by optional arguments:
-            *wolf* value = width of taper to terminate Coulomb integrals for the Wolf summation (default value is zero)
-            *dsf* value = width of taper to terminate Coulomb integrals for the Fennell-Gezelter summation (default value is zero)
+         *wolf* value = width of taper to terminate Coulomb integrals for the Wolf summation (default value is zero)
+         *dsf* value = width of taper to terminate Coulomb integrals for the Fennell-Gezelter summation (default value is zero)
        *cdamp* value = damping parameter for Coulomb interactions (qeq/ctip only)
        *maxrepeat* value = number of equilibration cycles allowed to ensure no atoms cross charge bounds (qeq/ctip only)
        *qdamp* value = damping factor for damped dynamics charge solver (qeq/dynamic and qeq/fire only)
@@ -255,7 +255,7 @@ larger sizes, and *qeq/fire* is faster than *qeq/dynamic*\ .
    arbitrary choices of these parameters.  We do not develop these QEq
    parameters.  See the examples/qeq directory for some examples.
 
-In the previous versions of LAMMPS, the real-space summations of Coulomb interactions were done by replacing 1/r using a damped potential erfc(alpha*r)/r with the parameter *alpha* controlling the rate of decay. However, any choice of *alpha* leads to a jump at the cutoff, which interferes with equilibration if atoms move across the cutoff. The charge-neutralized potentials due to Wolf et al. (*wolf*) and its extension by Fennell and Gezelter (*dsf*) solve this problem, but they were not implemented for charge equilibration in previous versions of LAMMPS. An extension was implemented to specify the width of taper (see Murty et al.) to smoothly terminate the Coulomb integrals at the cutoff. This is done by specifying the optional arguments *wolf* and *dsf* with the value representing the width of the taper that smoothly terminates the Coulomb integrals. For example, if the cutoff is 8 A and the taper width is 2 A, the Coulomb integrals are smoothly rescaled from their actual value at r=6 A to zero at r=8 A. For backward compatibility, the default taper width is zero. 
+In older versions of LAMMPS, the real-space summations of Coulomb interactions were done by replacing *1/r* using a damped potential *erfc(alpha*r)/r* with the parameter *alpha* controlling the rate of decay. However, any finite value of *alpha* leads to a jump at the cutoff, which interferes with equilibration if atoms move across the cutoff. The charge-neutralized potential of :ref:`(Wolf et al.) <Wolf>` (*wolf*) and its extension by :ref:`(Fennell and Gezelter) <Fennell>` (*dsf*) solve this problem. An extension was implemented to specify the width of taper (see ref:`(Mei et al.) <Mei>`) to smoothly terminate the Coulomb integrals at the cutoff. This is done by specifying the optional arguments *wolf* and *dsf* with the value representing the width of taper that smoothly terminates the Coulomb integrals. For example, if the cutoff is 8 A and the taper width is 2 A, the Coulomb integrals are smoothly rescaled from their actual value at r=6 A to zero at r=8 A. For backward compatibility, the default taper width is zero. 
 
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -322,3 +322,15 @@ Physical Chemistry, 105, 9396-9049 (2001)
 .. _Shan:
 
 **(QEq/Fire)** T.-R. Shan, A. P. Thompson, S. J. Plimpton, in preparation
+
+.. _Wolf:
+
+**(Wolf)** D. Wolf, P. Keblinski, S. R. Phillpot, J. Eggebrecht, J. Chem. Phys. 110, 8254 (1999).
+
+.. _Fennell:
+
+**(Fennell)** J. Fennell, J. D. Gezelter, J. Chem. Phys. 124, 234104 (2006).
+
+.. _Mei:
+
+**(Mei)** J. Mei, J. W. Davenport, G. W. Fernando, Phys. Rev. B 43, 4653 (1991).
