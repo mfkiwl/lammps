@@ -321,7 +321,7 @@ any other pair style such as EAM, MEAM, Tersoff, or LJ in
 hybrid/overlay mode.  To do this, you would need to provide a
 Streitz-Mintmire parameterization for the material being modeled.
 
-An implementation of the Streitz-Mintmire potential for GaN due to :ref:`(Groger and Fikar) <Groger1>` can be found in the examples/streitz directory. The electrostatic parameters of Ga and N are stored in file GaN.streitz and the short-range tersoff/mod potential in the file GaN.streitz+tersoff.mod. The total potential must be specified as: 
+An implementation of the Streitz-Mintmire potential for GaN due to :ref:`(Groger and Fikar) <Groger1>` can be found in the examples/streitz directory. The electrostatic parameters of Ga and N are stored in file GaN.streitz and the short-range tersoff/mod potential in the file GaN.streitz+tersoff.mod. The total potential must be specified as:
 
 .. code-block:: LAMMPS
 
