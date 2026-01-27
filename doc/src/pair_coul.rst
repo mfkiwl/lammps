@@ -146,6 +146,11 @@ Examples
    pair_style coul/streitz 12.0 wolf 0.30
    pair_coeff * * AlO.streitz Al O
 
+   pair_style coul/streitz 12.0 wolf 0.3 2.0
+   pair_style coul/streitz 12.0 dsf 0.3
+   pair_style coul/streitz 12.0 dsf 0.3 2.0
+   pair_coeff * * GaN.streitz Ga N
+
    pair_style tip4p/cut 1 2 7 8 0.15 12.0
    pair_coeff * *
 
@@ -302,7 +307,7 @@ command doc page.  Alternatively *qfile* can be replaced by
 "coul/streitz", in which case the fix will extract QEq parameters from
 the coul/streitz pair style itself.
 
-See the examples/strietz directory for an example input script that
+See the examples/streitz directory for an example input script that
 uses the Streitz-Mintmire potential.  The potentials directory has the
 AlO.eam.alloy and AlO.streitz potential files used by the example.
 
