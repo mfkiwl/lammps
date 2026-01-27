@@ -42,7 +42,9 @@ Syntax
 
   .. parsed-literal::
 
-       *alpha* value = Slater type orbital exponent (qeq/slater only)
+       *alpha* value = Slater type orbital exponent (qeq/slater only). Can be followed by optional arguments:
+            *wolf* value = width of taper to terminate Coulomb integrals for the Wolf summation (default value is zero)
+            *dsf* value = width of taper to terminate Coulomb integrals for the Fennell-Gezelter summation (default value is zero)
        *cdamp* value = damping parameter for Coulomb interactions (qeq/ctip only)
        *maxrepeat* value = number of equilibration cycles allowed to ensure no atoms cross charge bounds (qeq/ctip only)
        *qdamp* value = damping factor for damped dynamics charge solver (qeq/dynamic and qeq/fire only)
@@ -57,6 +59,10 @@ Examples
    fix 1 all qeq/point 1 10 1.0e-6 200 param.qeq1
    fix 1 qeq qeq/shielded 1 8 1.0e-6 100 param.qeq2
    fix 1 all qeq/slater 5 10 1.0e-6 100 params alpha 0.2
+   fix 1 all qeq/slater 5 10 1.0e-6 100 params alpha 0.2 wolf
+   fix 1 all qeq/slater 5 10 1.0e-6 100 params alpha 0.2 wolf 2.0
+   fix 1 all qeq/slater 5 10 1.0e-6 100 params alpha 0.2 dsf
+   fix 1 all qeq/slater 5 10 1.0e-6 100 params alpha 0.2 dsf 2.0
    fix 1 all qeq/ctip 1 12 1.0e-8 100 coul/ctip cdamp 0.30 maxrepeat 10
    fix 1 qeq qeq/dynamic 1 12 1.0e-3 100 my_qeq
    fix 1 all qeq/fire 1 10 1.0e-3 100 my_qeq qdamp 0.2 qstep 0.1
@@ -248,6 +254,8 @@ larger sizes, and *qeq/fire* is faster than *qeq/dynamic*\ .
    non-trivial.  Charges on atoms are not guaranteed to equilibrate with
    arbitrary choices of these parameters.  We do not develop these QEq
    parameters.  See the examples/qeq directory for some examples.
+
+In the previous versions of LAMMPS, the real-space summations of Coulomb interactions were done by replacing 1/r using a damped potential erfc(alpha*r)/r with the parameter *alpha* controlling the rate of decay. However, any choice of *alpha* leads to a jump at the cutoff, which interferes with equilibration if atoms move across the cutoff. The charge-neutralized potentials due to Wolf et al. (*wolf*) and its extension by Fennell and Gezelter (*dsf*) solve this problem, but they were not implemented for charge equilibration in previous versions of LAMMPS. An extension was implemented to specify the width of taper (see Murty et al.) to smoothly terminate the Coulomb integrals at the cutoff. This is done by specifying the optional arguments *wolf* and *dsf* with the value representing the width of the taper that smoothly terminates the Coulomb integrals. For example, if the cutoff is 8 A and the taper width is 2 A, the Coulomb integrals are smoothly rescaled from their actual value at r=6 A to zero at r=8 A. For backward compatibility, the default taper width is zero. 
 
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
