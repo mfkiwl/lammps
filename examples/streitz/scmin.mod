@@ -1,4 +1,4 @@
-# QEq cannot be run together with minimize, becase each new calculation of charges alters the energy
+# QEq cannot be run together with minimize, because each new calculation of charges alters the energy
 # hypersurface on which we are looking for a minimum. Minimization frequently gets stuck with the
 # message "linesearch alpha is zero" before reaching zero pressure.
 #
