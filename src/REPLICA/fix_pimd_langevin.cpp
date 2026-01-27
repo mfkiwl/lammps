@@ -1362,19 +1362,7 @@ void FixPIMDLangevin::inter_replica_comm(double **ptr)
     MPI_Allgatherv(bufsorted[0], 3 * m, MPI_DOUBLE, bufsortedall[0], counts, displacements,
                    MPI_DOUBLE, universe->uworld);
   } else if (cmode == MULTI_PROC) {
-    // Ensure receive buffer sized for my local atoms (3*nlocal doubles)
-    if (nlocal > maxlocal) {
-      maxlocal = nlocal + 200;
-      const int nbytes = sizeof(double) * 3 * maxlocal;
-
-      bufrecv = (double *) memory->srealloc(bufrecv, nbytes, "FixPIMDLangevin:bufrecv");
-
-      // if bufbeads[mode] are per-mode arrays of size 3*nlocal:
-      for (int imode = 0; imode < np; imode++) {
-        bufbeads[imode] = (double *) memory->srealloc(bufbeads[imode], nbytes, "FixPIMDLangevin:bufbeads");
-      }
-    }
-
+    // buffers are (re)allocated as needed in reallocate()
     // copy local values
     for (i = 0; i < nlocal; i++) {
       bufbeads[ireplica][3 * i + 0] = ptr[i][0];
