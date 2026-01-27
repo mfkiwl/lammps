@@ -33,8 +33,8 @@ compute q1all g1 property/atom q
 compute q1 g1 reduce ave c_q1all
 
 pair_style hybrid/overlay tersoff/mod coul/streitz 12.0 dsf 0.3 2.0
-pair_coeff * * tersoff/mod GaN.sm+tersoff.mod Ga N
-pair_coeff * * coul/streitz GaN.sm Ga N
+pair_coeff * * tersoff/mod GaN.streitz+tersoff.mod Ga N
+pair_coeff * * coul/streitz GaN.streitz Ga N
 
 fix fq all qeq/slater 1 12.0 1e-6 1000 coul/streitz alpha 0.3 dsf 2.0
 
