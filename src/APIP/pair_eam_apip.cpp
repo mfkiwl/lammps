@@ -259,8 +259,9 @@ void PairEAMAPIP::compute(int eflag, int vflag)
       phi = ((coeff[3] * p + coeff[4]) * p + coeff[5]) * p + coeff[6];
       if (rho[i] > rhomax) phi += fp[i] * (rho[i] - rhomax);
       phi *= scale[type[i]][type[i]];
-      ev_tally_full(i, 2.0 * lambda[i] * phi, 0.0, 0.0, 0.0, 0.0, 0.0);
       if (e_simple) { e_simple[i] = phi; }
+      if (eflag_global) eng_vdwl += lambda[i] * phi;
+      if (eflag_atom) eatom[i] += lambda[i] * phi;
     }
   }
 
@@ -409,13 +410,17 @@ void PairEAMAPIP::compute(int eflag, int vflag)
         }
 
         if (eflag || e_simple) {
-          evdwl = scale[itype][jtype] * phi;
+          evdwl = 0.5 * scale[itype][jtype] * phi;
           if (e_simple) {
-            e_simple[i] += 0.5 * evdwl;
-            if (j < nlocal) e_simple[j] += 0.5 * evdwl;
+            e_simple[i] += evdwl;
+            if (j < nlocal) e_simple[j] += evdwl;
           }
-          ev_tally_full(i, lambda[i] * evdwl, 0.0, 0.0, 0.0, 0.0, 0.0);
-          if (j < nlocal) ev_tally_full(j, lambda[j] * evdwl, 0.0, 0.0, 0.0, 0.0, 0.0);
+          if (eflag_global) eng_vdwl += lambda[i] * evdwl;
+          if (eflag_atom) eatom[i] += lambda[i] * evdwl;
+          if (j < nlocal) {
+            if (eflag_global) eng_vdwl += lambda[j] * evdwl;
+            if (eflag_atom) eatom[j] += lambda[j] * evdwl;
+          }
         }
         if (vflag) ev_tally(i, j, nlocal, newton_pair, 0.0, 0.0, fpair, delx, dely, delz);
       }
