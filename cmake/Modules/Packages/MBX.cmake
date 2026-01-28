@@ -25,12 +25,7 @@ set(MBX_SHA256 "6aea6e7b797edfc06e81de856d6d63f03e1886ca02d25c937e81df825fe4bfb9
 mark_as_advanced(MBX_URL)
 mark_as_advanced(MBX_SHA256)
 
-
 set(MBX_LINK_LIBS)
-if (FFT_SINGLE)
-  message(FATAL_ERROR, "MBX package requires using double precision FFT")
-endif()
-
 find_package(FFTW3 REQUIRED)
 if(FFTW3_FOUND)
   list(APPEND MBX_LINK_LIBS FFTW3::FFTW3)
