@@ -192,7 +192,9 @@ void PairLJGromacs::settings(int narg, char **arg)
   cut_inner_global = utils::numeric(FLERR, arg[0], false, lmp);
   cut_global = utils::numeric(FLERR, arg[1], false, lmp);
 
-  if (cut_inner_global <= 0.0 || cut_inner_global > cut_global)
+  if (cut_inner_global <= 0.0)
+    error->all(FLERR, "Pair style lj/gromacs inner cutoff must be > 0.0");
+  if (cut_inner_global > cut_global)
     error->all(FLERR, "Pair style lj/gromacs inner cutoff must be <= global cutoff");
 
   // reset cutoffs that have been explicitly set
