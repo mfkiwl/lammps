@@ -1247,10 +1247,11 @@ code for the library can be found at:
 `https://github.com/paesanilab/MBX/
 <https://github.com/paesanilab/MBX/>`_
 
-.. Instead of including the MBX package directly into LAMMPS, it
-.. is also possible to skip this step and build the MBX package as
-.. a plugin using the CMake script files in the ``examples/PACKAGE/mbx/plugin``
-.. folder and then load this plugin at runtime with the :doc:`plugin command <plugin>`.
+Instead of including the MBX package directly into LAMMPS, it is also
+possible to skip this step and build the MBX package as a plugin using
+the CMake script files in the ``examples/PACKAGE/mbx/plugin`` folder and
+then load this plugin at runtime with the :doc:`plugin command
+<plugin>`.
 
 .. tabs::
 
