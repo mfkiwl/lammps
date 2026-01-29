@@ -94,7 +94,6 @@ FixColvars::FixColvars(LAMMPS *lmp, int narg, char **arg) :
   extscalar = 1;
   vector_flag = 1;
   size_vector_variable = 1;
-  //size_vector = 0; // size_vector will be known after setup
   extvector = 0; // dont scale colvars values by number of atoms
   global_freq = 1;
   nevery = 1;
@@ -468,9 +467,7 @@ void FixColvars::setup(int vflag)
     proxy->parse_module_config();
     size_vector = proxy->colvars->num_variables();
   }
-  
   MPI_Bcast(&size_vector, 1, MPI_INT, 0, world);
-  utils::logmesg(lmp, "*** [rank {}] size_vector {}\n", me, size_vector);
 
   init_taglist();
 
