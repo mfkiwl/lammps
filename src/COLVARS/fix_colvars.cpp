@@ -92,6 +92,7 @@ FixColvars::FixColvars(LAMMPS *lmp, int narg, char **arg) :
   scalar_flag = 1;
   vector_flag = 1;
   size_vector = 1;
+  extvector = 0; // dont scale colvars values by number of atoms
   global_freq = 1;
   nevery = 1;
   extscalar = 1;
