@@ -55,11 +55,11 @@ variable	myweight atom f_weight_atom
 fix		property_atom all property/atom d_usedweight
 ## apply load balancing
 ## no load-balancing
-fix		balance all balance 10 0.9 report weight time 1.0 weight store usedweight
+#fix		balance all balance 10 0.9 report weight time 1.0 weight store usedweight
 ## load balancing with times per atom per processor
 #fix		balance all balance 10 0.9 rcb weight time 1.0 weight store usedweight
 ## load balancing with an approximated load per atom by fix apip_atom_weight
-#fix		balance all balance 10 0.9 rcb weight var myweight weight store usedweight
+fix		balance all balance 10 0.9 rcb weight var myweight weight store usedweight
 
 
 # output
