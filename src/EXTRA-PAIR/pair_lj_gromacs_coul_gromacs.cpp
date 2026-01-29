@@ -216,7 +216,7 @@ void PairLJGromacsCoulGromacs::allocate()
 
 void PairLJGromacsCoulGromacs::settings(int narg, char **arg)
 {
-  if (narg != 2 && narg != 4) error->all(FLERR, "Pair style lj/gromacs/coul/gromacs requires 2 or 4 arguments");
+  if (narg != 2 && narg != 4) error->all(FLERR, "Illegal pair_style command");
 
   cut_lj_inner = utils::numeric(FLERR, arg[0], false, lmp);
   cut_lj = utils::numeric(FLERR, arg[1], false, lmp);
@@ -228,9 +228,9 @@ void PairLJGromacsCoulGromacs::settings(int narg, char **arg)
     cut_coul = utils::numeric(FLERR, arg[3], false, lmp);
   }
 
-  if (cut_lj_inner <= 0.0 || cut_coul_inner < 0.0) error->all(FLERR, "Pair style lj/gromacs/coul/gromacs inner cutoffs must be > 0.0");
+  if (cut_lj_inner <= 0.0 || cut_coul_inner < 0.0) error->all(FLERR, "Illegal pair_style command");
   if (cut_lj_inner > cut_lj || cut_coul_inner > cut_coul)
-    error->all(FLERR, "Pair style lj/gromacs/coul/gromacs inner cutoffs must be <= global cutoff");
+    error->all(FLERR, "Illegal pair_style command");
 }
 
 /* ----------------------------------------------------------------------
