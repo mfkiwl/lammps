@@ -41,6 +41,7 @@
 #if defined(COLVARS_MPI)
 #include "universe.h"
 #endif
+#include "thermo.h"
 #include "update.h"
 
 #include "colvarmodule.h"
@@ -92,9 +93,13 @@ FixColvars::FixColvars(LAMMPS *lmp, int narg, char **arg) :
 
   scalar_flag = 1;
   extscalar = 1;
+  
   vector_flag = 1;
+  size_vector = 0;
   size_vector_variable = 1;
   extvector = 0; // dont scale colvars values by number of atoms
+  thermo_modify_colname = 1;
+  
   global_freq = 1;
   nevery = 1;
   restart_global = 1;
@@ -468,6 +473,7 @@ void FixColvars::setup(int vflag)
     size_vector = proxy->colvars->num_variables();
   }
   MPI_Bcast(&size_vector, 1, MPI_INT, 0, world);
+  output->thermo->colname_auto();
 
   init_taglist();
 
@@ -943,6 +949,29 @@ double FixColvars::compute_vector(int i)
   }
   MPI_Bcast(&value, 1, MPI_DOUBLE, 0, world);
   return value;
+}
+
+/* ---------------------------------------------------------------------- */
+
+std::string FixColvars::get_thermo_colname(int i)
+{
+  std::string name;
+  int name_length;
+  if (comm->me == 0) {
+    auto *variables = proxy->colvars->variables();
+    if ( i < variables->size() ) {
+      name = (*variables)[i]->name;
+      name_length = name.length();
+    } else {
+      name = "";
+      name_length = 0;
+    }
+
+  }
+  MPI_Bcast(&name_length, 1, MPI_INT, 0, world);
+  MPI_Bcast(name.data(), name_length, MPI_CHAR, 0, world);
+  //utils::logmesg(lmp, "*** [rank {}] get_thermo_colname({}) {} {}\n", comm->me, i, name, name_length);
+  return name;
 }
 
 /* ---------------------------------------------------------------------- */
