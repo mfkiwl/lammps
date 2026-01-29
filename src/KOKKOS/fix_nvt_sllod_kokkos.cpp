@@ -132,7 +132,7 @@ void FixNVTSllodKokkos<DeviceType>::nh_v_temp()
   d_h_two = Few<double, 6>(h_two);
 
   if ((int)vdelu.extent(0) < atomKK->nmax)
-    vdelu = typename AT::t_v_array(Kokkos::NoInit("nvt/sllod/kk:vdelu"), atomKK->nmax);
+    vdelu = typename AT::t_kkfloat_1d_3(Kokkos::NoInit("nvt/sllod/kk:vdelu"), atomKK->nmax);
 
   if (!this->psllod_flag) {
     if (this->temperature->kokkosable) this->temperature->remove_bias_all_kk();
@@ -178,6 +178,7 @@ void FixNVTSllodKokkos<DeviceType>::nh_v_temp()
 }
 
 template<class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void FixNVTSllodKokkos<DeviceType>::operator()(TagFixNVTSllod_temp1, const int &i) const {
   if (mask[i] & this->groupbit) {
@@ -188,6 +189,7 @@ void FixNVTSllodKokkos<DeviceType>::operator()(TagFixNVTSllod_temp1, const int &
 }
 
 template<class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void FixNVTSllodKokkos<DeviceType>::operator()(TagFixNVTSllod_temp2, const int &i) const {
   if (mask[i] & this->groupbit) {

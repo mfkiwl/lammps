@@ -14,7 +14,7 @@ OPT.
    * :doc:`hybrid (ko) <pair_hybrid>`
    * :doc:`hybrid/molecular (o) <pair_hybrid>`
    * :doc:`hybrid/overlay (ko) <pair_hybrid>`
-   * :doc:`hybrid/scaled (o) <pair_hybrid>`
+   * :doc:`hybrid/scaled (ko) <pair_hybrid>`
    * :doc:`kim <pair_kim>`
    * :doc:`list <pair_list>`
    * :doc:`tracker <pair_tracker>`
@@ -28,7 +28,6 @@ OPT.
    * :doc:`airebo/morse (io) <pair_airebo>`
    * :doc:`amoeba (g) <pair_amoeba>`
    * :doc:`atm <pair_atm>`
-   * :doc:`awpmd/cut <pair_awpmd>`
    * :doc:`beck (go) <pair_beck>`
    * :doc:`body/nparticle <pair_body_nparticle>`
    * :doc:`body/rounded/polygon <pair_body_rounded_polygon>`
@@ -193,12 +192,13 @@ OPT.
    * :doc:`lj/smooth (go) <pair_lj_smooth>`
    * :doc:`lj/smooth/linear (o) <pair_lj_smooth_linear>`
    * :doc:`lj/switch3/coulgauss/long <pair_lj_switch3_coulgauss_long>`
-   * :doc:`lj96/cut (go) <pair_lj96>`
+   * :doc:`lj96/cut (gko) <pair_lj96>`
    * :doc:`local/density <pair_local_density>`
    * :doc:`lubricate (o) <pair_lubricate>`
    * :doc:`lubricate/poly (o) <pair_lubricate>`
    * :doc:`lubricateU <pair_lubricateU>`
    * :doc:`lubricateU/poly <pair_lubricateU>`
+   * :doc:`mbx <pair_mbx>`
    * :doc:`mdpd (g) <pair_mesodpd>`
    * :doc:`mdpd/rhosum <pair_mesodpd>`
    * :doc:`meam (k) <pair_meam>`
@@ -262,6 +262,7 @@ OPT.
    * :doc:`rheo <pair_rheo>`
    * :doc:`rheo/solid <pair_rheo_solid>`
    * :doc:`saip/metal (t) <pair_saip_metal>`
+   * :doc:`saip/metal/tmd (t) <pair_saip_metal>`
    * :doc:`sdpd/taitwater/isothermal <pair_sdpd_taitwater_isothermal>`
    * :doc:`smatb <pair_smatb>`
    * :doc:`smatb/single <pair_smatb>`

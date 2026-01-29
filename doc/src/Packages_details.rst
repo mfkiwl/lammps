@@ -30,8 +30,6 @@ gives those details.
    * :ref:`AMOEBA <PKG-AMOEBA>`
    * :ref:`APIP <PKG-APIP>`
    * :ref:`ASPHERE <PKG-ASPHERE>`
-   * :ref:`ATC <PKG-ATC>`
-   * :ref:`AWPMD <PKG-AWPMD>`
    * :ref:`BOCS <PKG-BOCS>`
    * :ref:`BODY <PKG-BODY>`
    * :ref:`BPM <PKG-BPM>`
@@ -61,6 +59,7 @@ gives those details.
    * :ref:`EXTRA-PAIR <PKG-EXTRA-PAIR>`
    * :ref:`FEP <PKG-FEP>`
    * :ref:`GPU <PKG-GPU>`
+   * :ref:`GRAPHICS <PKG-GRAPHICS>`
    * :ref:`GRANULAR <PKG-GRANULAR>`
    * :ref:`H5MD <PKG-H5MD>`
    * :ref:`INTEL <PKG-INTEL>`
@@ -73,6 +72,7 @@ gives those details.
    * :ref:`MACHDYN <PKG-MACHDYN>`
    * :ref:`MANIFOLD <PKG-MANIFOLD>`
    * :ref:`MANYBODY <PKG-MANYBODY>`
+   * :ref:`MBX <PKG-MBX>`
    * :ref:`MC <PKG-MC>`
    * :ref:`MDI <PKG-MDI>`
    * :ref:`MEAM <PKG-MEAM>`
@@ -98,7 +98,6 @@ gives those details.
    * :ref:`PHONON <PKG-PHONON>`
    * :ref:`PLUGIN <PKG-PLUGIN>`
    * :ref:`PLUMED <PKG-PLUMED>`
-   * :ref:`POEMS <PKG-POEMS>`
    * :ref:`PTM <PKG-PTM>`
    * :ref:`PYTHON <PKG-PYTHON>`
    * :ref:`QEQ <PKG-QEQ>`
@@ -267,63 +266,6 @@ particle models including ellipsoids, 2d lines, and 3d triangles.
 
 ----------
 
-.. _PKG-ATC:
-
-ATC package
-----------------
-
-**Contents:**
-
-ATC stands for atoms-to-continuum.  This package implements a
-:doc:`fix atc <fix_atc>` command to either couple molecular dynamics
-with continuum finite element equations or perform on-the-fly
-conversion of atomic information to continuum fields.
-
-**Authors:** Reese Jones, Jeremy Templeton, Jon Zimmerman (Sandia).
-
-**Install:**
-
-This package has :ref:`specific installation instructions <atc>` on the
-:doc:`Build extras <Build_extras>` page.  The ATC package requires that
-also the :ref:`MANYBODY <PKG-MANYBODY>` package is installed.
-
-**Supporting info:**
-
-* ``src/ATC``: filenames -> commands
-* ``src/ATC/README``
-* :doc:`fix atc <fix_atc>`
-* ``examples/PACKAGES/atc``
-* https://www.lammps.org/pictures.html#atc
-
-----------
-
-.. _PKG-AWPMD:
-
-AWPMD package
-------------------
-
-**Contents:**
-
-AWPMD stands for Antisymmetrized Wave Packet Molecular Dynamics.  This
-package implements an atom, pair, and fix style which allows electrons
-to be treated as explicit particles in a classical molecular dynamics
-model.
-
-**Author:** Ilya Valuev (JIHT, Russia).
-
-**Install:**
-
-This package has :ref:`specific installation instructions <awpmd>` on the :doc:`Build extras <Build_extras>` page.
-
-**Supporting info:**
-
-* ``src/AWPMD``: filenames -> commands
-* ``src/AWPMD/README``
-* :doc:`pair_style awpmd/cut <pair_awpmd>`
-* ``examples/PACKAGES/awpmd``
-
-----------
-
 .. _PKG-BOCS:
 
 BOCS package
@@ -423,7 +365,7 @@ fix brownian/asphere <fix_brownian>` as well as
 Dynamics time integration of point, spherical and aspherical particles
 and also support self-propelled particles.
 
-**Authors:** Sam Cameron (University of Bristol),
+**Authors:** Sam Cameron (University of Bristol), Arthur Straube (Zuse Institute Berlin),
 Stefan Paquay (while at Brandeis University) (initial version of fix propel/self)
 
 .. versionadded:: 14May2021
@@ -1114,12 +1056,39 @@ This package has :ref:`specific installation instructions <gpu>` on the
 * ``lib/gpu/README``
 * :doc:`Accelerator packages <Speed_packages>`
 * :doc:`GPU package <Speed_gpu>`
-* :doc:`Section 2.6 -sf gpu <Run_options>`
-* :doc:`Section 2.6 -pk gpu <Run_options>`
+* :doc:`Section 4.2 -sf gpu <Run_options>`
+* :doc:`Section 4.2 -pk gpu <Run_options>`
 * :doc:`package gpu <package>`
 * :doc:`Commands <Commands_all>` pages (:doc:`pair <Commands_pair>`, :doc:`kspace <Commands_kspace>`)
   for styles followed by (g)
 * `Benchmarks page <https://www.lammps.org/bench.html>`_ of website
+
+----------
+
+.. _PKG-GRAPHICS:
+
+GRAPHICS package
+----------------
+
+**Contents:**
+
+Dump styles :doc:`image and movie <dump_image>`, supporting classes for
+rendering images and fonts, several fixes for adding graphics objects to
+visualizations, and the region2vmd command for exporting visualizations
+of regions scripted graphics in VMD.
+
+**Supporting info:**
+
+* ``src/GRAPHICS``: filenames -> commands
+* :doc:`Howto_viz`
+* :doc:`dump image <dump_image>`
+* :doc:`dump movie <dump_image>`
+* :doc:`fix graphics/arrows <fix_graphics_arrows>`
+* :doc:`fix graphics/isosurface <fix_graphics_isosurface>`
+* :doc:`fix graphics/labels <fix_graphics_labels>`,
+* :doc:`fix graphics/objects <fix_graphics_objects>`,
+* :doc:`fix graphics/periodic <fix_graphics_periodic>`,
+* :doc:`region2vmd <region2vmd>`
 
 ----------
 
@@ -1225,8 +1194,8 @@ This package has :ref:`specific installation instructions <intel>` on the :doc:`
 * ``src/INTEL/README``
 * :doc:`Accelerator packages <Speed_packages>`
 * :doc:`INTEL package <Speed_intel>`
-* :doc:`Section 2.6 -sf intel <Run_options>`
-* :doc:`Section 2.6 -pk intel <Run_options>`
+* :doc:`Section 4.2 -sf intel <Run_options>`
+* :doc:`Section 4.2 -pk intel <Run_options>`
 * :doc:`package intel <package>`
 * Search the :doc:`commands <Commands_all>` pages (:doc:`fix <Commands_fix>`, :doc:`compute <Commands_compute>`,
   :doc:`pair <Commands_pair>`, :doc:`bond, angle, dihedral, improper <Commands_bond>`, :doc:`kspace <Commands_kspace>`) for styles followed by (i)
@@ -1362,9 +1331,9 @@ This package has :ref:`specific installation instructions <kokkos>` on the :doc:
 * ``lib/kokkos/README``
 * :doc:`Accelerator packages <Speed_packages>`
 * :doc:`KOKKOS package <Speed_kokkos>`
-* :doc:`Section 2.6 -k on ... <Run_options>`
-* :doc:`Section 2.6 -sf kk <Run_options>`
-* :doc:`Section 2.6 -pk kokkos <Run_options>`
+* :doc:`Section 4.2 -k on ... <Run_options>`
+* :doc:`Section 4.2 -sf kk <Run_options>`
+* :doc:`Section 4.2 -pk kokkos <Run_options>`
 * :doc:`package kokkos <package>`
 * Search the :doc:`commands <Commands_all>` pages (:doc:`fix <Commands_fix>`, :doc:`compute <Commands_compute>`,
   :doc:`pair <Commands_pair>`, :doc:`bond, angle, dihedral, improper <Commands_bond>`,
@@ -1569,6 +1538,38 @@ A variety of many-body and bond-order potentials.  These include
 
 ----------
 
+.. _PKG-MBX:
+
+MBX Package
+-----------
+
+**Contents**
+
+The pair_style mbx command implements the MBX library for
+MB-pol and MB-nrg data-driven many-body potential energy functions. MBX
+is called using :doc:`pair_style mbx <pair_mbx>` command, which
+allow for MB-nrg potentials such as MB-pol to be used in LAMMPS.
+For more information on MBX, see the `MBX library <https://mbxsimulations.com>`_ website.
+
+**Authors:** The `MBX library <https://mbxsimulations.com>`_ is developed
+by the Paesani group at the University of California, San Diego. Major contributors
+include: Marc Riera, Christopher Knight, Ethan Bull-Vulpe, and Henry Agnew.
+
+.. versionadded:: TBD
+
+**Install:**
+
+This package has :ref:`specific installation instructions <mbx>` on the
+:doc:`Build extras <Build_extras>` page.
+
+**Supporting info:**
+
+* ``src/MBX``: filenames -> commands
+* :doc:`pair_style mbx <pair_mbx>`
+* https://mbxsimulations.com/
+
+----------
+
 .. _PKG-MC:
 
 MC package
@@ -1610,7 +1611,7 @@ MDI package
 A LAMMPS command and fixes to allow client-server coupling of LAMMPS
 to other atomic or molecular simulation codes or materials modeling
 workflows via the `MolSSI Driver Interface
-(MDI) library <https://molssi-mdi.github.io/MDI_Library/html/index.html>`_.
+(MDI) library <https://molssi-mdi.github.io/MDI_Library/>`_.
 
 **Author:** Taylor Barnes - MolSSI, taylor.a.barnes at gmail.com
 
@@ -2263,7 +2264,7 @@ This package has :ref:`specific installation instructions <opt>` on the :doc:`Bu
 * ``src/OPT``: filenames -> commands
 * :doc:`Accelerator packages <Speed_packages>`
 * :doc:`OPT package <Speed_opt>`
-* :doc:`Section 2.6 -sf opt <Run_options>`
+* :doc:`Section 4.2 -sf opt <Run_options>`
 * Search the :doc:`pair style <Commands_pair>` page for styles followed by (t)
 * `Benchmarks page <https://www.lammps.org/bench.html>`_ of website
 
@@ -2409,35 +2410,6 @@ as a plugin to avoid licensing conflicts when distributing binaries.
 * ``lib/plumed/README``
 * :doc:`fix plumed <fix_plumed>`
 * ``examples/PACKAGES/plumed``
-
-----------
-
-.. _PKG-POEMS:
-
-POEMS package
--------------
-
-**Contents:**
-
-A fix that wraps the Parallelizable Open source Efficient Multibody
-Software (POEMS) library, which is able to simulate the dynamics of
-articulated body systems.  These are systems with multiple rigid
-bodies (collections of particles) whose motion is coupled by
-connections at hinge points.
-
-**Author:** Rudra Mukherjee (JPL) while at RPI.
-
-**Install:**
-
-This package has :ref:`specific installation instructions <poems>` on the :doc:`Build extras <Build_extras>` page.
-
-**Supporting info:**
-
-* ``src/POEMS``: filenames -> commands
-* ``src/POEMS/README``
-* ``lib/poems/README``
-* :doc:`fix poems <fix_poems>`
-* ``examples/rigid``
 
 ----------
 
