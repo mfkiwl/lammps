@@ -955,12 +955,13 @@ double FixColvars::compute_vector(int i)
 
 std::string FixColvars::get_thermo_colname(int i)
 {
+  if (i==-1) return "CV(Energy)";
   std::string name;
   int name_length;
   if (comm->me == 0) {
     auto *variables = proxy->colvars->variables();
     if ( i < variables->size() ) {
-      name = (*variables)[i]->name;
+      name = "CV(" + (*variables)[i]->name + ")";
       name_length = name.length();
     } else {
       name = "";
