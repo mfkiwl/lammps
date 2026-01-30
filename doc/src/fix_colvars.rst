@@ -168,6 +168,14 @@ Aside from the state information in a ".colvars.state" file, other
 are produced by Colvars depending on the type of simulation.  For this
 reason, the "output" keyword is required for fix colvars.
 
+.. versionadded:: ???
+
+This fix computes a global vector of the current values of each colvar,
+and supports automatically generated thermo column names when
+using :doc:`thermo_modify colname auto <thermo_modify>`.  The thermo column
+names are "CV(Energy)" for the global scalar and "CV(<name>)" of each colvar
+as defined by the Colvars configuration for the global vector.
+
 
 Controlling Colvars via `fix_modify`
 """"""""""""""""""""""""""""""""""""
