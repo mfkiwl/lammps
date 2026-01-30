@@ -3,26 +3,56 @@ AMBER to LAMMPS Tutorial
 
 **written by Arun Srikanth Sridhar**
 
-`AMBER2LAMMPS <amber2lammps_>`_ is an open-source Python utility that converts AMBER topology (``.prmtop``)
-and coordinate/charge (``.crd``) files into LAMMPS data and parameter files.
-The source code is freely available for use, modification, and distribution under the MIT License.
-It provides both a command-line interface and a Python API with built-in validation. This tutorial provides a detailed workflow with examples using the
-`AMBER2LAMMPS <amber2lammps_>`_ python utility. The legacy scripts
-previously distributed in ``tools/amber2lmp`` have been removed due to
-their reliance on Python 2 and lack of maintenance.
+.. versionadded:: TBD
 
-This tutorial assumes familiarity with molecular dynamics simulations and molecular mechanics force fields, including atom typing, bond topologies, partial charge assignment, and different force field families (AMBER, CHARMM, GROMOS, OPLS/AA). For an introduction to force field concepts, see :doc:`Howto_FFgeneral` before starting this tutorial.
-AMBER offers various force fields for different biomolecules, including ff19SB/ff14SB (proteins), Bsc1/OL3 (DNA/RNA), GLYCAM06 (carbohydrates), and Lipid17 (lipids), alongside the General AMBER Force Field (GAFF/GAFF2) for small organic molecules
-(see https://ambermd.org/AmberModels.php and Wang, J., et al., J. Comput. Chem., 25, 1157-1174 (2004) for GAFF force field development).
+`AMBER2LAMMPS <amber2lammps_>`_ is a Python utility that converts AMBER
+topology (``.prmtop``) and coordinate/charge (``.crd``) files into
+LAMMPS data and parameter files.  It provides both a command-line
+interface and a Python API with built-in validation.  This tutorial
+provides a detailed workflow with examples using the `AMBER2LAMMPS
+<amber2lammps_>`_ python utility.  The legacy scripts previously
+distributed in ``tools/amber2lmp`` have been removed due to their
+reliance on Python 2 and lack of maintenance.
 
-**Important Force Field Compatibility Warning:**
-Different force field families (AMBER, CHARMM, GROMOS, OPLS/AA) use distinct atom typing schemes, charge assignment methods, and parameterization strategies. **Never mix and match parameters from different force field families; this leads to unphysical results and simulation failures.** Always use a consistent force field family throughout your system.
+This tutorial assumes familiarity with molecular dynamics simulations
+and molecular mechanics force fields, including atom typing, bond
+topologies, partial charge assignment, and different force field
+families (AMBER, CHARMM, GROMOS, OPLS/AA).  For an introduction to force
+field concepts, see :doc:`Howto_FFgeneral` before starting this
+tutorial.  AMBER offers various force fields for different biomolecules,
+including ff19SB/ff14SB (proteins), Bsc1/OL3 (DNA/RNA), GLYCAM06
+(carbohydrates), and Lipid17 (lipids), alongside the General AMBER Force
+Field (GAFF/GAFF2) for small organic molecules (see
+https://ambermd.org/AmberModels.php and Wang, J., et
+al., J. Comput. Chem., 25, 1157-1174 (2004) for GAFF force field
+development).
 
-What AMBER2LAMMPS Tool Does
----------------------------
+.. admonition:: Important Force Field Compatibility Warning:
+   :class: warning
 
-This tool helps you run molecular dynamics simulations in **LAMMPS** when you have your molecular system set up in **AMBER** format.
-AMBER2LAMMPS uses AmberTools utilities (antechamber and tleap) to perform the conversion.
+   Different force field families (AMBER, CHARMM, GROMOS, OPLS/AA) use
+   distinct atom typing schemes, charge assignment methods, and
+   parameterization strategies.  **Never mix and match parameters from
+   different force field families; this leads to unphysical results and
+   simulation failures.** Always use a consistent force field family
+   throughout your system.
+
+.. _amber2lammps: https://github.com/askforarun/AMBER2LAMMPS
+
+----------------
+
+.. contents::
+   :local:
+
+----------------
+   
+What the AMBER2LAMMPS tool does
+-------------------------------
+
+This tool helps you run molecular dynamics simulations in **LAMMPS**
+when you have your molecular system set up in **AMBER** format.
+AMBER2LAMMPS uses AmberTools utilities (antechamber and tleap) to
+perform the conversion.
 
 **Typical workflow:**
 
@@ -39,21 +69,28 @@ AMBER2LAMMPS uses AmberTools utilities (antechamber and tleap) to perform the co
 **What you get as output:**
 
 * **LAMMPS data file** (e.g., ``data.lammps``): Contains atomic coordinates, box dimensions, and molecular topology
-* **LAMMPS parameter file** (e.g., ``parm.lammps``): Contains force field parameters for bonds, angles, and nonbonded interactions
+* **LAMMPS parameter file** (e.g., ``parm.lammps``): Contains force field parameters for bonds, angles, and non-bonded interactions
 
+----------------
 
-.. _amber2lammps: https://github.com/askforarun/AMBER2LAMMPS
-
-Project and download
---------------------
+AMBER2LAMMPS homepage and download
+----------------------------------
 
 AMBER2LAMMPS is developed and maintained outside the LAMMPS repository.
-Download it from the upstream project and clone from GitHub:
+Download its source code from its GitHub project page or clone its repository from GitHub:
 
 .. code-block:: bash
 
+   # direct download
+   curl -L -o AMBER2LAMMPS-main.tar.gz https://github.com/askforarun/AMBER2LAMMPS/archive/refs/heads/main.tar.gz
+   tar -xzvvf AMBER2LAMMPS-main.tar.gz
+   cd AMBER2LAMMPS-main
+   
+   # clone repository
    git clone https://github.com/askforarun/AMBER2LAMMPS.git
    cd AMBER2LAMMPS
+
+----------------
 
 Requirements
 ------------
@@ -76,8 +113,8 @@ AMBER2LAMMPS works on all major platforms:
   with ``MOLECULE``, ``KSPACE``, and ``EXTRA-MOLECULE`` packages.
 * **Optional**: Open Babel (``obabel``) if starting from SMILES.
 
-Install dependencies
---------------------
+Installing dependencies
+-----------------------
 
 AmberTools
 ^^^^^^^^^^
@@ -104,7 +141,7 @@ Using pip:
 
 .. code-block:: bash
 
-   pip install parmed numpy
+   pip install --user parmed numpy
 
 Open Babel (optional, for SMILES to PDB conversion)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,7 +156,7 @@ Using pip:
 
 .. code-block:: bash
 
-   pip install openbabel
+   pip install --user openbabel
 
 Using system package manager:
 
@@ -128,15 +165,20 @@ Using system package manager:
    # Ubuntu/Debian
    sudo apt-get install openbabel
 
+   # Fedora/Red Hat
+   sudo dnf install openbabel
+
    # macOS
    brew install open-babel
+
+----------------
 
 Command Reference
 -----------------
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 65
+   :widths: 15 10 75
 
    * - Argument
      - Required?
@@ -167,7 +209,11 @@ Command Reference
      - Vacuum padding (Angstrom) for the simulation box. Default: ``3.8``.
    * - ``--charge``
      - yes
-     - Target net charge (integer). Applies a uniform offset to every atom to reach this charge (1e-6 tolerance). Does not add counterions; add them upstream for charged systems.
+     - Target net charge (integer). Applies a uniform offset to every
+       atom to reach this charge (1e-6 tolerance).
+   * -
+     -
+     - Does not add counterions; add those with the AMBER tools before conversion.
    * - ``--keep-temp``
      - optional
      - Keep temporary files (bonds.txt, angles.txt, dihedrals.txt, pairs.txt) after conversion. Default: ``False``.
@@ -195,7 +241,7 @@ The converter implements the following sequence (see
    is expanded by the buffer on all sides.
 6. **Charge normalization**: Charges are shifted uniformly to achieve the
    target net charge specified by ``--charge``.
-7. **Nonbonded parameters**: Lennard-Jones parameters are extracted
+7. **Non-bonded parameters**: Lennard-Jones parameters are extracted
    from the topology and become ``pair_coeff`` entries in the parameter file.
 8. **Topology terms**: Bonds, angles, and dihedrals are exported via
    ParmEd to temporary files and written to the LAMMPS data/parameter
@@ -205,14 +251,14 @@ The converter implements the following sequence (see
 10. **Verbose diagnostics**: With ``--verbose``, the script reports
     counts, box extents after buffering, and the final total charge.
 
-
 Charge normalization
 ^^^^^^^^^^^^^^^^^^^^
 
 **AMBER Charge Schemes:**
 AMBER uses various charge methods including:
 
-- **RESP** (Restrained Electrostatic Potential): Derived from quantum mechanical electrostatic potential
+- **RESP** (Restrained Electrostatic Potential): Derived from quantum
+  mechanical electrostatic potential
 - **AM1-BCC**: Semi-empirical charges with bond charge corrections
 - **CM5** or **CM1A**: Charge models based on atomic charges
 
@@ -220,15 +266,25 @@ In this tutorial, we will use AM1-BCC charges.
 
 **Charge Normalization in AMBER2LAMMPS:**
 
-- Most systems should be overall neutral for PME to converge; small residual charges (+/-0.003) from AM1-BCC (or other methods) calculated from antechamber are common.
-- For neutral molecules, run with ``--charge 0`` so AMBER2LAMMPS applies a uniform offset that removes the residual charge; this prevents the error from scaling up when the system is replicated in LAMMPS.
-- For intentionally charged species (e.g., protonated or deprotonated), add counterions in tleap/packmol before conversion. AMBER2LAMMPS never adds ions; it only shifts existing charges to your requested total.
+- Most systems should be overall neutral for PME to converge; small
+  residual charges (+/-0.003) from AM1-BCC (or other methods) calculated
+  from antechamber are common.
+- For neutral molecules, run with ``--charge 0`` so AMBER2LAMMPS applies
+  a uniform offset that removes the residual charge; this prevents the
+  error from scaling up when the system is replicated in LAMMPS.
+- For intentionally charged species (e.g., protonated or deprotonated),
+  add counterions in tleap/packmol before conversion. AMBER2LAMMPS never
+  adds ions; it only shifts existing charges to your requested total.
 - How the flag works:
   - ``--charge 0``: uniform shift makes the summed charge 0 within 1e-6.
   - ``--charge +1`` (or any integer): uniform shift makes the total that integer within 1e-6.
   - The same constant is added to every atom, so relative charge differences are preserved.
 
-**Example:** If your system has net charge +0.003 and you specify ``--charge 0``, each atom's charge will be reduced by ``(0.003 / number_of_atoms)`` to reach neutrality.
+**Example:** If your system has net charge +0.003 and you specify
+ ``--charge 0``, each atom's charge will be reduced by ``(0.003 /
+ number_of_atoms)`` to reach neutrality.
+
+-------------       
 
 Workflow Examples
 -----------------
@@ -283,6 +339,8 @@ Assuming ``ethanol.pdb`` is your structure:
    Outputs: ``ethanol.prmtop`` and ``ethanol.crd``.
 
 
+-------------
+       
 Basic conversion workflow
 -------------------------
 
@@ -313,7 +371,8 @@ Save the following LAMMPS commands in a file called ``example_lammps_input.lmp``
    thermo_style custom ebond eangle edihed eimp epair evdwl ecoul elong etail pe
    run 0
 
-The above script includes the parameter file via ``include parm.lammps`` and loads the coordinate data via ``read_data data.lammps``.
+The above script includes the parameter file via ``include parm.lammps``
+and loads the coordinate data via ``read_data data.lammps``.
 
 CLI usage with LAMMPS execution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -333,7 +392,7 @@ Run with LAMMPS:
 
 .. code-block:: bash
 
-   lmp < example_lammps_input.lmp
+   lmp -in example_lammps_input.lmp
 
 Additional CLI examples
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -358,15 +417,20 @@ Additional CLI examples
    # Keep temporary files for debugging
    python3 amber_to_lammps.py debug_data.lammps debug_parm.lammps molecule.prmtop molecule.crd --charge 0 --keep-temp --verbose
 
-Make sure to rename the files in example_lammps_input.lmp to match the names of the files generated by the conversion when custom file names are used.
+Make sure to rename the files in example_lammps_input.lmp to match the
+names of the files generated by the conversion when custom file names
+are used.
 
 Python API usage with LAMMPS execution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+This example script uses the :doc:`LAMMPS Python module <Python_head>`
+to execute LAMMPS directly from Python.
+
 .. code-block:: python
 
    from amber_to_lammps import amber2lammps, validate_files
-   import subprocess
+   from lammps import lammps
 
    validate_files('ethanol.prmtop', 'ethanol.crd')
 
@@ -380,8 +444,9 @@ Python API usage with LAMMPS execution
        verbose=True,
    )
 
-   cmd = "lmp < example_lammps_input.lmp"
-   subprocess.call(cmd, shell=True)
+   lmp = lammps()
+   lmp.file('example_lammps_input.lmp')
+   lmp.close()
 
 Additional API examples
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -444,14 +509,9 @@ Getting Help
 Citation
 --------
 
-If you use this Python tool in your research, please cite it as:
+If you use the AMBER2LAMMPS tool in your research, please cite it as:
 
-**DOI:** 10.5281/zenodo.18114886
-
-License
--------
-
-AMBER2LAMMPS is distributed under the MIT license.
+**DOI:** `10.5281/zenodo.18114886 <https://doi.org/10.5281/zenodo.18114886>`_
 
 .. raw:: latex
 
