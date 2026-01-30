@@ -94,10 +94,9 @@ FixColvars::FixColvars(LAMMPS *lmp, int narg, char **arg) :
   scalar_flag = 1;
   extscalar = 1;
 
-  vector_flag = 1;
-  size_vector = 0;
-  size_vector_variable = 1;
-  extvector = 0; // dont scale colvars values by number of atoms
+  array_flag = 1;
+  size_array_rows_variable = 1;
+  extarray = 0; // dont scale colvars values by number of atoms
   thermo_modify_colname = 1;
 
   global_freq = 1;
@@ -284,8 +283,6 @@ void FixColvars::init()
     }
   }
 #endif // defined(COLVARS_MPI)
-
-
 }
 
 
@@ -364,6 +361,12 @@ void FixColvars::init_taglist()
   MPI_Bcast(taglist, num_coords, MPI_LMP_TAGINT, 0, world);
 }
 
+void FixColvars::update_colvars()
+{
+  if (comm->me == 0) size_array_rows = proxy->colvars->num_variables();
+  MPI_Bcast(&size_array_rows, 1, MPI_INT, 0, world);
+  output->thermo->colname_auto();
+}
 
 int FixColvars::modify_param(int narg, char **arg)
 {
@@ -376,9 +379,8 @@ int FixColvars::modify_param(int narg, char **arg)
   int return_code = parse_fix_arguments(narg, arg, false);
 
   if (return_code >= 0) {
-    // update size_vector in case fix_modify changed number of colvars
-    if (comm->me == 0) size_vector = proxy->colvars->num_variables();
-    MPI_Bcast(&size_vector, 1, MPI_INT, 0, world);
+    // update colvars in case fix_modify changed them
+    update_colvars();
     // A fix colvars argument was detected, return directly
     return return_code;
   }
@@ -470,10 +472,8 @@ void FixColvars::setup(int vflag)
   if (me == 0) {
     setup_io();
     proxy->parse_module_config();
-    size_vector = proxy->colvars->num_variables();
   }
-  MPI_Bcast(&size_vector, 1, MPI_INT, 0, world);
-  output->thermo->colname_auto();
+  update_colvars();
 
   init_taglist();
 
@@ -940,12 +940,20 @@ double FixColvars::compute_scalar()
 
 /* ---------------------------------------------------------------------- */
 
-double FixColvars::compute_vector(int n)
+double FixColvars::compute_array(int m, int n)
 {
-  double value;
+  double value = 0.0;
   if (comm->me == 0) {
-    auto *variables = proxy->colvars->variables();
-    value = (*variables)[n]->value();
+    const auto& variables = *proxy->colvars->variables();
+    if (m >= variables.size())
+      error->all(FLERR, "f_{}[{}][{}] out-of-bounds: {} collective variables available.",
+                 id, m+1, n+1, variables.size());
+                 
+    const auto& variable = variables[m]->value();
+    if (n >= variable.size())
+      error->all(FLERR, "f_{}[{}][{}] out-of-bounds: collective variable {} has size {}.",
+                 id, m+1, n+1, get_thermo_colname(m), variable.size());
+    value = variable[n];
   }
   MPI_Bcast(&value, 1, MPI_DOUBLE, 0, world);
   return value;
@@ -953,15 +961,15 @@ double FixColvars::compute_vector(int n)
 
 /* ---------------------------------------------------------------------- */
 
-std::string FixColvars::get_thermo_colname(int n)
+std::string FixColvars::get_thermo_colname(int m)
 {
   // scalar value if n == -1
-  if (n == -1) return fmt::format("f_{}:energy",id);
+  if (m == -1) return fmt::format("f_{}:energy", id);
   std::string name;
   if (comm->me == 0) {
     auto *variables = proxy->colvars->variables();
-    if ( n < variables->size() )
-      name = fmt::format("f_{}:{}[{}]", id, (*variables)[n]->name, n+1);
+    if ( m < variables->size() )
+      name = fmt::format("f_{}:{}[{}]", id, (*variables)[m]->name, m+1);
     else
       name = "none";
   }
