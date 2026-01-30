@@ -251,6 +251,14 @@ int FixColvars::setmask()
   return mask;
 }
 
+/* ---------------------------------------------------------------------- */
+
+void FixColvars::post_constructor()
+{
+  if (comm->me == 0) proxy->parse_module_config();
+  update_colvars();
+}
+
 
 void FixColvars::init()
 {
@@ -361,12 +369,6 @@ void FixColvars::init_taglist()
   MPI_Bcast(taglist, num_coords, MPI_LMP_TAGINT, 0, world);
 }
 
-void FixColvars::update_colvars()
-{
-  if (comm->me == 0) size_array_rows = proxy->colvars->num_variables();
-  MPI_Bcast(&size_array_rows, 1, MPI_INT, 0, world);
-  output->thermo->colname_auto();
-}
 
 int FixColvars::modify_param(int narg, char **arg)
 {
@@ -471,9 +473,7 @@ void FixColvars::setup(int vflag)
 
   if (me == 0) {
     setup_io();
-    proxy->parse_module_config();
   }
-  update_colvars();
 
   init_taglist();
 
@@ -940,6 +940,26 @@ double FixColvars::compute_scalar()
 
 /* ---------------------------------------------------------------------- */
 
+void FixColvars::update_colvars()
+{
+  int sizes_array[2];
+  if (comm->me == 0) {
+    const auto& variables = *proxy->colvars->variables();
+    size_array_rows = variables.size();
+    size_array_cols = 0;
+    for( int i=0; i<size_array_rows ; i++ ) {
+      const auto& v = variables[i]->value();
+      size_array_cols = std::max(size_array_cols, static_cast<int>(v.size()));
+    }
+    sizes_array[0] = size_array_rows;
+    sizes_array[1] = size_array_cols;
+  }
+  MPI_Bcast(sizes_array, 2, MPI_INT, 0, world);
+  size_array_rows = sizes_array[0];
+  size_array_cols = sizes_array[1];
+  output->thermo->colname_auto();
+}
+
 double FixColvars::compute_array(int m, int n)
 {
   double value = 0.0;
@@ -958,8 +978,6 @@ double FixColvars::compute_array(int m, int n)
   MPI_Bcast(&value, 1, MPI_DOUBLE, 0, world);
   return value;
 }
-
-/* ---------------------------------------------------------------------- */
 
 std::string FixColvars::get_thermo_colname(int m)
 {

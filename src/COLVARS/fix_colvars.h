@@ -49,6 +49,7 @@ class FixColvars : public Fix {
   ~FixColvars() override;
 
   int setmask() override;
+  void post_constructor() override;
   void init() override;
   void setup(int) override;
   int modify_param(int, char **) override;
