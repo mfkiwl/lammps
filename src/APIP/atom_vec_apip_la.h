@@ -28,7 +28,7 @@ class AtomVecApipLa : public AtomVec {
  public:
   AtomVecApipLa(class LAMMPS *);
 
-  void grow_pointers();
+  void grow_pointers() override;
 
   void force_clear(int, size_t) override;
   void data_atom_post(int) override;
