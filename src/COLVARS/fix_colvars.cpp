@@ -940,12 +940,12 @@ double FixColvars::compute_scalar()
 
 /* ---------------------------------------------------------------------- */
 
-double FixColvars::compute_vector(int i)
+double FixColvars::compute_vector(int n)
 {
   double value;
   if (comm->me == 0) {
     auto *variables = proxy->colvars->variables();
-    value = (*variables)[i]->value();
+    value = (*variables)[n]->value();
   }
   MPI_Bcast(&value, 1, MPI_DOUBLE, 0, world);
   return value;
@@ -953,21 +953,19 @@ double FixColvars::compute_vector(int i)
 
 /* ---------------------------------------------------------------------- */
 
-std::string FixColvars::get_thermo_colname(int i)
+std::string FixColvars::get_thermo_colname(int n)
 {
-  if (i == -1) return "CV(Energy)";
+  // scalar value if n == -1
+  if (n == -1) return fmt::format("f_{}:energy",id);
   std::string name;
-  int name_length;
   if (comm->me == 0) {
     auto *variables = proxy->colvars->variables();
-    if ( i < variables->size() ) {
-      name = "CV(" + (*variables)[i]->name + ")";
-      name_length = name.length();
-    } else {
-      name = "";
-      name_length = 0;
-    }
+    if ( n < variables->size() )
+      name = fmt::format("f_{}:{}[{}]", id, (*variables)[n]->name, n+1);
+    else
+      name = "none";
   }
+  int name_length = name.length();
   MPI_Bcast(&name_length, 1, MPI_INT, 0, world);
   if (comm->me > 0) name.resize(name_length);
   MPI_Bcast(name.data(), name_length, MPI_CHAR, 0, world);
