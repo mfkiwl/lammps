@@ -1221,7 +1221,7 @@ void Thermo::colname_auto()
       if (icompute->thermo_modify_colname) {
         keyword_user[ifield] = icompute->get_thermo_colname(argindex1[ifield]-1);
         if ( argi.get_dim() == 2 )
-          keyword_user[ifield] += fmt::format("[{}]", argindex2[ifield]);        
+          keyword_user[ifield] += fmt::format("[{}]", argindex2[ifield]);
       }
     }
     if (argi.get_type() == ArgInfo::FIX) {
