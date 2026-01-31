@@ -38,7 +38,7 @@ fix_modify 2 config """
     name three
     distanceVec {
       group1 { atomNumbers 80 82 83 84 }
-      group2 { atomNumbers 37 }
+      group2 { atomNumbers $(atoms) }
     }
   }
   colvar {
