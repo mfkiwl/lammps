@@ -170,10 +170,27 @@ reason, the "output" keyword is required for fix colvars.
 
 .. versionadded:: TBD
 
-This fix computes a global array of the current values of each collective variable,
-with `f_ID[I][1]` for a scalar-valued collective variable and `f_ID[I][1], ..., f_ID[I][N]`
-for a vector-valued collective variable. The number of rows of the global array is equal
-to the number of collective variables.
+This fix computes a global array of the current values of each collective variable with the number of rows equal
+to the number of collective variables and:
+
+* `f_ID[I][1]` for a scalar-valued collective variable
+* `f_ID[I][1], ..., f_ID[I][N]` for a vector-valued collective variable
+
+Almost all collective variables are scalars:
+
+* distances (`distance, distanceZ, distanceXY, distanceInv <https://colvars.github.io/colvars-refman-lammps.html#sec:cvc_distances>`_)
+
+* angles (`angle, dipoleAngle, dihedral, polarTheta, polarPhi <https://colvars.github.io/colvars-refman-lammps.html#sec:cvc_angles>`_)
+
+* contacts (`coordNum, selfCoordNum, hBond <https://colvars.github.io/colvars-refman-lammps/colvars-refman-lammps.html#sec:cvc_contacts>`_)
+
+* `collective metrics <https://colvars.github.io/colvars-refman-lammps/colvars-refman-lammps.html#sec:cvc_collective>`_, `rotations <https://colvars.github.io/colvars-refman-lammps/colvars-refman-lammps.html#sec:cvc_rotations>`_, `protein structure descriptors <https://colvars.github.io/colvars-refman-lammps/colvars-refman-lammps.html#sec:cvc_protein>`_, `geometric path <https://colvars.github.io/colvars-refman-lammps/colvars-refman-lammps.html#sec:cvc_gpath>`_, `arithmetic path <https://colvars.github.io/colvars-refman-lammps/colvars-refman-lammps.html#sec:cvc_apathCV>`_, ...
+
+with the exception of:
+
+* 3-dimensional vectors (`distanceVec <https://colvars.github.io/colvars-refman-lammps.html#sec:cvc_distanceVec>`_ and `distanceDir <https://colvars.github.io/colvars-refman-lammps.html#sec:cvc_distanceDir>`_)
+
+* 4-dimensional unit quaternion (`orientation <https://colvars.github.io/colvars-refman-lammps.html#sec:cvc_orientation>`_)
 
 This fix supports automatically generated thermo column names when using
 :doc:`thermo_modify colname auto <thermo_modify>`. The thermo column names
