@@ -65,7 +65,7 @@ The following values can be computed and output.
   donor and acceptor atom in distance units
 - The *angle* value is the current hydrogen-donor-acceptor angle in degrees
 - The *hdist* value is the current distance between the hydrogen atom
-  and and hydrogen bond acceptor atom in distance units
+  and hydrogen bond acceptor atom in distance units
 - The *ehb* value is the hydrogen bond strength computed as the sum of
   the pairwise potential energy between a) the donor atom and the
   acceptor atom, and b) the hydrogen atom and the acceptor atom
@@ -205,8 +205,8 @@ to the donor atom with an explicit bond.  It cannot be used with pair
 styles like :doc:`reaxff <pair_reaxff>` where bonds are implicit.
 
 To compute the hydrogen bond strength the :doc:`pair style <pair_style>`
-must support computation of pair-wise forces and energies, which is not
-typically not available for many-body and machine learning potentials.
+must support computation of pair-wise forces and energies, which is
+generally not available for many-body and machine learning potentials.
 
 Related commands
 """"""""""""""""

@@ -73,7 +73,7 @@ ComputeHBondLocal::ComputeHBondLocal(LAMMPS *lmp, int narg, char **arg) :
   acceptormask = group->get_bitmask_by_id(FLERR, arg[6], "compute hbond/local acceptor");
   hydrogenmask = group->get_bitmask_by_id(FLERR, arg[7], "compute hbond/local hydrogen");
 
-  // fist three elements of a local vector row are always set
+  // first three elements of a local vector row are always set
   vflag.resize(MAXVAL);
   vflag[HYDROGEN] = HYDROGEN;
   vflag[DONOR] = DONOR;

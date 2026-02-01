@@ -996,7 +996,7 @@ input file:
                              adiam 1 0.5 adiam 2 0.4 ccolor hb yellow
 
 Note how the *cflag1* parameter is used to shrink the arrows so that
-their tips just touche the hydrogen bond acceptor atoms.
+their tips just touch the hydrogen bond acceptor atoms.
 
 If one wants to distinguish between donated and accepted hydrogen bonds
 for a subsystem, the input could become more complex and multiple
@@ -1024,7 +1024,7 @@ and the surrounding water molecules in both directions.
     group           wacceptor type 13
     group           hydrogen type 10 14
 
-    # peptide-water hydrogen bonds in where the peptide is the donor
+    # peptide-water hydrogen bonds where the peptide is the donor
     compute hb1 all hbond/local 3.3 30.0 pdonor wacceptor hydrogen
     # peptide-water hydrogen bonds where the peptide is the acceptor
     compute hb2 all hbond/local 3.7 30.0 wdonor pacceptor hydrogen

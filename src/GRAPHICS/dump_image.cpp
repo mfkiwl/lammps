@@ -1611,12 +1611,10 @@ void DumpImage::create_image()
       // set color and transparency
       double opacity = iobj.opacity;
       if (iobj.colorstyle == TYPE) {
-        itype = static_cast<int>(objarray[i][0]) % ntypes;
-        if (!itype) itype = ntypes;
+        itype = static_cast<int>(objarray[i][0] - 1.0) % ntypes + 1;
         color = colortype[itype];
       } else if (iobj.colorstyle == ELEMENT) {
-        itype = static_cast<int>(objarray[i][0]) % ntypes;
-        if (!itype) itype = ntypes;
+        itype = static_cast<int>(objarray[i][0] - 1.0) % ntypes + 1;
         color = colorelement[itype];
       } else if (iobj.colorstyle == CONSTANT) {
         color = iobj.rgb;
