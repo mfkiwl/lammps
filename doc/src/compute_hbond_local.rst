@@ -19,15 +19,14 @@ Syntax
 * hgroup-ID = group-ID of the hydrogen bond hydrogen atoms
 
 * one or more values may be appended
-* value = *dist* or *angle* or *hdist* or *engpot* or *force*
+* value = *dist* or *angle* or *hdist* or *ehb*
 
 .. parsed-literal::
 
-     *dist* = distance between hydrogen bond donor and acceptor atoms
-     *angle* = hydrogen - donor - acceptor angle
-     *hdist* = distance between hydrogen bond hydrogen and acceptor atoms
-     *engpot* = hydrogen bond potential energy
-     *force* = hydrogen bond force
+     *dist* = distance between hydrogen bond donor and acceptor atoms (distance units)
+     *angle* = hydrogen - donor - acceptor angle (degrees)
+     *hdist* = distance between hydrogen bond hydrogen and acceptor atoms (distance units)
+     *ehb* = hydrogen bond strength (energy units)
 
 Examples
 """"""""
@@ -35,6 +34,7 @@ Examples
 .. code-block:: LAMMPS
 
    compute hb all hbond/local 3.2 30.0 dgroup agroup hgroup
+   compute hb all hbond/local 3.2 30.0 oxygen oxygen hydrogen dist hdist angle ehb
 
 Description
 """""""""""
@@ -62,14 +62,13 @@ To be counted as a hydrogen bond the following conditions have to be met
 The following values can be computed and output.
 
 - The *dist* value is the current distance between the hydrogen bond
-  donor and acceptor atom.
-- The *angle* value is the current hydrogen-donor-acceptor angle.
+  donor and acceptor atom in distance units
+- The *angle* value is the current hydrogen-donor-acceptor angle in degrees
 - The *hdist* value is the current distance between the hydrogen atom
-  and and hydrogen bond acceptor atom.
-- The *engpot* value is the current pairwise energy between the hydrogen
-  atom and and hydrogen bond acceptor atom.
-- The *force* value is the magnitude of the current pairwise force
-  between the hydrogen atom and and hydrogen bond acceptor atom.
+  and and hydrogen bond acceptor atom in distance units
+- The *ehb* value is the hydrogen bond strength computed as the sum of
+  the pairwise potential energy between a) the donor atom and the
+  acceptor atom, and b) the hydrogen atom and the acceptor atom
 
 Output info
 """""""""""
@@ -80,53 +79,64 @@ columns in this order: the atom-ID of the hydrogen bond hydrogen atom,
 the atom-ID of the hydrogen bond donor atom, the atom-ID of the hydrogen
 bond acceptor atom, followed by the properties in the order they were
 selected in the compute command line.  To avoid double counting,
-hydrogen bonds are counted and their information stored on the MPI
-process where the hydrogen bond donor atom is a local atom; hydrogen and
-acceptor atoms may be ghost atoms.  The number of rows in the local
-array is the number of hydrogen bonds; the number of columns is three
-plus the number of selected value to compute and store.  The array can
-be accessed by any command that uses local data.
+hydrogen bonds are only counted and their information stored on the MPI
+process where the hydrogen bond donor atom is a *local* atom; hydrogen
+and acceptor atoms may be ghost atoms.  The number of columns is thus
+three plus the number of selected value to compute and store.  The array
+can be accessed by any command that uses local data.
 
-As an example, these commands can be added to the
+As an example, the commands shown below can be added to the
 ``examples/rdf-adf/in.spce`` example input file to compute and output
-the hydrogen bond information of the bulk water system in multiple ways.
+the hydrogen bond information of the compute for a bulk water system in
+multiple ways.
 
 .. code-block:: LAMMPS
 
-   group     ogroup type 1
-   group     hgroup type 2
-   variable  nmol equal count(ogroup)
+   group           ogroup type 1
+   group           hgroup type 2
+   variable        nmol equal count(ogroup)
 
-   compute   hb all hbond/local 3.3 30.0 ogroup ogroup hgroup dist angle hdist engpot force
+   # water oxygen atoms are both hydrogen bond donor and acceptor
+   compute         hb       all      hbond/local 3.3 30.0 ogroup ogroup hgroup dist hdist angle ehb
 
-   # output all hydrogen bonds. each line contains: hydrogen-ID donor-ID acceptor-ID r_DA theta_HDA r_HA pe fpair
-   dump      hb all local 100 hbonds.dump  c_hb[*]
+   # output all hydrogen bonds. each line contains: hydrogen-ID donor-ID acceptor-ID r_DA r_HA theta_HDA e_hb
+   dump            hb       all      local 100 hbonds.dump c_hb[*]
+   dump_modify     hb label "HBONDS" colname 1 Hydrogen colname 2 "   Donor " colname 3 Acceptor &
+                      colname 4 " r_DA  " colname 5 "  r_HA  " colname 6 "  theta " colname 7 "  e_hb"  &
+                      format line "%20.0f %8.0f %8.0f %8.3f %8.3f %8.3f %8.3f"
 
    # for the number of hydrogen bonds per molecule we must multiply by 2
    # since water oxygens are in equal parts hydrogen bond donor and acceptor
-   variable  nhb_mol equal 2.0*c_hb/${nmol}
+   variable        nhb_mol equal 2.0*c_hb/${nmol}
+   # get average values for distances, angles and strength for the current step
+   compute         avg      all      reduce ave c_hb[4] c_hb[5] c_hb[6] c_hb[7] inputs local
+   # get running average of those values
+   fix             ave      all      ave/time 100 1 100 v_nhb_mol c_avg[1] c_avg[2] c_avg[3] c_avg[4] ave running
 
-   # get average values for distances and angles for the current step
-   compute   avg all reduce ave c_hb[4] c_hb[5] c_hb[6] inputs local
-   # get running average average of those values for data analysis
-   fix       ave all ave/time 100 1 100 v_nhb_mol c_avg[1] c_avg[2] c_avg[3] ave running
-   # get histogram of O-O distance
-   fix       dhist all ave/histo 100 100 10000 2.4  3.5 30 c_hb[4] kind local mode vector file hbond_histo_dist.dat
-   # get histogram of angle
-   fix       ahist all ave/histo 100 100 10000 0.0 30.0 30 c_hb[5] kind local mode vector file hbond_histo_angle.dat
+   # get histogram of hydrogen bond distance
+   fix       dhist all ave/histo 100 100 10000 2.3 3.3 30 c_hb[4] file hbond_histo_dist.dat mode vector kind local
+   # get histogram of hydrogen bond angle
+   fix       ahist all ave/histo 100 100 10000 0.0 30.0 30 c_hb[6] file hbond_histo_angle.dat mode vector kind local
+   # get histogram of hydrogen bond strength
+   fix       ahist all ave/histo 100 100 10000 -11.0 1.0 30 c_hb[7] file hbond_histo_eng.dat mode vector kind local
 
-   # output computed global data as thermo output first for step then averaged
-   thermo_style   custom step temp press v_nhb_mol c_avg[*] f_avg[*]
-   thermo_modify  colname 4 "n_HB/mol" colname 5 "r_DA" colname 6 "theta_HDA" colname 7 "r_HA" &
-                  colname 8 "<n_HB/mol>" colname 9 "<r_DA>" colname 10 "<theta_HDA>" colname 11 "<r_HA>"
+   # output computed global data as thermo output, first for current step, then running averages
+   thermo_style    custom step temp press v_nhb_mol c_avg[*] f_ave[*]
+   thermo_modify   colname 4 "n_HB/mol" colname 5 "r_DA " colname 6 "r_HA " colname 7 "theta_HDA" colname 8 "e_HB " &
+                   colname 9 "<n_HB/mol>" colname 10 "<r_DA> " colname 11 "<r_HA> " colname 12 "<theta_HDA>" colname 13 "<e_HB> "
+   thermo          100
+
 
 The :doc:`dump local <dump>` command will output the three atom-IDs for
 hydrogen bond donor, acceptor, and hydrogen atom, then donor-acceptor
 distance, hydrogen-donor-acceptor angle, hydrogen-acceptor distance,
-potential energy and force for the hydrogen bond.  The :doc:`custom
+and hydrogen bond strength for the hydrogen bond.  The :doc:`custom
 thermo output <thermo_style>` includes the number of hydrogen bonds per
 molecule and the distances and angles averaged over the system and then
 over time.
+
+See the :doc:`Howto_viz` for examples of visualizing the computed
+hydrogen bonds with :doc:`dump image <dump_image>`.
 
 ----------
 
@@ -150,10 +160,10 @@ timestep to the next.
 
 The output for *dist* and *hdist* will be in distance :doc:`units
 <units>`.  The output for *angle* will be in degrees.  The output for
-*engpot* will be in energy :doc:`units <units>`.  The output for *force*
-will be in force :doc:`units <units>`.  If a :doc:`kspace solver
-<kspace_style>` is used, the force and energy values **only** contain
-the real-space contributions.
+*strength* will be in energy :doc:`units <units>`.  If a :doc:`kspace
+solver <kspace_style>` is used, this energy *only* contains the
+real-space contributions. But since the distances are small, the
+missing contribution should be very small.
 
 -----------
 
@@ -194,10 +204,9 @@ This compute requires that the hydrogen atom of a hydrogen bond is bound
 to the donor atom with an explicit bond.  It cannot be used with pair
 styles like :doc:`reaxff <pair_reaxff>` where bonds are implicit.
 
-To compute potential energy and force of the hydrogen bonds the
-:doc:`pair style <pair_style>` must support computation of pair-wise
-forces and energies, which is not available for many-body and
-machine learning potentials.
+To compute the hydrogen bond strength the :doc:`pair style <pair_style>`
+must support computation of pair-wise forces and energies, which is not
+typically not available for many-body and machine learning potentials.
 
 Related commands
 """"""""""""""""

@@ -41,7 +41,7 @@ using MathConst::RAD2DEG;
 static constexpr int DELTA = 10000;
 static constexpr double EPSILON = 1.0e-10;
 
-enum { HYDROGEN = 0, DONOR, ACCEPTOR, DIST, ANGLE, HDIST, ENGPOT, FORCE, MAXVAL };
+enum { HYDROGEN = 0, DONOR, ACCEPTOR, DIST, ANGLE, HDIST, ENGPOT, MAXVAL };
 
 /* ---------------------------------------------------------------------- */
 
@@ -88,14 +88,10 @@ ComputeHBondLocal::ComputeHBondLocal(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg], "hdist") == 0) {
       hdistflag = 1;
       vflag[nvalues++] = HDIST;
-    } else if (strcmp(arg[iarg], "engpot") == 0) {
+    } else if (strcmp(arg[iarg], "ehb") == 0) {
       hdistflag = 1;
       singleflag = 1;
       vflag[nvalues++] = ENGPOT;
-    } else if (strcmp(arg[iarg], "force") == 0) {
-      hdistflag = 1;
-      singleflag = 1;
-      vflag[nvalues++] = FORCE;
     } else {
       error->all(FLERR, iarg, "Unknown compute hbond/local property {}", arg[iarg]);
     }
@@ -104,7 +100,7 @@ ComputeHBondLocal::ComputeHBondLocal(LAMMPS *lmp, int narg, char **arg) :
   vflag.resize(nvalues);
 
   if (singleflag && (!force->pair || !force->pair->single_enable))
-    error->all(FLERR, "Computation of hydrogen bond energy or force not supported by pair style");
+    error->all(FLERR, "Computation of hydrogen bond energy not supported by pair style");
 
   // initialize output settings
 
@@ -251,8 +247,11 @@ int ComputeHBondLocal::compute_hbonds(int flag)
   // - then loop over special 1-2 neighbors for find hydrogens attached to donor and within groups
   // - then loop over neighbors of donors and apply group selections
   // - finally compute distance and angle and apply cutoffs and compute requested values
-  // since we use a full neighbor list, each non-bonded pair will be tried for donor - acceptor and acceptor - donor
+  // since we use a full neighbor list, each non-bonded pair will be tried
+  //   tried for being a donor - acceptor pair and a acceptor - donor pair
   // hydrogen bonds are considered local when the donor atom is local
+  // the communication cutoff required by the pair style is assumed to be large enough
+  // so that all atoms in a hydrogen bond are accessible on the MPI process
 
   for (int ii = 0; ii < inum; ++ii) {
     int i = ilist[ii];
@@ -295,15 +294,19 @@ int ComputeHBondLocal::compute_hbonds(int flag)
                   double fpair = 0.0;
                   double epot = 0.0;
                   double hdist = 0.0;
+                  double hdistsq = 0.0;
                   if (hdistflag) {
                     double dx = x[k][0] - x[j][0];
                     double dy = x[k][1] - x[j][1];
                     double dz = x[k][2] - x[j][2];
-                    hdist = sqrt(dx * dx + dy * dy + dz * dz);
+                    hdistsq = dx * dx + dy * dy + dz * dz;
+                    hdist = sqrt(hdistsq);
                   }
-                  if (singleflag)
-                    epot =
-                        force->pair->single(j, k, type[j], type[k], hdist * hdist, 1.0, 1.0, fpair);
+                  if (singleflag) {
+                    double tmp;
+                    epot = force->pair->single(k, j, type[k], type[j], hdistsq, 1.0, 1.0, tmp);
+                    epot += force->pair->single(i, j, type[i], type[j], distsq, 1.0, 1.0, tmp);
+                  }
 
                   int m = 0;
                   for (const auto &val : vflag) {
@@ -328,9 +331,6 @@ int ComputeHBondLocal::compute_hbonds(int flag)
                         break;
                       case ENGPOT:
                         alocal[nhb][m] = epot;
-                        break;
-                      case FORCE:
-                        alocal[nhb][m] = -hdist * fpair;
                         break;
                       default:
                         alocal[nhb][m] = 0.0;
