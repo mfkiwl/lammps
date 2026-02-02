@@ -144,7 +144,7 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
   }
   if (!atom->apip_la_inp_flag || !atom->apip_la_avg_flag || !atom->apip_la_norm_flag) {
     error->all(FLERR,
-               "fix lambda/la/csp/apip requires atomic style with csp, csp_avg and csp_norm.");
+               "fix lambda/la/csp/apip requires atomic style with apip_la_inp, apip_la_avg and apip_la_norm.");
   }
 
   size_f_lambda = atom->nlocal;
