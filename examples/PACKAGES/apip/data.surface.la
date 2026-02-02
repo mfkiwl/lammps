@@ -1,4 +1,4 @@
-LAMMPS data file via write_data, version 22 Jul 2025, timestep = 0, units = metal
+LAMMPS data file via write_data, version 10 Dec 2025, timestep = 0, units = metal
 
 7800 atoms
 1 atom types
@@ -11,7 +11,7 @@ Masses
 
 1 63.546
 
-Atoms # apip/la
+Atoms # apip
 
 1 1 36.13989492843509 0.011222208470945341 90.3125777711784 -1 0 -1
 2 1 1.8453968662071587 1.8638903437145289 90.30342681008683 0 0 -1

@@ -134,8 +134,6 @@
 
 /atom_vec_apip.cpp
 /atom_vec_apip.h
-/atom_vec_apip_la.cpp
-/atom_vec_apip_la.h
 /fix_lambda_apip.cpp
 /fix_lambda_apip.h
 /fix_lambda_la_csp_apip.cpp

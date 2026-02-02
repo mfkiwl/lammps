@@ -16,7 +16,7 @@ variable	cspavg_r_hi equal 8.0
 
 ## basic stuff
 units		metal
-atom_style	apip/la # own atom style required for APIP
+atom_style	apip conservative # own atom style required for APIP
 timestep	0.00001
 
 # copper surfaces at room temperature

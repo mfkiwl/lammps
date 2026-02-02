@@ -235,8 +235,10 @@ void FixLambdaLACSPAPIP::init()
     error->all(FLERR, "cutoff of potential ({}) smaller than cutoff of the CSP ({})",
                force->pair->cutforce, sqrt(csp_cutsq));
 
-  if (strcmp(atom->atom_style, "apip/la"))
-    error->all(FLERR, "fix lambda/la/csp/apip requires atom style apip/la");
+  if (strcmp(atom->atom_style, "apip"))
+    error->all(FLERR, "fix lambda/la/csp/apip requires atom style apip");
+  if (! (atom->apip_la_inp_flag && atom->apip_la_norm_flag && atom->apip_la_avg_flag))
+    error->all(FLERR, "fix lambda/la/csp/apip requires atom style apip conservative");
 }
 
 /**

@@ -92,7 +92,7 @@ following components:
 
    .. tab:: conservative dynamic switching parameter
 
-        #. :doc:`atom_style apip/la <atom_style>` so that the switching parameter :math:`\lambda_i` can be stored.
+        #. :doc:`atom_style apip conservative <atom_style>` so that the switching parameter :math:`\lambda_i` can be stored.
         #. A fast potential: :doc:`eam/apip <pair_eam_apip>` or :doc:`pace/fast/apip <pair_pace_apip>`.
         #. A precise potential: :doc:`pace/precise/apip <pair_pace_apip>`.
         #. :doc:`fix lambda/la/csp/apip <fix_lambda_la_csp_apip>` to calculate a differentiable switching parameter :math:`\lambda_i`.
@@ -142,7 +142,7 @@ Example
 
       .. code-block:: LAMMPS
 
-         atom_style apip/la
+         atom_style apip conservative
          comm_style tiled
 
          pair_style hybrid/overlay eam/fs/apip pace/precise/apip
@@ -159,7 +159,7 @@ Example
 
          fix 5 all balance 100 1.1 rcb weight var myweight
 
-      First, the :doc:`atom_style apip/la <atom_style>` and the communication style are set.
+      First, the :doc:`atom_style apip conservative <atom_style>` and the communication style are set.
 
       .. note::
          Note, that :doc:`comm_style <comm_style>` *tiled* is required for the style *rcb* of
