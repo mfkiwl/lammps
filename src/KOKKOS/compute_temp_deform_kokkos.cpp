@@ -23,7 +23,6 @@
 #include "comm.h"
 #include "domain_kokkos.h"
 #include "error.h"
-#include "fix_nh.h"
 #include "force.h"
 #include "group.h"
 #include "math_extra.h"
@@ -31,6 +30,8 @@
 #include "update.h"
 
 using namespace LAMMPS_NS;
+
+enum{NOBIAS,BIAS};
 
 /* ---------------------------------------------------------------------- */
 
@@ -123,7 +124,7 @@ template<class DeviceType>
 void ComputeTempDeformKokkos<DeviceType>::remove_bias_all_kk()
 {
   remove_deform_bias_all_kk();
-  if (which == FixNH::BIAS) {
+  if (which == BIAS) {
     if (temperature->kokkosable) temperature->remove_bias_all_kk();
     else {
       atomKK->sync(this->temperature->execution_space,this->temperature->datamask_read);
@@ -147,7 +148,7 @@ void ComputeTempDeformKokkos<DeviceType>::restore_bias_all()
 template<class DeviceType>
 void ComputeTempDeformKokkos<DeviceType>::restore_bias_all_kk()
 {
-  if (which == FixNH::BIAS) {
+  if (which == BIAS) {
     if (temperature->kokkosable) temperature->restore_bias_all();
     else {
       atomKK->sync(this->temperature->execution_space,this->temperature->datamask_read);

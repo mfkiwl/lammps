@@ -32,6 +32,8 @@
 
 using namespace LAMMPS_NS;
 
+enum{NOBIAS,BIAS};
+
 /* ---------------------------------------------------------------------- */
 
 ComputeTempDeform::ComputeTempDeform(LAMMPS *lmp, int narg, char **arg) :
@@ -97,19 +99,19 @@ void ComputeTempDeform::init()
 
   temperature = modify->get_compute_by_id(id_temp);
   if (!temperature)
-    error->all(FLERR,"Temperature ID {} for compute temp/deform does not exist", id_temp);
+    error->all(FLERR,"Temperature ID {} for compute {} does not exist", id_temp, style);
   if (temperature->tempflag == 0)
-    error->all(FLERR,"Compute temp/deform temperature ID {} does not compute temperature", id_temp);
+    error->all(FLERR,"Compute {} temperature ID {} does not compute temperature", style, id_temp);
   if (temperature->igroup != igroup)
-    error->all(FLERR,"Group of temperature compute with ID {} for compute temp/deform does not match", id_temp);
+    error->all(FLERR,"Group of temperature compute with ID {} for compute {} does not match", id_temp, style);
 
   // avoid possibility of self-referential loop
 
-  if (strcmp(temperature->style, "temp/deform")==0)
-    error->all(FLERR,"Compute temp/deform temperature ID {} cannot be of style temp/deform", id_temp);
+  if (utils::strmatch(temperature->style, "^temp/deform"))
+    error->all(FLERR,"Compute {} internal temperature compute cannot be of style temp/deform", style);
 
-  if (temperature->tempbias) which = FixNH::BIAS;
-  else which = FixNH::NOBIAS;
+  if (temperature->tempbias) which = BIAS;
+  else which = NOBIAS;
 
   // make sure internal temperature compute is called first
 
@@ -132,8 +134,6 @@ void ComputeTempDeform::setup()
 
 void ComputeTempDeform::dof_compute()
 {
-  adjust_dof_fix();
-  natoms_temp = group->count(igroup);
   dof = temperature->dof;
 }
 
@@ -145,7 +145,7 @@ double ComputeTempDeform::compute_scalar()
 
   remove_deform_bias_all();
   scalar = temperature->compute_scalar();
-  if (dynamic) dof = temperature->dof;
+  if (dynamic) dof_compute();
   restore_deform_bias_all();
 
   return scalar;
@@ -160,7 +160,7 @@ void ComputeTempDeform::compute_vector()
   remove_deform_bias_all();
   temperature->compute_vector();
   vector = temperature->vector;
-  if (dynamic) dof = temperature->dof;
+  if (dynamic) dof_compute();
   restore_deform_bias_all();
 }
 
@@ -171,7 +171,7 @@ void ComputeTempDeform::compute_vector()
 void ComputeTempDeform::remove_bias(int i, double *v)
 {
   remove_deform_bias(i, v);
-  if (which == FixNH::BIAS) temperature->remove_bias(i, v);
+  if (which == BIAS) temperature->remove_bias(i, v);
 }
 
 /* ----------------------------------------------------------------------
@@ -181,7 +181,7 @@ void ComputeTempDeform::remove_bias(int i, double *v)
 void ComputeTempDeform::remove_bias_thr(int i, double *v, double *b)
 {
   remove_deform_bias_thr(i, v, b);
-  if (which == FixNH::BIAS) temperature->remove_bias_thr(i, v, b);
+  if (which == BIAS) temperature->remove_bias_thr(i, v, b);
 }
 
 /* ----------------------------------------------------------------------
@@ -191,7 +191,7 @@ void ComputeTempDeform::remove_bias_thr(int i, double *v, double *b)
 void ComputeTempDeform::remove_bias_all()
 {
   remove_deform_bias_all();
-  if (which == FixNH::BIAS) temperature->remove_bias_all();
+  if (which == BIAS) temperature->remove_bias_all();
 }
 
 /* ----------------------------------------------------------------------
@@ -201,7 +201,7 @@ void ComputeTempDeform::remove_bias_all()
 
 void ComputeTempDeform::restore_bias(int i, double *v)
 {
-  if (which == FixNH::BIAS) temperature->restore_bias(i, v);
+  if (which == BIAS) temperature->restore_bias(i, v);
   restore_deform_bias(i, v);
 }
 
@@ -212,7 +212,7 @@ void ComputeTempDeform::restore_bias(int i, double *v)
 
 void ComputeTempDeform::restore_bias_thr(int i, double *v, double *b)
 {
-  if (which == FixNH::BIAS) temperature->restore_bias_thr(i, v, b);
+  if (which == BIAS) temperature->restore_bias_thr(i, v, b);
   restore_deform_bias_thr(i, v, b);
 }
 
@@ -223,7 +223,7 @@ void ComputeTempDeform::restore_bias_thr(int i, double *v, double *b)
 
 void ComputeTempDeform::restore_bias_all()
 {
-  if (which == FixNH::BIAS) temperature->restore_bias_all();
+  if (which == BIAS) temperature->restore_bias_all();
   restore_deform_bias_all();
 }
 
@@ -257,7 +257,7 @@ void ComputeTempDeform::remove_deform_bias_thr(int i, double *v, double *b)
   double *h_ratelo = domain->h_ratelo;
 
   domain->x2lamda(atom->x[i], lamda);
-  if (which == FixNH::NOBIAS) {
+  if (which == NOBIAS) {
     b[0] = h_rate[0] * lamda[0] + h_rate[5] * lamda[1] + h_rate[4] * lamda[2] + h_ratelo[0];
     b[1] = h_rate[1] * lamda[1] + h_rate[3] * lamda[2] + h_ratelo[1];
     b[2] = h_rate[2] * lamda[2] + h_ratelo[2];
@@ -327,7 +327,7 @@ void ComputeTempDeform::restore_deform_bias(int /*i*/, double *v)
 
 void ComputeTempDeform::restore_deform_bias_thr(int i, double *v, double *b)
 {
-  if (which == FixNH::NOBIAS) {
+  if (which == NOBIAS) {
     v[0] += b[0];
     v[1] += b[1];
     v[2] += b[2];
@@ -432,9 +432,9 @@ int ComputeTempDeform::modify_param(int narg, char **arg) {
                    "To adjust extra/dof, use compute_modify on the internal temperature compute \"{}\".",
                    style, id_temp);
   } else if (strcmp(arg[0],"dynamic/dof") == 0) {
-    error->warning(FLERR, "compute_modify dynamic/dof ignored by compute {}. "
-                   "To adjust dynamic/dof, use compute_modify on the internal temperature compute \"{}\".",
-                   style, id_temp);
+    // Can't set dynamic_user flag directly, so pass through the modify call
+
+    temperature->modify_params(MIN(narg, 2), arg);
   }
   return 0;
 }

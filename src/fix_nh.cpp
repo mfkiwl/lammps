@@ -46,6 +46,7 @@ static constexpr double EPSILON = 1.0e-6;
 
 enum{NONE,XYZ,XY,YZ,XZ};
 enum{ISO,ANISO,TRICLINIC};
+enum{NOBIAS,BIAS};
 
 /* ----------------------------------------------------------------------
    NVT,NPH,NPT integrators for improved Nose-Hoover equations of motion
