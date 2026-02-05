@@ -85,7 +85,6 @@ void AtomVecHybridKokkos::sort_kokkos(Kokkos::BinSort<KeyViewType, BinOp> &Sorte
 void AtomVecHybridKokkos::pack_comm_bonus_kokkos(const int &n, const DAT::tdual_int_1d &list,
                                                  const DAT::tdual_double_2d_lr &buf, int vel_flag)
 {
-  // TODO: set up an stylesKK_bonus for only bonus atom_style functions?
   for (int k = 0; k < nstyles; k++)
     stylesKK[k]->pack_comm_bonus_kokkos(n,list,buf,vel_flag);
 }
