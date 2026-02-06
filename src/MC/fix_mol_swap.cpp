@@ -57,7 +57,12 @@ FixMolSwap::FixMolSwap(LAMMPS *lmp, int narg, char **arg) :
   restart_global = 1;
   time_depend = 1;
 
-  vizsteps = 1000;
+  // no visualization without an atom map
+  if (atom->map_style == Atom::MAP_NONE) {
+    vizsteps = 0;
+  } else {
+    vizsteps = 1000;
+  }
 
   // parse args
 
@@ -559,6 +564,11 @@ void FixMolSwap::restart(char *buf)
 
 int FixMolSwap::image(int *&objs, double **&parms)
 {
+  // no visualization without an atom map
+  if (atom->map_style == Atom::MAP_NONE)
+    error->all(FLERR, Error::NOLASTLINE,
+               "Cannot use fix mol/swap in dump image without an atom map");
+
   memory->destroy(imgobjs);
   memory->destroy(imgparms);
 

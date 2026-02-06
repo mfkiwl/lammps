@@ -69,7 +69,12 @@ FixAtomSwap::FixAtomSwap(LAMMPS *lmp, int narg, char **arg) :
   restart_global = 1;
   time_depend = 1;
 
-  vizsteps = 1000;
+  // no visualization without an atom map
+  if (atom->map_style == Atom::MAP_NONE) {
+    vizsteps = 0;
+  } else {
+    vizsteps = 1000;
+  }
 
   // required args
 
@@ -78,10 +83,10 @@ FixAtomSwap::FixAtomSwap(LAMMPS *lmp, int narg, char **arg) :
   seed = utils::inumeric(FLERR, arg[5], false, lmp);
   double temperature = utils::numeric(FLERR, arg[6], false, lmp);
 
-  if (nevery <= 0) error->all(FLERR, "Illegal fix atom/swap command");
-  if (ncycles < 0) error->all(FLERR, "Illegal fix atom/swap command");
-  if (seed <= 0) error->all(FLERR, "Illegal fix atom/swap command");
-  if (temperature <= 0.0) error->all(FLERR, "Illegal fix atom/swap command");
+  if (nevery <= 0) error->all(FLERR, 3, "Illegal fix atom/swap command nevery value");
+  if (ncycles < 0) error->all(FLERR, 4, "Illegal fix atom/swap command ncycles value");
+  if (seed <= 0) error->all(FLERR, 5, "Illegal fix atom/swap command random seed");
+  if (temperature <= 0.0) error->all(FLERR, 6, "Illegal fix atom/swap command temperature value");
 
   beta = 1.0 / (force->boltz * temperature);
 
@@ -974,6 +979,11 @@ void *FixAtomSwap::extract(const char *name, int &dim)
 
 int FixAtomSwap::image(int *&objs, double **&parms)
 {
+  // no visualization without an atom map
+  if (atom->map_style == Atom::MAP_NONE)
+    error->all(FLERR, Error::NOLASTLINE,
+               "Cannot use fix atom/swap in dump image without an atom map");
+
   memory->destroy(imgobjs);
   memory->destroy(imgparms);
 
