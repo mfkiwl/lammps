@@ -78,6 +78,38 @@ capped.
 
 The *fflag2* setting determines the diameter of the cylinders.
 
+The following input can be added to the ``examples/obstacle/in.obstacle``
+example input after adjusting its :doc:`create_box <create_box>` and
+:doc:`mass <mass>` commands to support 4 atom types instead of 3.
+
+.. code-block:: LAMMPS
+
+   # select atoms to trace and assign atom type 4 so they have a different color (yellow)
+   region   trace block 2 3 1.25 8.75 INF INF
+   group    trace region trace
+   set      group trace type 4
+
+   # create trajectory lines by averaging positions over 10 MD steps each 10 steps apart
+   fix      lines trace graphics/lines 10 10 100 25
+   # visualize the trace in silver with a diameter of 0.6 which is half of that of the atoms
+   dump     viz   all image 100 obstacle-*.png type type size 800 600 zoom 2.5 center s 0.50 0.7 0 &
+                                           shiny 0.5 fsaa yes box no 0.025 fix lines const 1 0.6
+   dump_modify  viz  pad 6 backcolor darkgray adiam * 1.2 fcolor lines silver
+
+.. |lines1| image:: img/lines-start.png
+   :width: 33%
+.. |lines2| image:: img/lines-mid.png
+   :width: 33%
+.. |lines3| image:: img/lines-end.png
+   :width: 33%
+
+|lines1|  |lines2|  |lines3|
+
+.. raw:: html
+
+   <center>(Trajectory lines visualization example. Click to see the full-size images)</center><br>
+
+
 Restart, fix_modify, output, run start/stop, minimize info
 ==========================================================
 
