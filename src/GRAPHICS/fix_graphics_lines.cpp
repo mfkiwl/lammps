@@ -58,6 +58,7 @@ FixGraphicsLines::FixGraphicsLines(LAMMPS *lmp, int narg, char **arg) :
   time_depend = 1;
   restart_global = 1;
   dynamic_group_allow = 0;    // there is no clean way to use dynamic groups for this
+  firstflag = 1;
 
   nvalues = ivalue = numobjs = 0;
 }
@@ -166,6 +167,10 @@ void FixGraphicsLines::end_of_step()
   if (restart_reset == 0) {
     // when we are not restarting, we have to call end_of_step() for fix ave/atom explicitly
     fave->end_of_step();
+    if (firstflag) {
+      firstflag = 0;
+      return;
+    }
     // we only continue when one block of averaging is complete
     if (update->ntimestep % nfreq) return;
 
@@ -184,6 +189,7 @@ void FixGraphicsLines::end_of_step()
     ++ivalue;
     if (ivalue == nlength) ivalue = 0;
   } else {
+    firstflag = 0;
     // when we are restarting, we also get called from setup()
     // we only need to know the number of local atoms in the fix group
     // then we use the restarted data to fill the image data arrays
