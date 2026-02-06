@@ -42,7 +42,7 @@ class FixGraphicsLines : public Fix {
   int image(int *&, double **&) override;
 
  protected:
-  int nrepeat, nfreq, nmax;
+  int nrepeat, nfreq, nlength;
   int nvalues, ivalue;
 
   // for storing graphics objects

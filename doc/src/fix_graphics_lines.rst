@@ -47,7 +47,7 @@ additional sets of positions, the then oldest set in the history storage
 will be overwritten and thus limiting the length of the trace.
 
 The *group-ID* sets the group ID of the atoms selected to have the selected
-property represented.  This may be a dynamic group.
+property represented.  This may *not* be a dynamic group.
 
 The *Nfreq* value determines how often the graphics data is updated.
 This should be the same value as the corresponding *N* parameter of the

@@ -42,7 +42,15 @@ FixGraphicsLines::FixGraphicsLines(LAMMPS *lmp, int narg, char **arg) :
   nevery = utils::inumeric(FLERR, arg[3], false, lmp);
   nrepeat = utils::inumeric(FLERR, arg[4], false, lmp);
   nfreq = utils::inumeric(FLERR, arg[5], false, lmp);
-  nmax = utils::inumeric(FLERR, arg[6], false, lmp);
+  nlength = utils::inumeric(FLERR, arg[6], false, lmp);
+
+  if (nevery <= 0) error->all(FLERR, 3, "Illegal fix graphics/lines nevery value: {}", nevery);
+  if (nrepeat <= 0) error->all(FLERR, 4, "Illegal fix graphics/lines nrepeat value: {}", nrepeat);
+  if (nfreq <= 0) error->all(FLERR, 5, "Illegal fix graphics/lines nfreq value: {}", nfreq);
+  if (nlength <= 0) error->all(FLERR, 6, "Illegal fix graphics/lines nlength value: {}", nlength);
+  if (peratom_freq % nevery || nrepeat * nevery > peratom_freq)
+    error->all(FLERR, Error::NOPOINTER,
+               "Inconsistent fix graphics/lines nevery/nrepeat/nfreq values");
 
   // fix settings
   scalar_flag = 1;
@@ -61,20 +69,25 @@ void FixGraphicsLines::post_constructor()
   const auto *gname = group->names[igroup];
   id_cprop = utils::strdup(id + std::string("_COMPUTE_PROPERTY_ATOM"));
   cprop = modify->add_compute(fmt::format("{0} {1} property/atom xu yu zu", id_cprop, gname));
+  if (!cprop)
+    error->all(FLERR, Error::NOLASTLINE,
+               "Error creating internal unwrapped coodinate compute for fix graphics/lines");
   id_fave = utils::strdup(id + std::string("_FIX_AVE_ATOM"));
   fave = modify->add_fix(fmt::format("{0} {1} ave/atom {2} {3} {4} c_{5}[1] c_{5}[2] c_{5}[3]",
                                      id_fave, gname, nevery, nrepeat, nfreq, id_cprop));
   if (!fave)
-    error->all(FLERR, Error::NOLASTLINE, "Error creating internal averaging for fix graphics/line");
+    error->all(FLERR, Error::NOLASTLINE,
+               "Error creating internal position averaging for fix graphics/lines");
   id_fstore = utils::strdup(id + std::string("_FIX_STORE_ATOM"));
-  auto cmd = fmt::format("{0} {1} STORE/ATOM {2} 3 0 1", id_fstore, gname, nmax);
+  auto cmd = fmt::format("{0} {1} STORE/ATOM {2} 3 0 1", id_fstore, gname, nlength);
   fstore = dynamic_cast<FixStoreAtom *>(modify->add_fix(cmd));
   if (!fstore)
-    error->all(FLERR, Error::NOLASTLINE, "Error creating internal storage for fix graphics/line");
+    error->all(FLERR, Error::NOLASTLINE, "Error creating internal storage for fix graphics/lines");
 
   // turn off automatic end_of_step() processing for fix ave/atom.
   // We call it manually instead to ensure it is called *before* we access its data
   int ifave = modify->find_fix(id_fave);
+  if (ifave < 0) error->all(FLERR, Error::NOLASTLINE, "Internal fix information corrupted");
   modify->fmask[ifave] &= ~END_OF_STEP;
 }
 
@@ -116,11 +129,11 @@ void FixGraphicsLines::write_restart(FILE *fp)
     list[0] = nevery;
     list[1] = nrepeat;
     list[2] = nfreq;
-    list[3] = nmax;
+    list[3] = nlength;
     list[4] = nvalues;
     list[5] = ivalue;
-    fwrite(&size,sizeof(int),1,fp);
-    fwrite(list,sizeof(double),6,fp);
+    fwrite(&size, sizeof(int), 1, fp);
+    fwrite(list, sizeof(double), 6, fp);
   }
 }
 
@@ -129,7 +142,7 @@ void FixGraphicsLines::write_restart(FILE *fp)
 void FixGraphicsLines::restart(char *buf)
 {
   auto *list = (double *) buf;
-  if ((list[0] != nevery) || (list[1] != nrepeat) || (list[2] != nfreq) || (list[3] != nmax))
+  if ((list[0] != nevery) || (list[1] != nrepeat) || (list[2] != nfreq) || (list[3] != nlength))
     error->all(FLERR, Error::NOLASTLINE, "Cannot restart fix graphics/lines: settings don't match");
 
   nvalues = list[4];
@@ -167,9 +180,9 @@ void FixGraphicsLines::end_of_step()
         ++n;
       }
     }
-    if (nvalues < nmax) ++nvalues;
+    if (nvalues < nlength) ++nvalues;
     ++ivalue;
-    if (ivalue == nmax) ivalue = 0;
+    if (ivalue == nlength) ivalue = 0;
   } else {
     // when we are restarting, we also get called from setup()
     // we only need to know the number of local atoms in the fix group
@@ -179,6 +192,8 @@ void FixGraphicsLines::end_of_step()
       if (mask[i] & groupbit) ++n;
     }
     restart_reset = 0;
+    // we do not have any stored data, so we cannot generate any graphics
+    if (nvalues == 0) return;
   }
 
   // allocate storage for the largest possible number of graphics objects
