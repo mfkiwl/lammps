@@ -12,7 +12,7 @@ Syntax
 
 * ID, group-ID are documented in :doc:`fix <fix>` command
 * graphics/lines = style name of this fix command
-* Nevery = retrieve unwraped position information every this many timesteps
+* Nevery = retrieve unwrapped position information every this many timesteps
 * Nrepeat = number of times to use the position information for calculating averages
 * Nfreq = store position averages every this many timesteps
 * Nlength = length of averaged position history
