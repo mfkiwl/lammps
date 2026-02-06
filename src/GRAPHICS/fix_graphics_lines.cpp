@@ -48,7 +48,7 @@ FixGraphicsLines::FixGraphicsLines(LAMMPS *lmp, int narg, char **arg) :
   if (nrepeat <= 0) error->all(FLERR, 4, "Illegal fix graphics/lines nrepeat value: {}", nrepeat);
   if (nfreq <= 0) error->all(FLERR, 5, "Illegal fix graphics/lines nfreq value: {}", nfreq);
   if (nlength <= 0) error->all(FLERR, 6, "Illegal fix graphics/lines nlength value: {}", nlength);
-  if (peratom_freq % nevery || nrepeat * nevery > peratom_freq)
+  if ((nfreq % nevery) || (nrepeat * nevery > nfreq))
     error->all(FLERR, Error::NOPOINTER,
                "Inconsistent fix graphics/lines nevery/nrepeat/nfreq values");
 

@@ -43,7 +43,7 @@ class FixGraphicsLines : public Fix {
 
  protected:
   int nrepeat, nfreq, nlength;
-  int nvalues, ivalue;
+  int nvalues, ivalue, firstflag;
 
   // for storing graphics objects
   int numobjs;
