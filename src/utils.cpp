@@ -1704,9 +1704,8 @@ bool utils::is_double(const std::string &str)
 {
   if (str.empty()) return false;
 
-  return strmatch(str, R"(^[+-]?\d+\.?\d*$)") ||
-      strmatch(str, R"(^[+-]?\d+\.?\d*[eE][+-]?\d+$)") || strmatch(str, R"(^[+-]?\d*\.?\d+$)") ||
-      strmatch(str, R"(^[+-]?\d*\.?\d+[eE][+-]?\d+$)");
+  return strmatch(str, R"(^[+-]?\d+\.?\d*$)") || strmatch(str, R"(^[+-]?\d+\.?\d*[eE][+-]?\d+$)") ||
+      strmatch(str, R"(^[+-]?\d*\.?\d+$)") || strmatch(str, R"(^[+-]?\d*\.?\d+[eE][+-]?\d+$)");
 }
 
 /* ----------------------------------------------------------------------
