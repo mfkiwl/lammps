@@ -403,15 +403,16 @@ int LabelMap::infer_bondtype(int type1, int type2)
 int LabelMap::infer_bondtype(const std::vector<std::string> &mytypes)
 {
   // search for matching bond type label with symmetry considerations
+  int out = 0;
   std::vector<std::string> btypes(2);
   for (int i = 0; i < nbondtypes; i++) {
     int status = parse_typelabel(2, btypelabel[i], btypes);
     if ((status != -1) && (btypes.size() == 2)) {
       if (mytypes[0] == btypes[0] && mytypes[1] == btypes[1]) return i + 1;
-      if (mytypes[0] == btypes[1] && mytypes[1] == btypes[0]) return -(i + 1);
+      if (mytypes[0] == btypes[1] && mytypes[1] == btypes[0]) out = -(i + 1);
     }
   }
-  return 0;
+  return out;
 }
 
 /* ----------------------------------------------------------------------
