@@ -3492,9 +3492,9 @@ void FixBondReact::update_everything()
                     int alocal3 = atom->map(atag3);
                     if (alocal1 < 0 || alocal2 < 0 || alocal3 < 0)
                       error->one(FLERR,"Bond/react: Fix bond/react needs ghost atoms from further away");
-                    int atype = atom->lmap->infer_angletype(type[alocal1],type[alocal2],type[alocal3]);
-                    if (atype == -1) error->one(FLERR,"Bond/react: Unable to infer angle type from wildcard atoms");
-                    angle_type[jjlocal][p] = atype;
+                    int signed_atype = atom->lmap->infer_angletype(type[alocal1],type[alocal2],type[alocal3]);
+                    if (!atype) error->one(FLERR,"Bond/react: Unable to infer angle type from wildcard atoms");
+                    angle_type[jjlocal][p] = std::abs(signed_atype);
                   } else {
                     angle_type[jjlocal][p] = rxn.product->angle_type[j][p];
                   }
