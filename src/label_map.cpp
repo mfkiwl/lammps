@@ -468,6 +468,7 @@ int LabelMap::infer_angletype(const std::vector<std::string> &mytypes)
    infer dihedral type from four atom types
    input/output is numeric types, uses type labels internally
    assumes dihedral types of the form "a-b-c-d"
+   returns negative of numeric type if constituent atoms types in reverse order
 ------------------------------------------------------------------------- */
 
 int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
@@ -475,7 +476,7 @@ int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
   // check for out of range input
   if ((type1 < 1) || (type1 > natomtypes) || (type2 < 1) || (type2 > natomtypes) || (type3 < 1) ||
       (type3 > natomtypes) || (type4 < 1) || (type4 > natomtypes))
-    return -1;
+    return 0;
 
   // convert numeric atom types to type label
   std::vector<std::string> mytypes(4);
@@ -484,7 +485,7 @@ int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
   mytypes[2] = typelabel[type3 - 1];
   mytypes[3] = typelabel[type4 - 1];
   for (size_t i = 0; i < 4; i++)
-    if (mytypes[i].empty()) return -1;
+    if (mytypes[i].empty()) return 0;
 
   return infer_dihedraltype(mytypes);
 }
@@ -493,24 +494,25 @@ int LabelMap::infer_dihedraltype(int type1, int type2, int type3, int type4)
    infer dihedral type from four atom types
    input/output is numeric types, uses type labels internally
    assumes dihedral types of the form "a-b-c-d"
+   returns negative of numeric type if constituent atoms types in reverse order
 ------------------------------------------------------------------------- */
 
 int LabelMap::infer_dihedraltype(const std::vector<std::string> &mytypes)
 {
   // search for matching dihedral type label
 
+  int out = 0;
   int status;
   std::vector<std::string> dtypes(4);
   for (int i = 0; i < ndihedraltypes; i++) {
     status = parse_typelabel(4, dtypelabel[i], dtypes);
     if (status != -1)
-      if ((mytypes[0] == dtypes[0] && mytypes[1] == dtypes[1] && mytypes[2] == dtypes[2] &&
-           mytypes[3] == dtypes[3]) ||
-          (mytypes[3] == dtypes[0] && mytypes[2] == dtypes[1] && mytypes[1] == dtypes[2] &&
-           mytypes[0] == dtypes[3]))
-        return i + 1;
+      if (mytypes[0] == dtypes[0] && mytypes[1] == dtypes[1] && mytypes[2] == dtypes[2] &&
+           mytypes[3] == dtypes[3]) return i + 1;
+      if (mytypes[3] == dtypes[0] && mytypes[2] == dtypes[1] && mytypes[1] == dtypes[2] &&
+           mytypes[0] == dtypes[3]) out = -(i + 1);
   }
-  return -1;
+  return out;
 }
 
 /* ----------------------------------------------------------------------

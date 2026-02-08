@@ -4287,6 +4287,31 @@ void Molecule::check_labels()
         }
       }
     }
+    // some dihedrals are not symmetric, like class2
+    if (check_which_labels[2]) {
+      for (int i = 0; i < natoms; i++) {
+        for (int j = 0; j < num_dihedral[i]; j++) {
+          int dtype = dihedral_type[i][j];
+          int atom1 = dihedral_atom1[i][j];
+          int atom2 = dihedral_atom2[i][j];
+          int atom3 = dihedral_atom3[i][j];
+          int atom4 = dihedral_atom4[i][j];
+          int inferred_type = atom->lmap->infer_dihedraltype(type[atom1-1], type[atom2-1], type[atom3-1], type[atom4-1]);
+          if (inferred_type != dtype) {
+            std::string atom1_label = atom->lmap->find_label(type[atom1-1], Atom::ATOM);
+            std::string atom2_label = atom->lmap->find_label(type[atom2-1], Atom::ATOM);
+            std::string atom3_label = atom->lmap->find_label(type[atom3-1], Atom::ATOM);
+            std::string atom4_label = atom->lmap->find_label(type[atom4-1], Atom::ATOM);
+            std::string dlabel = atom->lmap->find_label(dtype, Atom::DIHEDRAL);
+            if (inferred_type == -dtype)
+              error->warning(FLERR, "Dihedral between atoms {}, {}, {}, {} has constituent atom types ({}, {}, {}, {}) in reverse order compared to its "
+                                    "dihedral type label ({})", atom1, atom2, atom3, atom4, atom1_label, atom2_label, atom3_label, atom4_label, dlabel);
+            else error->warning(FLERR, "Dihedral between atoms {}, {}, {}, {} has constituent atom types ({}, {}, {}, {}) that do not match its "
+                                       "dihedral label ({})", atom1, atom2, atom3, atom4, atom1_label, atom2_label, atom3_label, atom4_label, dlabel);
+          }
+        }
+      }
+    }
   }
 }
 
