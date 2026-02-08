@@ -3764,9 +3764,9 @@ void FixBondReact::update_everything()
                     int local4 = atom->map(tag4);
                     if (local1 < 0 || local2 < 0 || local3 < 0 || local4 < 0)
                       error->one(FLERR,"Bond/react: Fix bond/react needs ghost atoms from further away");
-                    int itype = atom->lmap->infer_impropertype(type[local1],type[local2],type[local3],type[local4]);
-                    if (itype == -1) error->one(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
-                    improper_type[jjlocal][p] = itype;
+                    int signed_itype = atom->lmap->infer_impropertype(type[local1],type[local2],type[local3],type[local4]);
+                    if (!signed_itype) error->one(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
+                    improper_type[jjlocal][p] = std::abs(signed_itype);
                   } else {
                     improper_type[jjlocal][p] = rxn.product->improper_type[j][p];
                   }
@@ -3805,9 +3805,9 @@ void FixBondReact::update_everything()
                       int local4 = atom->map(tag4);
                       if (local1 < 0 || local2 < 0 || local3 < 0 || local4 < 0)
                         error->one(FLERR,"Bond/react: Fix bond/react needs ghost atoms from further away");
-                      int itype = atom->lmap->infer_impropertype(type[local1],type[local2],type[local3],type[local4]);
-                      if (itype == -1) error->one(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
-                      improper_type[jjlocal][insert_num] = itype;
+                      int signed_itype = atom->lmap->infer_impropertype(type[local1],type[local2],type[local3],type[local4]);
+                      if (!signed_itype) error->one(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
+                      improper_type[jjlocal][insert_num] = std::abs(signed_itype);
                     } else {
                       improper_type[jjlocal][insert_num] = rxn.product->improper_type[j][p];
                     }
