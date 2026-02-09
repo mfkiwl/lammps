@@ -348,9 +348,8 @@ void FixColvars::setup_io()
 {
   if (comm->me == 0) {
     proxy->set_input_prefix(std::string(inp_name ? inp_name : ""));
-    if (proxy->input_prefix().size() > 0)
-      proxy->log("Will read input state from file \""+
-                 proxy->input_prefix()+".colvars.state\"");
+    if (!proxy->input_prefix().empty())
+      proxy->log("Will read input state from file \"" + proxy->input_prefix() + ".colvars.state\"");
     proxy->set_output_prefix(std::string(out_name ? out_name : ""));
     // Try to extract a restart prefix from a potential restart command
     LAMMPS_NS::Output *outp = lmp->output;
