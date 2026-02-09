@@ -570,7 +570,7 @@ int LabelMap::infer_impropertype(const std::vector<std::string> &mytypes, std::a
 
   // search for matching improper type label
   int out = 0;
-  int status, navail_types = 4; //nlist;
+  int status, navail_types = 4;
   std::vector<std::string> itypes(4);
   std::vector<std::string> avail_types = mytypes;
   if (iorder) *iorder = {1, 2, 3, 4};
@@ -585,7 +585,6 @@ int LabelMap::infer_impropertype(const std::vector<std::string> &mytypes, std::a
             status = -1;
             break;
           }
-        } else {
           avail_types[j] = "";
           navail_types--;
         }
