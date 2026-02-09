@@ -78,7 +78,7 @@ The following values can be computed and output.
   acceptor atom, and b) the hydrogen atom and the acceptor atom.  This
   is typically a positive value for an attractive interaction.
 
-If the *ecut* keyword is used, and additional energy cutoff is applied.
+If the *ecut* keyword is used, an additional energy cutoff is applied.
 The computed hydrogen bond strength must be larger than the *ecut* value
 or else the potential hydrogen bond is not counted as such.  The energy
 cutoff is not applied for a negative value of *ecut*, which is the
