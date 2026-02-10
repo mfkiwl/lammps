@@ -496,10 +496,10 @@ void FixColvars::post_force(int /*vflag*/)
 {
   const auto me = comm->me;
   // some housekeeping: update status of the proxy as needed
-  if (me == 0)
+  if (me == 0) {
     if (proxy->want_exit())
       error->one(FLERR, Error::NOLASTLINE, "Run aborted on request from colvars module.");
-
+  }
   const tagint * const tag = atom->tag;
   const double * const * const x = atom->x;
   double * const * const f = atom->f;
