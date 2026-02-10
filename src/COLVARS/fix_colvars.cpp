@@ -786,7 +786,7 @@ double FixColvars::compute_array(int m, int n)
   if (comm->me == 0) {
     const auto& variables = *proxy->colvars->variables();
     if (m >= variables.size())
-      error->all(FLERR, "f_{}[{}][{}] out-of-bounds: {} collective variables available.",
+      error->all(FLERR, Error::NOLASTLINE, "f_{}[{}][{}] out-of-bounds: {} collective variables available.",
                  id, m+1, n+1, variables.size());
     const auto& variable = variables[m]->value();
     if (n >= variable.size())
