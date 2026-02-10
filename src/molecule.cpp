@@ -136,6 +136,7 @@ void Molecule::command(int narg, char **arg, int &index)
       if (sizescale <= 0.0) error->all(FLERR, iarg + 1, "Illegal scale factor {}", sizescale);
       iarg += 2;
     } else if (strcmp(arg[iarg], "check_labels") == 0) {
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "check_labels", error);
       if (strchr(arg[iarg + 1], 'b'))
         check_which_labels[0] = 1;
       if (strchr(arg[iarg + 1], 'a'))

@@ -131,7 +131,7 @@ type labels must contain their constituent atom types delimited by
 hyphens, e.g., 'c2-c2-c2-n' for a dihedral that contains three atoms of
 type 'c2' and one atom of 'n'.  If the constituent atoms do not have these
 atom types in the proper order, a warning will be generated when using
-this *check_types* keyword.  Certain symmetries are considered to account
+this *check_labels* keyword.  Certain symmetries are considered to account
 for equivalent ways of writing higher-order interactions.  Type labels for
 bonds, angles, and dihedrals are assumed to be equivalent to those written
 in reverse order.  For example, an angle with type label 'c1-c2-n' is

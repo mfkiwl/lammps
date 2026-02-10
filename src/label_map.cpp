@@ -506,11 +506,12 @@ int LabelMap::infer_dihedraltype(const std::vector<std::string> &mytypes)
   std::vector<std::string> dtypes(4);
   for (int i = 0; i < ndihedraltypes; i++) {
     status = parse_typelabel(4, dtypelabel[i], dtypes);
-    if (status != -1)
+    if (status != -1) {
       if (mytypes[0] == dtypes[0] && mytypes[1] == dtypes[1] && mytypes[2] == dtypes[2] &&
            mytypes[3] == dtypes[3]) return i + 1;
       if (mytypes[3] == dtypes[0] && mytypes[2] == dtypes[1] && mytypes[1] == dtypes[2] &&
            mytypes[0] == dtypes[3]) out = -(i + 1);
+    }
   }
   return out;
 }
@@ -552,15 +553,16 @@ int LabelMap::infer_impropertype(const std::vector<std::string> &mytypes, std::a
 {
   // search for matching improper type label
   int out = 0;
-  int status, navail_types = 4;
+  int status, navail_types;
   std::vector<std::string> itypes(4);
-  std::vector<std::string> avail_types = mytypes;
-  if (iorder) *iorder = {1, 2, 3, 4};
+  std::vector<std::string> avail_types;
   for (int i = 0; i < nimpropertypes; i++) {
     status = parse_typelabel(4, itypelabel[i], itypes);
     if (status != -1) {
       if (mytypes[0] == itypes[0] && mytypes[1] == itypes[1] && mytypes[2] == itypes[2] &&
           mytypes[3] == itypes[3]) return i + 1;
+      navail_types = 4;
+      avail_types = mytypes;
       for (int j = 0; j < 4; j++) {
         if (force->improper && force->improper->symmatoms[j] == 1) {
           if (mytypes[j] != itypes[j]) {
@@ -573,6 +575,7 @@ int LabelMap::infer_impropertype(const std::vector<std::string> &mytypes, std::a
       }
       if (status == -1) continue;
 
+      if (iorder) *iorder = {0, 1, 2, 3};
       for (int j = 0; j < 4; j++) {
         if (std::string(force->improper_style) == "none" || force->improper->symmatoms[j] == 0) {
           for (int k = 0; k < 4; k++) {

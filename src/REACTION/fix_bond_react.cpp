@@ -3539,13 +3539,13 @@ void FixBondReact::update_everything()
                       if (!signed_atype) error->one(FLERR,"Bond/react: Unable to infer angle type from wildcard atoms");
                       angle_type[jjlocal][insert_num] = std::abs(signed_atype);
                       if (signed_atype > 0) {
-                        angle_atom1[jjlocal][p] = atag1;
-                        angle_atom2[jjlocal][p] = atag2;
-                        angle_atom3[jjlocal][p] = atag3;
+                        angle_atom1[jjlocal][insert_num] = atag1;
+                        angle_atom2[jjlocal][insert_num] = atag2;
+                        angle_atom3[jjlocal][insert_num] = atag3;
                       } else {
-                        angle_atom1[jjlocal][p] = atag3;
-                        angle_atom2[jjlocal][p] = atag2;
-                        angle_atom3[jjlocal][p] = atag1;
+                        angle_atom1[jjlocal][insert_num] = atag3;
+                        angle_atom2[jjlocal][insert_num] = atag2;
+                        angle_atom3[jjlocal][insert_num] = atag1;
                       }
                     } else {
                       angle_type[jjlocal][insert_num] = rxn.product->angle_type[j][p];
@@ -3698,15 +3698,15 @@ void FixBondReact::update_everything()
                       if (!signed_dtype) error->one(FLERR,"Bond/react: Unable to infer dihedral type from wildcard atoms");
                       dihedral_type[jjlocal][insert_num] = std::abs(signed_dtype);
                       if (signed_dtype > 0) {
-                        dihedral_atom1[jjlocal][p] = tag1;
-                        dihedral_atom2[jjlocal][p] = tag2;
-                        dihedral_atom3[jjlocal][p] = tag3;
-                        dihedral_atom4[jjlocal][p] = tag4;
+                        dihedral_atom1[jjlocal][insert_num] = tag1;
+                        dihedral_atom2[jjlocal][insert_num] = tag2;
+                        dihedral_atom3[jjlocal][insert_num] = tag3;
+                        dihedral_atom4[jjlocal][insert_num] = tag4;
                       } else {
-                        dihedral_atom1[jjlocal][p] = tag4;
-                        dihedral_atom2[jjlocal][p] = tag3;
-                        dihedral_atom3[jjlocal][p] = tag2;
-                        dihedral_atom4[jjlocal][p] = tag1;
+                        dihedral_atom1[jjlocal][insert_num] = tag4;
+                        dihedral_atom2[jjlocal][insert_num] = tag3;
+                        dihedral_atom3[jjlocal][insert_num] = tag2;
+                        dihedral_atom4[jjlocal][insert_num] = tag1;
                       }
                     } else {
                       dihedral_type[jjlocal][insert_num] = rxn.product->dihedral_type[j][p];
@@ -3864,13 +3864,13 @@ void FixBondReact::update_everything()
                       if (!signed_itype) error->one(FLERR,"Bond/react: Unable to infer improper type from wildcard atoms");
                       improper_type[jjlocal][insert_num] = std::abs(signed_itype);
                       if (signed_itype > 0) {
-                        improper_atom1[jjlocal][p] = tag1;
-                        improper_atom2[jjlocal][p] = tag2;
-                        improper_atom3[jjlocal][p] = tag3;
-                        improper_atom4[jjlocal][p] = tag4;
+                        improper_atom1[jjlocal][insert_num] = tag1;
+                        improper_atom2[jjlocal][insert_num] = tag2;
+                        improper_atom3[jjlocal][insert_num] = tag3;
+                        improper_atom4[jjlocal][insert_num] = tag4;
                       } else {
-                        tagint* iptrs[4] = {&improper_atom1[jjlocal][p],&improper_atom2[jjlocal][p],
-                                            &improper_atom3[jjlocal][p],&improper_atom4[jjlocal][p]};
+                        tagint* iptrs[4] = {&improper_atom1[jjlocal][insert_num],&improper_atom2[jjlocal][insert_num],
+                                            &improper_atom3[jjlocal][insert_num],&improper_atom4[jjlocal][insert_num]};
                         // types guaranteed to match, just in wrong order
                         std::array<tagint, 4> tags = {tag1, tag2, tag3, tag4};
                         for (int iatom = 0; iatom < 4; iatom++)
