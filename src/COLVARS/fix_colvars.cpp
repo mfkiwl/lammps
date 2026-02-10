@@ -790,7 +790,7 @@ double FixColvars::compute_array(int m, int n)
                  id, m+1, n+1, variables.size());
     const auto& variable = variables[m]->value();
     if (n >= variable.size())
-      error->all(FLERR, "f_{}[{}][{}] out-of-bounds: collective variable {} has size {}.",
+      error->all(FLERR, Error::NOLASTLINE, "f_{}[{}][{}] out-of-bounds: collective variable {} has size {}.",
                  id, m+1, n+1, get_thermo_colname(m), variable.size());
     value = variable[n];
   }
