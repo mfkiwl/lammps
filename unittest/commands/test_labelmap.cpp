@@ -360,7 +360,7 @@ TEST_F(LabelMapTest, Topology)
     EXPECT_EQ(atom->lmap->infer_dihedraltype({"N3", "C1", "N2", "C1"}), 0);
     EXPECT_EQ(atom->lmap->infer_impropertype(1, 2, 1, 2), 1);
     EXPECT_EQ(atom->lmap->infer_impropertype(2, 1, 2, 2), 0);
-    EXPECT_EQ(atom->lmap->infer_impropertype(2, 1, 2, 1), 1);
+    EXPECT_EQ(atom->lmap->infer_impropertype(2, 1, 2, 1), -1);
     EXPECT_EQ(atom->lmap->infer_impropertype(3, 1, 2, 1), 0);
     EXPECT_EQ(atom->lmap->infer_impropertype(2, 3, 2, 1), 0);
     EXPECT_EQ(atom->lmap->infer_impropertype(2, 1, 3, 1), 0);
