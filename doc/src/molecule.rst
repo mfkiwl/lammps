@@ -116,28 +116,33 @@ section) the total mass of the molecule (header keyword = mass), the
 center-of-mass of the molecule (header keyword = com), and the moments
 of inertia of the molecule (header keyword = inertia).
 
-The *check_labels* keyword provides a warning if the type label of a bond,
-angle, dihedral, or improper defined in the molecule template is not
-consistent with the atom types of its constituent atoms.  The
-*check_labels* value is a single string that should contain one or more of
-the characters 'b', 'a', 'd', and 'i', which correspond to bonds, angles,
-dihedrals, and impropers, respectively.  For example, the keyword/value
-pair 'check_labels badi' will check all the type labels of all
-higher-order interactions, while 'check_labels adi' will only check type
-labels for angles, dihedrals, and impropers.  The *check_labels* keyword
-requires a specific :doc:`type label<Howto_type_labels>` to infer the
-types of higher-order interactions.  Bond, angle, dihedral, and improper
-type labels must contain their constituent atom types delimited by
-hyphens, e.g., 'c2-c2-c2-n' for a dihedral that contains three atoms of
-type 'c2' and one atom of 'n'.  If the constituent atoms do not have these
-atom types in the proper order, a warning will be generated when using
-this *check_labels* keyword.  Certain symmetries are considered to account
-for equivalent ways of writing higher-order interactions.  Type labels for
-bonds, angles, and dihedrals are assumed to be equivalent to those written
-in reverse order.  For example, an angle with type label 'c1-c2-n' is
-equivalent to 'n-c2-c1'.  Symmetries for impropers are more complex and
-are described on the doc page for each improper style in the 'Symmetry
-convention' section.
+.. versionadded:: TBD
+
+The *check_labels* keyword causes the molecule command to issue a
+warning if the type label of a bond, angle, dihedral, or improper
+defined in the molecule template is not consistent with the atom types
+of its constituent atoms.  The *check_labels* value is a single string
+that should contain one or more of the characters 'b', 'a', 'd', and
+'i', which correspond to bonds, angles, dihedrals, and impropers,
+respectively.  For example, the keyword/value pair *check_labels badi*
+will check all the type labels of all bonded interactions, while
+*check_labels adi* will only check type labels for angles, dihedrals,
+and impropers but not for bonds.  The *check_labels* keyword requires
+using a specific convention for :doc:`type label<Howto_type_labels>` for
+enabling commands in LAMMPS (like :doc:`fix bond/react
+<fix_bond_react>`) to infer the types of bonded interactions.  Bond,
+angle, dihedral, and improper type labels must contain their constituent
+atom types delimited by hyphens. That is, for a dihedral that formed by
+three atoms of type 'c2' and one atom of 'n', the dihedral type label
+must be 'c2-c2-c2-n' .  If the constituent atoms do not have these atom
+types in the proper order, a warning will be generated when using the
+*check_labels* keyword.  Certain symmetries are considered to account
+for equivalent ways of writing bonded interactions.  Type labels for
+bonds, angles, and dihedrals are assumed to be equivalent to those
+written in reverse order.  For example, an angle with type label
+'c1-c2-n' is equivalent to 'n-c2-c1'.  Symmetries for impropers are more
+complex and are described on the doc page for each improper style in the
+'Symmetry convention' section.
 
 .. note::
 
@@ -155,8 +160,8 @@ convention' section.
    have "extra" options which ensure extra space is allocated for
    storing topology info for molecules that are added later.  This
    feature is *not* available for the :doc:`read_restart command
-   <read_restart>`, thus binary restart files need to be converted
-   to data files first.
+   <read_restart>`, thus binary restart files need to be converted to
+   data files first.
 
 ----------
 
