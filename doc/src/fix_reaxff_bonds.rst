@@ -35,7 +35,8 @@ is written to *filename* on timesteps that are multiples of *Nevery*,
 including timestep 0.  For time-averaged chemical species analysis,
 please see the :doc:`fix reaxff/species <fix_reaxff_species>` command.
 
-The specified group-ID is ignored by this fix.
+The specified group-ID is ignored by this fix except for the :doc:`dump
+image <dump_image>` related functionality (see below).
 
 The format of the output file should be reasonably self-explanatory.
 The meaning of the column header abbreviations is as follows:
@@ -67,7 +68,7 @@ timestep numbers have the same length by adding leading zeroes
 (e.g. 00010 for a pad value of 5).  The default pad value is 0, i.e. no
 leading zeroes.
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
 If the filename is "NULL", then no output is created.  This can be
 useful when using fix *reaxff/bonds* in combination with :doc:`dump
@@ -77,12 +78,20 @@ the ReaxFF force field.
 Dump image info
 """""""""""""""
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
 Fix *reaxff/bonds* supports the *fix* keyword of :doc:`dump image
 <dump_image>`.  The fix will pass geometry information about the bonds
 computed by the :doc:`ReaxFF pair style <pair_reaxff>` to *dump image*
-so that they can be included in the rendered image.
+so that they can be included in the rendered image.  Only bonds where
+*both* atoms are within the fix group generate graphics objects that are
+displayed in the dumped images.  That group may be a dynamic group.
+
+The color of the bonds is by default that of the atoms when using color
+styles "type" or "element".  With color style "const" the default value
+of "white" can be changed using :doc:`dump_modify fcolor <dump_image>`.
+The transparency is by default fully opaque and can be changed with
+*dump\_modify ftrans*\ .
 
 The *fflag1* setting of *dump image fix* determines whether the bonds
 will be capped with spheres (1) or not (0).
