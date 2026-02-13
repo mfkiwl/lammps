@@ -40,7 +40,8 @@ using namespace MathConst;
 
 FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg), ngh_pairs(nullptr), list(nullptr), distsq(nullptr), nearest(nullptr),
-    fixstore(nullptr), f_lambda(nullptr), prefactor1(nullptr), prefactor2(nullptr)
+    fixstore_la_avg(nullptr), fixstore_la_inp(nullptr), fixstore_la_norm(nullptr),
+    fixstore_pairs(nullptr), f_lambda(nullptr), prefactor1(nullptr), prefactor2(nullptr)
 {
   comm_reverse = 2;
   comm_forward = 2;
@@ -50,9 +51,7 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
   prefactor1_size = prefactor2_size = ngh_pairs_size = 0;
   maxneigh = 0;
 
-  peratom_flag = 1;
-  peratom_freq = 1;
-  size_peratom_cols = 3;
+  store_stats = false;
 
   // set defaults
   cut_lo = cut_hi = -1;
@@ -119,6 +118,12 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
       else
         lambda_non_group = utils::numeric(FLERR, arg[i + 1], false, lmp);
       i++;
+    } else if (strcmp(arg[i], "store_stats") == 0) {
+      if (i + 1 == narg)
+        error->all(FLERR,
+                   "the store_stats option of fix lambda/la/csp/apip requires an additional argument");
+      store_stats = utils::logical(FLERR, arg[i + 1], false, lmp);
+      i++;
     } else {
       error->all(FLERR, "unknown argument {}", arg[i]);
     }
@@ -142,17 +147,18 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
   if (!atom->apip_lambda_flag) {
     error->all(FLERR, "fix lambda/la/csp/apip requires atomic style with lambda.");
   }
-  if (!atom->apip_la_inp_flag || !atom->apip_la_avg_flag || !atom->apip_la_norm_flag) {
-    error->all(FLERR,
-               "fix lambda/la/csp/apip requires atomic style with apip_la_inp, apip_la_avg and "
-               "apip_la_norm.");
-  }
 
-  size_f_lambda = atom->nlocal;
-  memory->create(f_lambda, size_f_lambda, size_peratom_cols, "pair:lambda:la:csp:apip:f:lambda");
-  array_atom = f_lambda;
-  for (int i = 0; i < atom->nlocal; i++) {
-    for (int j = 0; j < size_peratom_cols; j++) f_lambda[i][j] = 0;
+  if (store_stats) {
+    peratom_flag = 1;
+    peratom_freq = 1;
+    size_peratom_cols = 5;
+
+    size_f_lambda = atom->nlocal;
+    memory->create(f_lambda, size_f_lambda, size_peratom_cols, "pair:lambda:la:csp:apip:f:lambda");
+    array_atom = f_lambda;
+    for (int i = 0; i < atom->nlocal; i++) {
+      for (int j = 0; j < size_peratom_cols; j++) f_lambda[i][j] = 0;
+    }
   }
 }
 
@@ -161,13 +167,16 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
 FixLambdaLACSPAPIP::~FixLambdaLACSPAPIP()
 {
   memory->destroy(ngh_pairs);
-  memory->destroy(f_lambda);
+  if (store_stats) memory->destroy(f_lambda);
   memory->destroy(distsq);
   memory->destroy(nearest);
   memory->destroy(prefactor1);
   memory->destroy(prefactor2);
-  if (fixstore && modify->nfix) modify->delete_fix(fixstore->id);
-  fixstore = nullptr;
+  if (fixstore_pairs && modify->nfix) modify->delete_fix(fixstore_pairs->id);
+  if (fixstore_la_avg && modify->nfix) modify->delete_fix(fixstore_la_avg->id);
+  if (fixstore_la_inp && modify->nfix) modify->delete_fix(fixstore_la_inp->id);
+  if (fixstore_la_norm && modify->nfix) modify->delete_fix(fixstore_la_norm->id);
+  fixstore_pairs = fixstore_la_avg = fixstore_la_inp = fixstore_la_norm = nullptr;
 }
 
 /**
@@ -177,15 +186,16 @@ FixLambdaLACSPAPIP::~FixLambdaLACSPAPIP()
 
 void FixLambdaLACSPAPIP::post_constructor()
 {
+  // 1. CSP pairs
   std::string cmd;
   cmd = id;
   cmd += "LAST_CSP_NGH_PAIR";
 
   // delete existing fix store if existing
-  fixstore = dynamic_cast<FixStoreAtom *>(modify->get_fix_by_id(cmd));
+  fixstore_pairs = dynamic_cast<FixStoreAtom *>(modify->get_fix_by_id(cmd));
   // check nfix in case all fixes have already been deleted
-  if (fixstore && modify->nfix) modify->delete_fix(fixstore->id);
-  fixstore = nullptr;
+  if (fixstore_pairs && modify->nfix) modify->delete_fix(fixstore_pairs->id);
+  fixstore_pairs = nullptr;
 
   char str_values[40];
   sprintf(str_values, "%d", nnn);
@@ -194,11 +204,36 @@ void FixLambdaLACSPAPIP::post_constructor()
   cmd += " all STORE/ATOM ";
   cmd += str_values;    // n1
   cmd += " 0 0 1";      // n2 gflag rflag
-  fixstore = dynamic_cast<FixStoreAtom *>(modify->add_fix(cmd));
+  fixstore_pairs = dynamic_cast<FixStoreAtom *>(modify->add_fix(cmd));
 
   // do not carry the CSP-pairs with atoms during normal atom migration yet
   // activate after the CSP-pairs are calculated
-  fixstore->disable = 1;
+  fixstore_pairs->disable = 1;
+
+  // 2. local averaging data
+  cmd = id;
+  cmd += "LA_INP";
+  fixstore_la_inp = dynamic_cast<FixStoreAtom *>(modify->get_fix_by_id(cmd));
+  if (fixstore_la_inp && modify->nfix) modify->delete_fix(fixstore_la_inp->id);
+  fixstore_la_inp = nullptr;
+  cmd += " all STORE/ATOM 1 0 1 0";
+  fixstore_la_inp = dynamic_cast<FixStoreAtom *>(modify->add_fix(cmd));
+
+  cmd = id;
+  cmd += "LA_NORM";
+  fixstore_la_norm = dynamic_cast<FixStoreAtom *>(modify->get_fix_by_id(cmd));
+  if (fixstore_la_norm && modify->nfix) modify->delete_fix(fixstore_la_norm->id);
+  fixstore_la_norm = nullptr;
+  cmd += " all STORE/ATOM 1 0 1 0";
+  fixstore_la_norm = dynamic_cast<FixStoreAtom *>(modify->add_fix(cmd));
+
+  cmd = id;
+  cmd += "LA_AVG";
+  fixstore_la_avg = dynamic_cast<FixStoreAtom *>(modify->get_fix_by_id(cmd));
+  if (fixstore_la_avg && modify->nfix) modify->delete_fix(fixstore_la_avg->id);
+  fixstore_la_avg = nullptr;
+  cmd += " all STORE/ATOM 1 0 1 0";
+  fixstore_la_avg = dynamic_cast<FixStoreAtom *>(modify->add_fix(cmd));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -208,7 +243,7 @@ int FixLambdaLACSPAPIP::setmask()
   int mask = 0;
   mask |= PRE_FORCE;
   mask |= POST_NEIGHBOR;
-  if (calculate_forces_flag) mask |= PRE_REVERSE;
+  mask |= PRE_REVERSE;
   return mask;
 }
 
@@ -238,8 +273,6 @@ void FixLambdaLACSPAPIP::init()
 
   if (strcmp(atom->atom_style, "apip"))
     error->all(FLERR, "fix lambda/la/csp/apip requires atom style apip");
-  if (!(atom->apip_la_inp_flag && atom->apip_la_norm_flag && atom->apip_la_avg_flag))
-    error->all(FLERR, "fix lambda/la/csp/apip requires atom style apip conservative");
 }
 
 /**
@@ -296,6 +329,9 @@ void FixLambdaLACSPAPIP::pre_force(int /*vflag*/)
     pre_force_const_pairs();
   else
     pre_force_dyn_pairs();
+
+  comm_forward_flag = FORWARD_INP_LAMBDA;
+  comm->forward_comm(this);
 }
 
 /**
@@ -313,9 +349,9 @@ void FixLambdaLACSPAPIP::pre_force_dyn_pairs()
 
   mask = atom->mask;
   lambda = atom->apip_lambda;
-  csp = atom->apip_la_inp;
-  csp_avg = atom->apip_la_avg;
-  csp_norm = atom->apip_la_norm;
+  csp = fixstore_la_inp->vstore;
+  csp_avg = fixstore_la_avg->vstore;
+  csp_norm = fixstore_la_norm->vstore;
 
   int nlocal = atom->nlocal;
   int nmax = atom->nmax;
@@ -328,7 +364,7 @@ void FixLambdaLACSPAPIP::pre_force_dyn_pairs()
     memory->create(ngh_pairs, ngh_pairs_size, nnn, "fix_lambda_la_csp_apip:ngh_pairs");
   }
 
-  double **stored_tags = fixstore->astore;
+  double **stored_tags = fixstore_pairs->astore;
 
   inum = list->inum;
   ilist = list->ilist;
@@ -485,7 +521,7 @@ void FixLambdaLACSPAPIP::pre_force_dyn_pairs()
   tags_stored = true;
 
   // carry the CSP-pairs with atoms during normal atom migration
-  fixstore->disable = 0;
+  fixstore_pairs->disable = 0;
 
   // reverse communication of csp_norm and csp_avgs of ghost atoms
   comm->reverse_comm(this);
@@ -525,11 +561,11 @@ void FixLambdaLACSPAPIP::pre_force_const_pairs()
 
   mask = atom->mask;
   lambda = atom->apip_lambda;
-  csp = atom->apip_la_inp;
-  csp_avg = atom->apip_la_avg;
-  csp_norm = atom->apip_la_norm;
+  csp = fixstore_la_inp->vstore;
+  csp_avg = fixstore_la_avg->vstore;
+  csp_norm = fixstore_la_norm->vstore;
   x = atom->x;
-  stored_tags = fixstore->astore;
+  stored_tags = fixstore_pairs->astore;
 
   // grow ngh_pairs array if necessary
 
@@ -683,11 +719,24 @@ void FixLambdaLACSPAPIP::setup_pre_reverse(int eflag, int vflag)
 }
 
 /**
-  * Calculate derivative of the switching parameter for the forces.
+  * Calculate forces and store per-atom stats.
   */
 
 void FixLambdaLACSPAPIP::pre_reverse(int /*eflag*/, int vflag)
 {
+  store_la();
+  calculate_forces(vflag);
+}
+
+
+/**
+  * Calculate derivative of the switching parameter for the forces.
+  */
+
+void FixLambdaLACSPAPIP::calculate_forces(int vflag)
+{
+  if (! calculate_forces_flag) return;
+
   int i, j, ii, jj, inum, jnum, i_pair, i1, i2, i3;
   int *ilist, *jlist, *numneigh, **firstneigh, *mask;
   double **x, **f, *lambda, *csp, *csp_avg, *csp_norm, *e_fast, *e_precise;
@@ -702,9 +751,9 @@ void FixLambdaLACSPAPIP::pre_reverse(int /*eflag*/, int vflag)
   x = atom->x;
   f = atom->f;
   lambda = atom->apip_lambda;
-  csp = atom->apip_la_inp;
-  csp_norm = atom->apip_la_norm;
-  csp_avg = atom->apip_la_avg;
+  csp = fixstore_la_inp->vstore;
+  csp_avg = fixstore_la_avg->vstore;
+  csp_norm = fixstore_la_norm->vstore;
   e_fast = atom->apip_e_fast;
   e_precise = atom->apip_e_precise;
   mask = atom->mask;
@@ -743,8 +792,10 @@ void FixLambdaLACSPAPIP::pre_reverse(int /*eflag*/, int vflag)
     prefactor2[i] = prefactor1[i] * weighting_function_poly(0);
   }
 
-  // communicate prefactor1 to neighbouring processors
-  // and get prefactor1 of ghosts
+  // communication of prefactor1 and csp
+  // The csp was computed in pre_force, but is not known for ghosts yet.
+  // send values of own atoms to neighbouring processors
+  // get values of ghosts
   comm_forward_flag = FORWARD_PREFACTOR;
   comm->forward_comm(this);
 
@@ -968,8 +1019,8 @@ void *FixLambdaLACSPAPIP::extract(const char *str, int &dim)
 int FixLambdaLACSPAPIP::pack_reverse_comm(int n, int first, double *buf)
 {
   int i, m, last;
-  double *avg = atom->apip_la_avg;
-  double *norm = atom->apip_la_norm;
+  double *avg = fixstore_la_avg->vstore;
+  double *norm = fixstore_la_norm->vstore;
 
   m = 0;
   last = first + n;
@@ -985,8 +1036,8 @@ int FixLambdaLACSPAPIP::pack_reverse_comm(int n, int first, double *buf)
 void FixLambdaLACSPAPIP::unpack_reverse_comm(int n, int *list, double *buf)
 {
   int i, j, m;
-  double *avg = atom->apip_la_avg;
-  double *norm = atom->apip_la_norm;
+  double *avg = fixstore_la_avg->vstore;
+  double *norm = fixstore_la_norm->vstore;
 
   m = 0;
   for (i = 0; i < n; i++) {
@@ -1008,7 +1059,7 @@ int FixLambdaLACSPAPIP::pack_forward_comm(int n, int *list, double *buf, int /*p
 
   if (comm_forward_flag == FORWARD_INP_LAMBDA) {
 
-    double *la_inp = atom->apip_la_inp;
+    double *la_inp = fixstore_la_inp->vstore;
     double *lambda = atom->apip_lambda;
 
     for (i = 0; i < n; i++) {
@@ -1040,8 +1091,8 @@ void FixLambdaLACSPAPIP::unpack_forward_comm(int n, int first, double *buf)
   last = first + n;
   if (comm_forward_flag == FORWARD_INP_LAMBDA) {
 
-    double *la_inp = atom->apip_la_inp;
     double *lambda = atom->apip_lambda;
+    double *la_inp = fixstore_la_inp->vstore;
     for (i = first; i < last; i++) {
       la_inp[i] = buf[m++];
       lambda[i] = buf[m++];
@@ -1060,15 +1111,10 @@ void FixLambdaLACSPAPIP::unpack_forward_comm(int n, int first, double *buf)
 
 void FixLambdaLACSPAPIP::store_f_lambda_before()
 {
+  if (! store_stats) return;
+
   int nlocal = atom->nlocal;
   double **f = atom->f;
-
-  if (nlocal > size_f_lambda) {
-    memory->destroy(f_lambda);
-    size_f_lambda = nlocal;
-    memory->create(f_lambda, size_f_lambda, size_peratom_cols, "pair:lambda:la:csp:apip:f:lambda");
-    array_atom = f_lambda;
-  }
 
   for (int i = 0; i < nlocal; i++) {
     f_lambda[i][0] = -f[i][0];
@@ -1084,6 +1130,8 @@ void FixLambdaLACSPAPIP::store_f_lambda_before()
 
 void FixLambdaLACSPAPIP::store_f_lambda_after()
 {
+  if (! store_stats) return;
+
   int nlocal = atom->nlocal;
   double **f = atom->f;
 
@@ -1091,6 +1139,37 @@ void FixLambdaLACSPAPIP::store_f_lambda_after()
     f_lambda[i][0] += f[i][0];
     f_lambda[i][1] += f[i][1];
     f_lambda[i][2] += f[i][2];
+  }
+}
+
+/**
+  * Store per-atom stats regarding the local averaging and allocate the per-atom array.
+  */
+
+void FixLambdaLACSPAPIP::store_la()
+{
+  if (! store_stats) return;
+
+  int nlocal = atom->nlocal;
+  double *inp = fixstore_la_inp->vstore;
+  double *avg = fixstore_la_avg->vstore;
+
+  // allocate more memory if required
+  if (nlocal > size_f_lambda) {
+    memory->destroy(f_lambda);
+    size_f_lambda = nlocal;
+    memory->create(f_lambda, size_f_lambda, size_peratom_cols, "pair:lambda:la:csp:apip:f:lambda");
+    array_atom = f_lambda;
+    // zero forces if required
+    if (! calculate_forces_flag)
+      for (int i = 0; i < nlocal; i++)
+        f_lambda[i][0] = f_lambda[i][1] = f_lambda[i][2] = 0;
+  }
+
+  for (int i = 0; i < nlocal; i++) {
+    // store local averaging stats
+    f_lambda[i][3] = inp[i];
+    f_lambda[i][4] = avg[i];
   }
 }
 
@@ -1158,7 +1237,7 @@ void FixLambdaLACSPAPIP::restart(char *buf)
                "fix lambda/la/csp/apip: const_ngh_flag = {} != {} = const_ngh_flag in restart file",
                const_ngh_flag_tmp, const_ngh_flag);
 
-  if (tags_stored) fixstore->disable = 0;
+  if (tags_stored) fixstore_pairs->disable = 0;
 }
 
 /**

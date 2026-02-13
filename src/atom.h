@@ -179,7 +179,6 @@ class Atom : protected Pointers {
   // APIP package
 
   double *apip_lambda, *apip_lambda_input, *apip_lambda_input_ta, *apip_e_fast, *apip_e_precise, **apip_f_const_lambda, **apip_f_dyn_lambda, *apip_lambda_const;
-  double *apip_la_inp, *apip_la_norm, *apip_la_avg;
   int *apip_lambda_required;
 
   // end of customization section
@@ -231,7 +230,6 @@ class Atom : protected Pointers {
   // APIP package
 
   int apip_lambda_flag, apip_e_fast_flag, apip_e_precise_flag, apip_lambda_input_flag, apip_lambda_input_ta_flag, apip_lambda_required_flag, apip_f_const_lambda_flag, apip_f_dyn_lambda_flag, apip_lambda_const_flag;
-  int apip_la_inp_flag, apip_la_norm_flag, apip_la_avg_flag;
 
   // end of customization section
   // --------------------------------------------------------------------

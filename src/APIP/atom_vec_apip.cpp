@@ -88,26 +88,18 @@ void AtomVecApip::process_args(int narg, char **arg)
                       "apip_f_dyn_lambda"};    // communication of force after calculation
 
   } else if (mode_flag == MODE_CONS) {
-    atom->apip_la_inp_flag = 1;
-    atom->apip_la_avg_flag = 1;
-    atom->apip_la_norm_flag = 1;
-
     // strings with peratom variables to include in each AtomVec method
     // strings cannot contain fields in corresponding AtomVec default strings
     // order of fields in a string does not matter
     // except: fields_data_atom & fields_data_vel must match data file
 
     // The full list of fields is in atom_vec.cpp
-    fields_copy = {"apip_lambda", "apip_lambda_required", "apip_la_inp", "apip_la_avg",
-                   "apip_la_norm"};
-    fields_comm = {"apip_lambda", "apip_lambda_required", "apip_la_inp", "apip_la_avg",
-                   "apip_la_norm"};
-    fields_border = {"apip_lambda", "apip_lambda_required", "apip_la_inp", "apip_la_avg",
-                     "apip_la_norm"};
+    fields_copy = {"apip_lambda", "apip_lambda_required"};
+    fields_comm = {"apip_lambda", "apip_lambda_required"};
+    fields_border = {"apip_lambda", "apip_lambda_required"};
     fields_exchange = {"apip_lambda", "apip_lambda_required"};
     fields_restart = {"apip_lambda", "apip_lambda_required"};
-    fields_grow = {"apip_lambda", "apip_lambda_required", "apip_e_fast", "apip_e_precise",
-                   "apip_la_inp", "apip_la_avg",          "apip_la_norm"};    // allocates memory
+    fields_grow = {"apip_lambda", "apip_lambda_required", "apip_e_fast", "apip_e_precise"};    // allocates memory
     fields_reverse = {};    // communication of force after calculation
   }
 
@@ -131,10 +123,6 @@ void AtomVecApip::grow_pointers()
     apip_lambda_const = atom->apip_lambda_const;
     apip_f_const_lambda = atom->apip_f_const_lambda;
     apip_f_dyn_lambda = atom->apip_f_dyn_lambda;
-  } else if (mode_flag == MODE_CONS) {
-    apip_la_inp = atom->apip_la_inp;
-    apip_la_avg = atom->apip_la_avg;
-    apip_la_norm = atom->apip_la_norm;
   }
 }
 
@@ -159,10 +147,6 @@ void AtomVecApip::data_atom_post(int ilocal)
     apip_f_dyn_lambda[ilocal][0] = 0;
     apip_f_dyn_lambda[ilocal][1] = 0;
     apip_f_dyn_lambda[ilocal][2] = 0;
-  } else if (mode_flag == MODE_CONS) {
-    apip_la_inp[ilocal] = 0;
-    apip_la_avg[ilocal] = 0;
-    apip_la_norm[ilocal] = 0;
   }
 }
 
