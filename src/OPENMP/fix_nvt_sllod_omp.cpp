@@ -20,7 +20,6 @@
 
 #include "atom.h"
 #include "comm.h"
-#include "compute.h"
 #include "compute_temp_deform.h"
 #include "domain.h"
 #include "error.h"
@@ -45,9 +44,9 @@ FixNVTSllodOMP::FixNVTSllodOMP(LAMMPS *lmp, int narg, char **arg) :
   FixNHOMP(lmp, narg, arg)
 {
   if (!tstat_flag)
-    error->all(FLERR,"Temperature control must be used with fix nvt/sllod/omp");
+    error->all(FLERR, 2, "Temperature control must be used with fix nvt/sllod/omp");
   if (pstat_flag)
-    error->all(FLERR,"Pressure control can not be used with fix nvt/sllod/omp");
+    error->all(FLERR, 2, "Pressure control can not be used with fix nvt/sllod/omp");
 
   // default values
 
@@ -57,7 +56,7 @@ FixNVTSllodOMP::FixNVTSllodOMP(LAMMPS *lmp, int narg, char **arg) :
   bool user_kick = false;
   if (mtchain_default_flag) mtchain = 1;
 
-  // select SLLOD/p-SLLOD/g-SLLOD variant
+  // select SLLOD/p-SLLOD/g-SLLOD variant and velocity frame
 
   int iarg = 3;
 
@@ -115,7 +114,7 @@ void FixNVTSllodOMP::init()
       nondeformbias = 1;
       if (kick_flag)
         error->all(FLERR, Error::NOLASTLINE,
-                   "fix {} with peculiar=no and kick=yes ""requires temperature bias "
+                   "fix {} with peculiar=no and kick=yes requires temperature bias "
                    "to be calculated by compute temp/deform", style);
     } else if (!peculiar_flag) {
       error->all(FLERR, Error::NOLASTLINE, "Fix {} used with lab-frame velocity and non-deform "
@@ -145,8 +144,7 @@ void FixNVTSllodOMP::init()
       // make sure fix deform init happens first so h_rate is set
       if (!peculiar_flag) {
         f->init();
-        if (comm->me == 0)
-          utils::logmesg(lmp, "fix {} applying velocity profile kick.\n", style);
+        if (comm->me == 0) utils::logmesg(lmp, "fix {} applying velocity profile kick.\n", style);
         auto *f2 dynamic_cast<ComputeTempDeform*>(temperature);
         if (f2) f2->apply_deform_bias_all();
         kick_flag = 0;
