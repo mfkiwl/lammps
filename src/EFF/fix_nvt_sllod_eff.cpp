@@ -141,8 +141,7 @@ void FixNVTSllodEff::init()
         if (f2) f2->apply_deform_bias_all();
         kick_flag = 0;
       } else if (comm->me == 0) {
-        error->warning(FLERR,"fix {} using peculiar frame velocity. "
-                       "Ignoring kick flag.", style);
+        error->warning(FLERR,"fix {} using peculiar frame velocity. Ignoring kick flag.", style);
       }
     }
 

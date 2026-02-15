@@ -101,18 +101,23 @@ void ComputeTempDeformEff::init()
     auto *f = dynamic_cast<FixDeform *>(fixes[0]);
     if (f && f->remapflag == Domain::X_REMAP && comm->me == 0)
       error->warning(FLERR, "Using compute {} with inconsistent fix deform remap option", style);
-  } else
-    error->warning(FLERR, "Using compute {} with no fix deform defined", style);
+  } else {
+    if (comm->me == 0)
+      error->warning(FLERR, "Using compute {} with no fix deform defined", style);
+  }
 
   // check internal temperature compute
 
   temperature = modify->get_compute_by_id(id_temp);
   if (!temperature)
-    error->all(FLERR,"Temperature ID {} for compute {} does not exist", id_temp, style);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Temperature ID {} for compute {} does not exist", id_temp, style);
   if (temperature->tempflag == 0)
-    error->all(FLERR,"Compute {} temperature ID {} does not compute temperature", style, id_temp);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Compute {} temperature ID {} does not compute temperature", style, id_temp);
   if (temperature->igroup != igroup)
-    error->all(FLERR,"Group of temperature compute with ID {} for compute {} does not match", id_temp, style);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Group of temperature compute with ID {} for compute {} does not match", id_temp, style);
 
   // Flag if internal temperature compute is not an eff compute
 
@@ -123,7 +128,8 @@ void ComputeTempDeformEff::init()
   // avoid possibility of self-referential loop
 
   if (utils::strmatch(temperature->style, "^temp/deform"))
-    error->all(FLERR,"Compute {} internal temperature compute cannot be of style temp/deform", style);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Compute {} internal temperature compute cannot be of style temp/deform", style);
 
   if (temperature->tempbias) which = BIAS;
   else which = NOBIAS;
