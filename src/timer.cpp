@@ -269,9 +269,9 @@ void Timer::modify_params(int narg, char **arg)
     if (_timeout >= 0.0) {
       // round to seconds and break down to hours, minutes, and seconds
       auto tmptime = lround(_timeout);
-      auto hours = tmptime / 60 / 24;
-      auto minutes = (tmptime / 60) - (hours * 24);
-      auto seconds = tmptime - ((hours * 24) + minutes) * 60;
+      auto hours = tmptime / 3600L;
+      auto minutes = (tmptime % 3600L) / 60L;
+      auto seconds = tmptime % 60L;
       timeout = fmt::format("{:02d}:{:02d}:{:02d}", hours, minutes, seconds);
     }
 
