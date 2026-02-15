@@ -137,7 +137,7 @@ void FixNVTSllodEff::init()
       if (!peculiar_flag) {
         f->init();
         if (comm->me == 0) utils::logmesg(lmp, "fix {} applying velocity profile kick.\n", style);
-        auto *f2 dynamic_cast<ComputeTempDeformEff*>(temperature);
+        auto *f2 = dynamic_cast<ComputeTempDeformEff*>(temperature);
         if (f2) f2->apply_deform_bias_all();
         kick_flag = 0;
       } else if (comm->me == 0) {

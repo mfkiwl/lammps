@@ -49,8 +49,7 @@ ComputeTempDeform::ComputeTempDeform(LAMMPS *lmp, int narg, char **arg) :
       id_temp = utils::strdup(arg[iarg + 1]);
       tcomputeflag = 0;
       iarg += 2;
-    } else
-      error->all(FLERR, "Unknown compute {} keyword: {}", style, arg[iarg]);
+    } else error->all(FLERR, iarg, "Unknown compute {} keyword: {}", style, arg[iarg]);
   }
 
   scalar_flag = vector_flag = 1;
@@ -95,27 +94,33 @@ void ComputeTempDeform::init()
 
   auto fixes = modify->get_fix_by_style("^deform");
   if (fixes.size() > 0) {
-    if ((dynamic_cast<FixDeform *>(fixes[0]))->remapflag == Domain::X_REMAP && comm->me == 0)
-      error->warning(FLERR, "Using compute temp/deform with inconsistent fix deform remap option");
-  } else
-    error->warning(FLERR, "Using compute temp/deform with no fix deform defined");
+    auto *f = dynamic_cast<FixDeform *>(fixes[0]);
+    if (f && f->remapflag == Domain::X_REMAP && comm->me == 0)
+      error->warning(FLERR, "Using compute {} with inconsistent fix deform remap option", style);
+  } else {
+    if (comm->me == 0)
+      error->warning(FLERR, "Using compute {} with no fix deform defined", style);
+  }
 
   // check internal temperature compute
 
   temperature = modify->get_compute_by_id(id_temp);
   if (!temperature)
-    error->all(FLERR, "Temperature ID {} for compute {} does not exist", id_temp, style);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Temperature ID {} for compute {} does not exist", id_temp, style);
   if (temperature->tempflag == 0)
-    error->all(FLERR, "Compute {} temperature ID {} does not compute temperature", style, id_temp);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Compute {} temperature ID {} does not compute temperature", style, id_temp);
   if (temperature->igroup != igroup)
-    error->all(FLERR, "Group of temperature compute with ID {} for compute {} does not match",
+    error->all(FLERR, Error::NOLASTLINE,
+               "Group of temperature compute with ID {} for compute {} does not match",
                id_temp, style);
 
   // avoid possibility of self-referential loop
 
   if (utils::strmatch(temperature->style, "^temp/deform"))
-    error->all(FLERR, "Compute {} internal temperature compute cannot be of style temp/deform",
-               style);
+    error->all(FLERR, Error::NOLASTLINE,
+               "Compute {} internal temperature compute cannot be of style temp/deform", style);
 
   if (temperature->tempbias)
     which = BIAS;
@@ -429,7 +434,7 @@ double ComputeTempDeform::memory_usage()
 int ComputeTempDeform::modify_param(int narg, char **arg)
 {
   if (strcmp(arg[0], "temp") == 0) {
-    if (narg < 2) error->all(FLERR, "Illegal compute_modify command");
+    if (narg < 2) utils::missing_cmd_args(FLERR, "compute_modify temp/deform", error);
     if (tcomputeflag) modify->delete_compute(id_temp);
     delete[] id_temp;
     tcomputeflag = 0;

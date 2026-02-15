@@ -16,33 +16,31 @@
    Contributing author: Andres Jaramillo-Botero (Caltech)
 ------------------------------------------------------------------------- */
 
+#include "compute_temp_deform_eff.h"
+
+#include "atom.h"
+#include "comm.h"
+#include "domain.h"
+#include "error.h"
+#include "fix_deform.h"
+#include "fix_nh.h"
+#include "force.h"
+#include "group.h"
+#include "math_extra.h"
+#include "memory.h"
+#include "modify.h"
+#include "update.h"
 
 #include <cstring>
 
-#include "compute_temp_deform_eff.h"
-#include "domain.h"
-#include "atom.h"
-#include "update.h"
-#include "force.h"
-#include "math_extra.h"
-#include "modify.h"
-#include "fix.h"
-#include "fix_deform.h"
-#include "fix_nh.h"
-#include "group.h"
-#include "comm.h"
-#include "memory.h"
-#include "error.h"
-
-
 using namespace LAMMPS_NS;
 
-enum{NOBIAS,BIAS};
+enum { NOBIAS, BIAS };
 
 /* ---------------------------------------------------------------------- */
 
 ComputeTempDeformEff::ComputeTempDeformEff(LAMMPS *lmp, int narg, char **arg) :
-  Compute(lmp, narg, arg)
+  Compute(lmp, narg, arg), temperature(nullptr), id_temp(nullptr)
 {
   tcompute_eff = 0;
   tcomputeflag = 1;
@@ -59,7 +57,7 @@ ComputeTempDeformEff::ComputeTempDeformEff(LAMMPS *lmp, int narg, char **arg) :
   }
 
   if (!atom->electron_flag)
-    error->all(FLERR,"Compute temp/deform/eff requires atom style electron");
+    error->all(FLERR, 2, "Compute {} requires atom style electron", style);
 
   scalar_flag = vector_flag = 1;
   size_vector = 6;
@@ -90,7 +88,7 @@ ComputeTempDeformEff::~ComputeTempDeformEff()
   // delete temperature compute if created by this compute
 
   if (tcomputeflag) modify->delete_compute(id_temp);
-  delete [] id_temp;
+  delete[] id_temp;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -120,7 +118,8 @@ void ComputeTempDeformEff::init()
                "Compute {} temperature ID {} does not compute temperature", style, id_temp);
   if (temperature->igroup != igroup)
     error->all(FLERR, Error::NOLASTLINE,
-               "Group of temperature compute with ID {} for compute {} does not match", id_temp, style);
+               "Group of temperature compute with ID {} for compute {} does not match",
+               id_temp, style);
 
   // Flag if internal temperature compute is not an eff compute
 
@@ -134,8 +133,10 @@ void ComputeTempDeformEff::init()
     error->all(FLERR, Error::NOLASTLINE,
                "Compute {} internal temperature compute cannot be of style temp/deform", style);
 
-  if (temperature->tempbias) which = BIAS;
-  else which = NOBIAS;
+  if (temperature->tempbias)
+    which = BIAS;
+  else
+    which = NOBIAS;
 
   // make sure internal temperature compute is called first
 
@@ -441,20 +442,20 @@ double ComputeTempDeformEff::memory_usage()
 
 /* ---------------------------------------------------------------------- */
 
-int ComputeTempDeformEff::modify_param(int narg, char **arg) {
-  if (strcmp(arg[0],"temp") == 0) {
-    if (narg < 2) error->all(FLERR,"Illegal compute_modify command");
+int ComputeTempDeformEff::modify_param(int narg, char **arg)
+{
+  if (strcmp(arg[0], "temp") == 0) {
+    if (narg < 2) utils::missing_cmd_args(FLERR,"compute_modify temp/deform/eff", error);
     if (tcomputeflag) modify->delete_compute(id_temp);
-    delete [] id_temp;
+    delete[] id_temp;
     tcomputeflag = 0;
     id_temp = utils::strdup(arg[1]);
     return 2;
-
-  } else if (strcmp(arg[0],"extra/dof") == 0) {
+  } else if (strcmp(arg[0], "extra/dof") == 0) {
     // Can't set extra/dof of internal temp compute directly,
     // so pass through the modify call
     temperature->modify_params(MIN(narg, 2), arg);
-  } else if (strcmp(arg[0],"dynamic/dof") == 0) {
+  } else if (strcmp(arg[0], "dynamic/dof") == 0) {
     // Can't set dynamic_user flag of internal temp compute directly,
     // so pass through the modify call
     temperature->modify_params(MIN(narg, 2), arg);
