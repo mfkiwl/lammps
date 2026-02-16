@@ -512,6 +512,7 @@ the :doc:`Build extras <Build_extras>` page.
 **Supporting info:**
 
 * ``src/COLVARS``: filenames -> commands
+* https://colvars.github.io/master/colvars-refman-lammps.html
 * `doc/PDF/colvars-refman-lammps.pdf <PDF/colvars-refman-lammps.pdf>`_
 * ``src/COLVARS/README``
 * ``lib/colvars/README``
