@@ -6,6 +6,9 @@
 //
 // For the license information refer to format.h.
 
+#if __has_include(<version>)
+#include <version>
+#endif
 #if !defined(__cpp_lib_format) || (__cpp_lib_format < 201907L)
 
 // Disable bogus MSVC warnings.

@@ -33,6 +33,9 @@
 #ifndef FMT_FORMAT_H_
 #define FMT_FORMAT_H_
 
+#if __has_include(<version>)
+#include <version>
+#endif
 #if defined(__cpp_lib_format) && (__cpp_lib_format >= 201907L)
 
 // when compiling for C++20 or later we emulate

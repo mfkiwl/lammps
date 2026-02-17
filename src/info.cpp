@@ -49,6 +49,9 @@
 #include <cstring>
 #include <ctime>
 #include <map>
+#if __has_include(<version>)
+#include <version>
+#endif
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
