@@ -550,7 +550,7 @@ overridden with a smaller value.
 
 The *comm* and *comm/exchange* and *comm/forward* and *comm/pair/forward*
 and *comm/fix/forward* and *comm/reverse* and *comm/pair/reverse* and
-*comm/fix/reverse* 
+*comm/fix/reverse*
 keywords determine whether the host or device performs the packing and
 unpacking of data when communicating per-atom data between processors.
 "Exchange" communication happens only on timesteps that neighbor lists

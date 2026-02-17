@@ -1138,7 +1138,7 @@ void FixQEqReaxFFKokkos<DeviceType>::unpack_forward_comm(int n, int first, doubl
 }
 
 /* ---------------------------------------------------------------------- */
-template<class DeviceType> 
+template<class DeviceType>
 int FixQEqReaxFFKokkos<DeviceType>::pack_reverse_comm_kokkos(int n, int first_in, DAT::tdual_double_1d &buf)
 {
   first = first_in;
@@ -1149,7 +1149,7 @@ int FixQEqReaxFFKokkos<DeviceType>::pack_reverse_comm_kokkos(int n, int first_in
 
 template<class DeviceType>
 KOKKOS_INLINE_FUNCTION
-void FixQEqReaxFFKokkos<DeviceType>::operator()(TagQEqPackReverseComm, const int &i) const 
+void FixQEqReaxFFKokkos<DeviceType>::operator()(TagQEqPackReverseComm, const int &i) const
 {
   //const auto d = d_o(i+first);
   if (!( converged & 1)) d_buf[2*i] = d_o(i+first,0);
@@ -1157,17 +1157,18 @@ void FixQEqReaxFFKokkos<DeviceType>::operator()(TagQEqPackReverseComm, const int
 }
 
 /* ---------------------------------------------------------------------- */
-template<class DeviceType> 
-void  FixQEqReaxFFKokkos<DeviceType>::unpack_reverse_comm_kokkos(int n, DAT::tdual_int_1d k_sendlist, DAT::tdual_double_1d& buf) 
+
+template<class DeviceType>
+void FixQEqReaxFFKokkos<DeviceType>::unpack_reverse_comm_kokkos(int n, DAT::tdual_int_1d k_sendlist, DAT::tdual_double_1d& buf)
 {
   d_buf = buf.view<DeviceType>();
   d_sendlist = k_sendlist.view<DeviceType>();
   Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType, TagQEqUnpackReverseComm>(0,n),*this);
-} 
+}
 
 template<class DeviceType>
 KOKKOS_INLINE_FUNCTION
-void FixQEqReaxFFKokkos<DeviceType>::operator()(TagQEqUnpackReverseComm, const int &i) const 
+void FixQEqReaxFFKokkos<DeviceType>::operator()(TagQEqUnpackReverseComm, const int &i) const
 {
   int j = d_sendlist(i);
 
@@ -1177,6 +1178,7 @@ void FixQEqReaxFFKokkos<DeviceType>::operator()(TagQEqUnpackReverseComm, const i
 }
 
 /* ---------------------------------------------------------------------- */
+
 template<class DeviceType>
 int FixQEqReaxFFKokkos<DeviceType>::pack_reverse_comm(int n, int first, double *buf)
 {

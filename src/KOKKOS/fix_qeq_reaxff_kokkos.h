@@ -204,7 +204,7 @@ class FixQEqReaxFFKokkos : public FixQEqReaxFF, public KokkosBase {
   int pack_reverse_comm_kokkos(int, int, DAT::tdual_double_1d&) override;
   int pack_reverse_comm(int, int, double *) override;
 
-  void unpack_reverse_comm_kokkos(int, DAT::tdual_int_1d, DAT::tdual_double_1d&) override; 
+  void unpack_reverse_comm_kokkos(int, DAT::tdual_int_1d, DAT::tdual_double_1d&) override;
   void unpack_reverse_comm(int, int *, double *) override;
   double memory_usage() override;
   void sparse_matvec_kokkos(typename AT::t_kkfloat_1d_2 &);

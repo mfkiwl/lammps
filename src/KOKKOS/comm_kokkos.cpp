@@ -450,11 +450,10 @@ void CommKokkos::forward_comm_device(Fix *fix, int size)
 
 void CommKokkos::reverse_comm(Fix *fix, int size)
 {
-  if(fix->execution_space == Host || fix->execution_space == HostKK || !fix->reverse_comm_device || reverse_fix_comm_legacy ) {   
+  if(fix->execution_space == Host || fix->execution_space == HostKK || !fix->reverse_comm_device || reverse_fix_comm_legacy ) {
     k_sendlist.sync_host();
     CommBrick::reverse_comm(fix, size);
-  }
-  else {
+  } else {
     k_sendlist.sync_device();
     reverse_comm_device<LMPDeviceType>(fix,size);
   }

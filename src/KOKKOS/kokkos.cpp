@@ -68,7 +68,7 @@ KokkosLMP::KokkosLMP(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp)
   forward_pair_comm_changed = 0;
   reverse_pair_comm_changed = 0;
   forward_fix_comm_changed = 0;
-  reverse_fix_comm_changed = 0; 
+  reverse_fix_comm_changed = 0;
   reverse_comm_changed = 0;
   sort_changed = atom_map_changed = 0;
 
