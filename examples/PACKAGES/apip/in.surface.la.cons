@@ -35,26 +35,23 @@ read_data	data.surface.la
 
 fix		nve all nve
 
-fix		lambda_cspavg all lambda/la/csp/apip ${cspavg_csp_lo} ${cspavg_csp_hi} ${cspavg_r_lo} ${cspavg_r_hi} ${cspavg_lattice}
+fix		lambda_cspavg all lambda/la/csp/apip ${cspavg_csp_lo} ${cspavg_csp_hi} ${cspavg_r_lo} ${cspavg_r_hi} ${cspavg_lattice} #store_peratom 10
 pair_style	hybrid/overlay eam/fs/apip pace/apip zero ${cspavg_r_hi}
 pair_coeff	* * eam/fs/apip ${eamfs_file} Cu
 pair_coeff	* * pace/apip ${ace_file} Cu
 pair_coeff	* * zero
 
-#fix		lambda_cspavg all lambda/la/csp/apip ${cspavg_csp_lo} ${cspavg_csp_hi} ${cspavg_r_lo} ${cspavg_r_hi} ${cspavg_lattice} forces no
+#fix		lambda_cspavg all lambda/la/csp/apip ${cspavg_csp_lo} ${cspavg_csp_hi} ${cspavg_r_lo} ${cspavg_r_hi} ${cspavg_lattice} forces no #store_peratom 10
 #pair_style	hybrid/overlay eam/fs zero ${cspavg_r_hi}
 #pair_coeff	* * eam/fs ${eamfs_file} Cu
 #pair_coeff	* * zero
 
-#fix		lambda_cspavg all lambda/la/csp/apip ${cspavg_csp_lo} ${cspavg_csp_hi} ${cspavg_r_lo} ${cspavg_r_hi} ${cspavg_lattice} forces no
+#fix		lambda_cspavg all lambda/la/csp/apip ${cspavg_csp_lo} ${cspavg_csp_hi} ${cspavg_r_lo} ${cspavg_r_hi} ${cspavg_lattice} forces no #store_peratom 10
 #pair_style	hybrid/overlay pace zero ${cspavg_r_hi}
 #pair_coeff	* * pace ${ace_file} Cu
 #pair_coeff	* * zero
 
 compute		lambda all property/atom apip_lambda
-compute		csp all property/atom apip_la_inp
-compute		csp_norm all property/atom apip_la_norm
-compute		csp_avg all property/atom apip_la_avg
 
 
 # get statistics about lambda
@@ -67,7 +64,7 @@ compute		lambda_types all reduce sum v_flag_simple v_flag_switch v_flag_complex
 thermo_style	custom step temp etotal c_lambda_types[*] fnorm fmax
 thermo		1
 
-#dump		1 all custom 10 dump.surface.la.cons.* id type x y z c_lambda c_csp c_csp_norm c_csp_avg proc
+#dump		1 all custom 10 dump.surface.la.cons.* id type x y z c_lambda f_lambda_cspavg[*] proc
 
 
 run		100

@@ -29,6 +29,7 @@
 #include "neigh_request.h"
 #include "neighbor.h"
 #include "pair.h"
+#include "update.h"
 
 #include <algorithm>
 
@@ -118,11 +119,12 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
       else
         lambda_non_group = utils::numeric(FLERR, arg[i + 1], false, lmp);
       i++;
-    } else if (strcmp(arg[i], "store_stats") == 0) {
+    } else if (strcmp(arg[i], "store_peratom") == 0) {
       if (i + 1 == narg)
         error->all(FLERR,
                    "the store_stats option of fix lambda/la/csp/apip requires an additional argument");
-      store_stats = utils::logical(FLERR, arg[i + 1], false, lmp);
+      peratom_freq = utils::inumeric(FLERR, arg[i + 1], false, lmp);
+      if (peratom_freq <= 0) error->all(FLERR, "store_peratom frequency needs to be positive.");
       i++;
     } else {
       error->all(FLERR, "unknown argument {}", arg[i]);
@@ -148,9 +150,9 @@ FixLambdaLACSPAPIP::FixLambdaLACSPAPIP(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR, "fix lambda/la/csp/apip requires atomic style with lambda.");
   }
 
-  if (store_stats) {
+  if (peratom_freq > 0) {
+    store_stats = true;
     peratom_flag = 1;
-    peratom_freq = 1;
     size_peratom_cols = 5;
 
     size_f_lambda = atom->nlocal;
@@ -1111,7 +1113,7 @@ void FixLambdaLACSPAPIP::unpack_forward_comm(int n, int first, double *buf)
 
 void FixLambdaLACSPAPIP::store_f_lambda_before()
 {
-  if (! store_stats) return;
+  if ((! store_stats) || update->ntimestep % peratom_freq) { return; }
 
   int nlocal = atom->nlocal;
   double **f = atom->f;
@@ -1130,7 +1132,7 @@ void FixLambdaLACSPAPIP::store_f_lambda_before()
 
 void FixLambdaLACSPAPIP::store_f_lambda_after()
 {
-  if (! store_stats) return;
+  if ((! store_stats) || update->ntimestep % peratom_freq) { return; }
 
   int nlocal = atom->nlocal;
   double **f = atom->f;
@@ -1148,7 +1150,7 @@ void FixLambdaLACSPAPIP::store_f_lambda_after()
 
 void FixLambdaLACSPAPIP::store_la()
 {
-  if (! store_stats) return;
+  if ((! store_stats) || update->ntimestep % peratom_freq) { return; }
 
   int nlocal = atom->nlocal;
   double *inp = fixstore_la_inp->vstore;
