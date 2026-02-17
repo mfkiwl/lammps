@@ -310,11 +310,16 @@ The LAMMPS source code currently includes a slightly modified copy of
 the `{fmt} library <https://fmt.dev>`_, which is preferred over
 formatting with the "printf()" family of functions.  When compiling for
 C++20 and later we switch to using the `C++ format library
-<https://cppreference.com/w/cpp/utility/format.html>`_.  The
-namespace prefix currently remains ``fmt::`` through a small wrapper.
-In the future, this will be switched to ``std::`` when LAMMPS requires
-the C++20 standard as the minimum C++ standard.  Thus only functionality
-compatible with the C++ format library for C++20 is accepted.
+<https://cppreference.com/w/cpp/utility/format.html>`_.  The namespace
+prefix currently remains ``fmt::`` through a small wrapper.  In the
+future, this will be switched to ``std::`` when LAMMPS requires the
+C++20 standard as the minimum C++ standard.  Thus only functionality
+compatible with the C++ format library for C++20 is accepted.  Using
+``std::format`` requires a fully C++20 compatible compiler (e.g. GCC 13
+and later, Clang 14 and later, or MSVC 16.10 and later) and we `use the
+__cpp_lib_format feature test macro
+<https://cppreference.com/w/cpp/utility/feature_test.html>`_ to confirm
+the availability of ``std::format``.
 
 The primary reason for this choice is that it allows a typesafe default
 format for any type of supported data.  This is particularly useful for

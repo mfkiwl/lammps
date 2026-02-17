@@ -33,6 +33,7 @@
 #ifndef FMT_FORMAT_H_
 #define FMT_FORMAT_H_
 
+// LAMMPS CUSTOMIZATION
 #if __has_include(<version>)
 #include <version>
 #endif
@@ -42,6 +43,12 @@
 // the parts of fmt::format we use with std::format
 // eventually, this emulation can be removed when
 // we require C++20 as minimum C++ standard
+//
+// WARNING: checking for C++20 is not sufficient
+// since several compilers with partial C++20 support
+// do not contain std::format. We need to use the
+// feature test macro like above.
+// Known compatible compilers are: GCC 13+, Clang 14+, MSVC 16.10+
 
 #include <format>
 #include <string_view>
