@@ -92,13 +92,12 @@ by using a very small tolerance and setting *maxiter* to the desired
 number of iterations.
 
 The optional *matfree* keyword replaces the sequence of
-explicitly constructing the H matrix then (repeatedly) applying it
+explicitly constructing the H matrix, then (repeatedly) applying it
 with a matrix-free approach where the H matrix is effectively
 regenerated each time it is applied. This trades performance for
 reduced memory requirements because it avoids the overheads of
 storing the matrix. This is only supported for the *qeq/reaxff/kk*
-style and will work as expected for both full and half qeq neighbor
-lists.
+style, with both full and half qeq neighbor lists supported.
 
 .. note::
 
