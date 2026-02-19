@@ -32,6 +32,7 @@
 #include "update.h"
 
 #include <algorithm>
+#include <cstring>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
