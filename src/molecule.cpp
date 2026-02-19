@@ -149,13 +149,17 @@ void Molecule::command(int narg, char **arg, int &index)
     } else if (strcmp(arg[iarg], "auto") == 0) {
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "molecule auto", error);
       char *auto_arg = arg[iarg + 1];
-      if (strcmp(auto_arg, "angle") == 0)
-        auto_angleflag = 1;
-      else if (strcmp(auto_arg, "dihedral") == 0)
-        auto_dihedralflag = 1;
-      else if (strcmp(auto_arg, "improper") == 0)
-        auto_improperflag = 1;
-      else error->all(FLERR, iarg + 1, "Illegal argument '{}' for molecule auto", auto_arg);
+      int i = 0;
+      while (auto_arg[i] != '\0') {
+        if (auto_arg[i] == 'a')
+          auto_angleflag = 1;
+        else if (auto_arg[i] == 'd')
+          auto_dihedralflag = 1;
+        else if (auto_arg[i] == 'i')
+          auto_improperflag = 1;
+        else error->all(FLERR, iarg + 1, "Illegal argument '{}' for molecule auto", auto_arg);
+        i++;
+      }
       iarg += 2;
     } else
       break;
