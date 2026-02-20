@@ -13,7 +13,7 @@ Syntax
 * ID = user-assigned name for the molecule template
 * file1,file2,... = names of files containing molecule descriptions
 * zero or more keyword/value pairs may be appended after each file
-* keyword = *offset* or *toff* or *boff* or *aoff* or *doff* or *ioff* or *scale* or *check_labels*
+* keyword = *offset* or *toff* or *boff* or *aoff* or *doff* or *ioff* or *scale* or *check_labels* or *auto*
 
   .. parsed-literal::
 
@@ -37,6 +37,8 @@ Syntax
          sfactor = scale factor to apply to the size, mass, and dipole of the molecule
        *check_labels* value = string
          string = string containing any of the following characters: 'b', 'a', 'd', or 'i'
+       *auto* value = string
+         string = string containing any of the following characters: 'a', 'd', or 'i'
 
 Examples
 """"""""
@@ -49,6 +51,7 @@ Examples
    molecule CO2 co2.txt boff 3 aoff 2
    molecule 1 mymol.txt offset 6 9 18 23 14
    molecule objects file.1 scale 1.5 file.1 scale 2.0 file.2 scale 1.3
+   molecule 1 mymol.txt auto ad
 
 Description
 """""""""""
@@ -162,6 +165,25 @@ complex and are described on the doc page for each improper style in the
    feature is *not* available for the :doc:`read_restart command
    <read_restart>`, thus binary restart files need to be converted to
    data files first.
+
+The *auto* keyword allows the molecule command to generate angle,
+dihedral, and/or improper data by traversing the bond graph defined in the
+*Bonds* section. The *auto* value is a single string that should contain
+one or more of the characters 'a', 'd', and 'i', which correspond to angles,
+dihedrals, and impropers, respectively.  For example, the keyword/value pair
+*auto adi* will generate angle, dihedral, and improper information, while
+*auto di* will only generate information for dihedrals and impropers but not
+for angles.
+Angles are generated from all unique 1-2-3 paths through the bond graph. Dihedrals
+are generated from all unique 1-2-3-4 paths through the bond graph. Impropers
+are generated from all atoms bonded to 3 neighbors.
+Types for auto-generated are inferred based on the atom types of the atoms involved,
+following the same hyphen-delimited naming convention required by the check_labels keyword.
+If a matching type cannot be found, LAMMPS will generate an error.
+
+.. note::
+
+    This command requires the *Special Bonds* data to be allocated.
 
 ----------
 
