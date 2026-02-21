@@ -72,7 +72,7 @@ if(DOWNLOAD_MBX)
       URL     ${MBXLIB_URL}
       URL_HASH MD5=${MBXLIB_MD5}
       BUILD_IN_SOURCE TRUE
-      PATCH_COMMAND patch -b -p0 < ${LAMMPS_DIR}/cmake/patches/mbx-mingw.patch
+      PATCH_COMMAND patch -b -p0 < ${LAMMPS_SOURCE_DIR}/../cmake/patches/mbx-mingw.patch
       CONFIGURE_COMMAND mingw64-configure ${MBX_CONFIG_FLAGS} --prefix=<INSTALL_DIR>
       INSTALL_COMMAND make install prefix=-build includedir=/include bindir=/bin
                                  datadir=/share exec_prefix=/ infodir=/share/info
