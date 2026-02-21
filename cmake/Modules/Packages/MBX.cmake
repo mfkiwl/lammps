@@ -6,8 +6,8 @@ if(POLICY CMP0135)
   cmake_policy(SET CMP0135 OLD)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  message(FATAL_ERROR "Compiling the MBX package for Windows is currently not supported")
+if((CMAKE_SYSTEM_NAME STREQUAL "Windows") AND (NOT CMAKE_CROSSCOMPILING))
+  message(FATAL_ERROR "Compiling the MBX package natively for Windows is currently not supported")
 endif()
 
 # for supporting multiple concurrent mbx installations for debugging and testing
@@ -65,17 +65,35 @@ if(DOWNLOAD_MBX)
   message(STATUS "MBX_CONFIG_FLAGS: ${MBX_CONFIG_FLAGS}")
 
   include(ExternalProject)
-  ExternalProject_Add(mbx_build
-    URL     ${MBXLIB_URL}
-    URL_HASH MD5=${MBXLIB_MD5}
-    CONFIGURE_COMMAND <SOURCE_DIR>/configure
-                      --prefix=<INSTALL_DIR>
-                      ${MBX_CONFIG_FLAGS}
-                      CXX=${MBX_CONFIG_CXX}
-                      CC=${MBX_CONFIG_CC}
-                      CPPFLAGS=-I${FFTW3_INCLUDE_DIRS}
-    BUILD_BYPRODUCTS ${MBX_BUILD_BYPRODUCTS}
-  )
+
+  # hacks to make Linux-to-Windows cross-compilation work
+  if((CMAKE_SYSTEM_NAME STREQUAL "Windows") AND (CMAKE_CROSSCOMPILING))
+    ExternalProject_Add(mbx_build
+      URL     ${MBXLIB_URL}
+      URL_HASH MD5=${MBXLIB_MD5}
+      BUILD_IN_SOURCE TRUE
+      PATCH_COMMAND patch -b -p0 < ${LAMMPS_DIR}/cmake/patches/mbx-mingw.patch
+      CONFIGURE_COMMAND mingw64-configure ${MBX_CONFIG_FLAGS} --prefix=<INSTALL_DIR>
+      INSTALL_COMMAND make install prefix=-build includedir=/include bindir=/bin
+                                 datadir=/share exec_prefix=/ infodir=/share/info
+                                 libdir=/lib libexecdir=/libexec localstatedir=/var
+                                 mandir=/share/man sbindir=/sbin sharedstatedir=/com
+                                 sysconfdir=/etc DESTDIR=<INSTALL_DIR>
+      BUILD_BYPRODUCTS ${MBX_BUILD_BYPRODUCTS}
+    )
+  else()
+    ExternalProject_Add(mbx_build
+      URL     ${MBXLIB_URL}
+      URL_HASH MD5=${MBXLIB_MD5}
+      CONFIGURE_COMMAND <SOURCE_DIR>/configure
+                        --prefix=<INSTALL_DIR>
+                        ${MBX_CONFIG_FLAGS}
+                        CXX=${MBX_CONFIG_CXX}
+                        CC=${MBX_CONFIG_CC}
+                        CPPFLAGS=-I${FFTW3_INCLUDE_DIRS}
+      BUILD_BYPRODUCTS ${MBX_BUILD_BYPRODUCTS}
+    )
+  endif()
   ExternalProject_get_property(mbx_build INSTALL_DIR)
   add_library(LAMMPS::MBX UNKNOWN IMPORTED)
   add_dependencies(LAMMPS::MBX mbx_build)
