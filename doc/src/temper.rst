@@ -98,7 +98,7 @@ and the value in each column is its temperature (also numbered 0 to
 N-1).  For example, a 0 in the fourth column (column *T3*, step 2500)
 means that the fourth replica is assigned temperature 0, i.e. the lowest
 temperature.  You can verify this time sequence of temperature
-assignments for the *N*th replica by comparing the *N*th column of
+assignments for the *N*\ th replica by comparing the *N*\ th column of
 screen output to the thermodynamic data in the corresponding
 ``log.lammps.N`` or ``screen.N`` files as time proceeds.
 
