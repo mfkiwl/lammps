@@ -475,10 +475,10 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
       error->all(FLERR,"Cannot perform isochoric NPT with no barostated dimension.");
     }
     if (dimension == 3) {
-      if (domain->xperiodic * domain->yperiodic * domain->zperiodic == 0) 
+      if (domain->xperiodic * domain->yperiodic * domain->zperiodic == 0)
         error->all(FLERR, "Isochoric NPT requires periodic boundary conditions.");
     } else {
-      if (domain->xperiodic * domain->yperiodic == 0) 
+      if (domain->xperiodic * domain->yperiodic == 0)
         error->all(FLERR, "Isochoric NPT requires periodic boundary conditions.");
     }
   }
@@ -515,9 +515,9 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
     // In the isochoric case, dimensions can change size while not being
     // barostated to maintain volume/surface
     if (isochoric) {
-      if (not p_flag[0]) box_change |= BOX_CHANGE_X;
-      if (not p_flag[1]) box_change |= BOX_CHANGE_Y;
-      if (dimension == 3 && not p_flag[2]) box_change |= BOX_CHANGE_Z;
+      if (!p_flag[0]) box_change |= BOX_CHANGE_X;
+      if (!p_flag[1]) box_change |= BOX_CHANGE_Y;
+      if (dimension == 3 && !p_flag[2]) box_change |= BOX_CHANGE_Z;
     }
     no_change_box = 1;
     if (allremap == 0) restart_pbc = 1;
@@ -1279,13 +1279,13 @@ void FixNH::remap()
         if (scalexy) h[5] *= isofac;
       }
     } else if (psum == 2) {
-      if (not p_flag[0]) {
+      if (!p_flag[0]) {
         // Scale x
         oldlo = domain->boxlo[0];
         oldhi = domain->boxhi[0];
         domain->boxlo[0] = (oldlo-fixedpoint[0])*isofac + fixedpoint[0];
         domain->boxhi[0] = (oldhi-fixedpoint[0])*isofac + fixedpoint[0];
-      } else if (not p_flag[1]) {
+      } else if (!p_flag[1]) {
         // scale y
         oldlo = domain->boxlo[1];
         oldhi = domain->boxhi[1];
