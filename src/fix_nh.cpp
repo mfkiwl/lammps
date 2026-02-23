@@ -121,6 +121,7 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
   for (int i = 0; i < 6; i++) {
     p_start[i] = p_stop[i] = p_period[i] = p_target[i] = 0.0;
     p_flag[i] = 0;
+    if (i < 3) p_isoch[i] = 0;
   }
 
   // process keywords
@@ -338,7 +339,14 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
       iarg += 2;
     } else if (strcmp(arg[iarg],"isochoric") == 0) {
       if (iarg+2 > narg) utils::missing_cmd_args(FLERR, fmt::format("fix {} isochoric", style), error);
-      isochoric = utils::logical(FLERR,arg[iarg+1],false,lmp);
+      if (strcmp(arg[iarg+1], "x") == 0) p_isoch[0] = 1;
+      else if (strcmp(arg[iarg+1], "y") == 0) p_isoch[1] = 1;
+      else if (strcmp(arg[iarg+1], "z") == 0) p_isoch[2] = 1;
+      else if (strcmp(arg[iarg+1], "xy") == 0) p_isoch[0] = p_isoch[1] = 1;
+      else if (strcmp(arg[iarg+1], "yz") == 0) p_isoch[1] = p_isoch[2] = 1;
+      else if (strcmp(arg[iarg+1], "xz") == 0) p_isoch[0] = p_isoch[2] = 1;
+      else error->all(FLERR,"Illegal fix {} isochoric option: {}", style, arg[iarg+1]);
+      isochoric = true;
       iarg += 2;
     } else if (strcmp(arg[iarg],"fixedpoint") == 0) {
       if (iarg+4 > narg)
@@ -467,7 +475,14 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
   }
 
   if (isochoric) {
-    if (dimension == 3 && (p_flag[0]+p_flag[1]+p_flag[2] > 2)) {
+    for (int i; i < 3; i++) {
+      if (p_flag[i]) {
+        if (p_isoch[i]) {
+          error->all(FLERR,"Cannot use barostated dimension as isochoric dimension.");
+        }
+      }
+    }
+    if (dimension == 3 && (p_flag[0] + p_flag[1] + p_flag[2] > 2)) {
       error->all(FLERR,"Cannot perform isochoric NPT with all dimensions barostated.");
     } else if (dimension == 2 && (p_flag[0] + p_flag[1] > 1)) {
       error->all(FLERR,"Cannot perform 2d isochoric NPT with all dimensions barostated.");
@@ -480,6 +495,8 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
     } else {
       if (domain->xperiodic * domain->yperiodic == 0)
         error->all(FLERR, "Isochoric NPT requires periodic boundary conditions.");
+      if (p_isoch[2])
+        error->all(FLERR, "2d Isochoric NPT cannot use z dimension.");
     }
   }
 
@@ -515,9 +532,9 @@ FixNH::FixNH(LAMMPS *lmp, int narg, char **arg) :
     // In the isochoric case, dimensions can change size while not being
     // barostated to maintain volume/surface
     if (isochoric) {
-      if (!p_flag[0]) box_change |= BOX_CHANGE_X;
-      if (!p_flag[1]) box_change |= BOX_CHANGE_Y;
-      if (dimension == 3 && !p_flag[2]) box_change |= BOX_CHANGE_Z;
+      if (p_isoch[0]) box_change |= BOX_CHANGE_X;
+      if (p_isoch[1]) box_change |= BOX_CHANGE_Y;
+      if (dimension == 3 && p_isoch[2]) box_change |= BOX_CHANGE_Z;
     }
     no_change_box = 1;
     if (allremap == 0) restart_pbc = 1;
@@ -1214,95 +1231,30 @@ void FixNH::remap()
   }
 
   if (isochoric) {
-    if (dimension == 3) new_volume = domain->xprd * domain->yprd * domain->zprd;
-    else new_volume = domain->xprd * domain->yprd;
-    int psum = p_flag[0] + p_flag[1] + p_flag[2];
-    if (psum == 1) {
-      if (p_flag[0]) {
-        if (dimension == 3) {
-          isofac = sqrt(isofac);
-          // Scale y
-          oldlo = domain->boxlo[1];
-          oldhi = domain->boxhi[1];
-          domain->boxlo[1] = (oldlo-fixedpoint[1])*isofac + fixedpoint[1];
-          domain->boxhi[1] = (oldhi-fixedpoint[1])*isofac + fixedpoint[1];
-          if (scalexy) h[5] *= isofac;
-          // Scale z
-          oldlo = domain->boxlo[2];
-          oldhi = domain->boxhi[2];
-          domain->boxlo[2] = (oldlo-fixedpoint[2])*isofac + fixedpoint[2];
-          domain->boxhi[2] = (oldhi-fixedpoint[2])*isofac + fixedpoint[2];
-          if (scalexz) h[4] *= isofac;
-          if (scaleyz) h[3] *= isofac;
-        } else {
-          // Scale y
-          oldlo = domain->boxlo[1];
-          oldhi = domain->boxhi[1];
-          domain->boxlo[1] = (oldlo-fixedpoint[1])*isofac + fixedpoint[1];
-          domain->boxhi[1] = (oldhi-fixedpoint[1])*isofac + fixedpoint[1];
-          if (scalexy) h[5] *= isofac;
-        }
-      } else if (p_flag[1]) {
-        if (dimension == 3) {
-          isofac = sqrt(isofac);
-          // Scale x
-          oldlo = domain->boxlo[0];
-          oldhi = domain->boxhi[0];
-          domain->boxlo[0] = (oldlo-fixedpoint[0])*isofac + fixedpoint[0];
-          domain->boxhi[0] = (oldhi-fixedpoint[0])*isofac + fixedpoint[0];
-          // Scale z
-          oldlo = domain->boxlo[2];
-          oldhi = domain->boxhi[2];
-          domain->boxlo[2] = (oldlo-fixedpoint[2])*isofac + fixedpoint[2];
-          domain->boxhi[2] = (oldhi-fixedpoint[2])*isofac + fixedpoint[2];
-          if (scalexz) h[4] *= isofac;
-          if (scaleyz) h[3] *= isofac;
-        } else {
-          // Scale x
-          oldlo = domain->boxlo[0];
-          oldhi = domain->boxhi[0];
-          domain->boxlo[0] = (oldlo-fixedpoint[0])*isofac + fixedpoint[0];
-          domain->boxhi[0] = (oldhi-fixedpoint[0])*isofac + fixedpoint[0];
-        }
-      } else { // p_flag[2] == 1, should only happen in 3d.
-        isofac = sqrt(isofac);
-        // Scale x
-        oldlo = domain->boxlo[0];
-        oldhi = domain->boxhi[0];
-        domain->boxlo[0] = (oldlo-fixedpoint[0])*isofac + fixedpoint[0];
-        domain->boxhi[0] = (oldhi-fixedpoint[0])*isofac + fixedpoint[0];
-        // Scale y
-        oldlo = domain->boxlo[1];
-        oldhi = domain->boxhi[1];
-        domain->boxlo[1] = (oldlo-fixedpoint[1])*isofac + fixedpoint[1];
-        domain->boxhi[1] = (oldhi-fixedpoint[1])*isofac + fixedpoint[1];
-        if (scalexy) h[5] *= isofac;
-      }
-    } else if (psum == 2) {
-      if (!p_flag[0]) {
-        // Scale x
-        oldlo = domain->boxlo[0];
-        oldhi = domain->boxhi[0];
-        domain->boxlo[0] = (oldlo-fixedpoint[0])*isofac + fixedpoint[0];
-        domain->boxhi[0] = (oldhi-fixedpoint[0])*isofac + fixedpoint[0];
-      } else if (!p_flag[1]) {
-        // scale y
-        oldlo = domain->boxlo[1];
-        oldhi = domain->boxhi[1];
-        domain->boxlo[1] = (oldlo-fixedpoint[1])*isofac + fixedpoint[1];
-        domain->boxhi[1] = (oldhi-fixedpoint[1])*isofac + fixedpoint[1];
-        if (scalexy) h[5] *= isofac;
-      } else {
-        // scale z
-        oldlo = domain->boxlo[2];
-        oldhi = domain->boxhi[2];
-        domain->boxlo[2] = (oldlo-fixedpoint[2])*isofac + fixedpoint[2];
-        domain->boxhi[2] = (oldhi-fixedpoint[2])*isofac + fixedpoint[2];
-        if (scalexz) h[4] *= isofac;
-        if (scaleyz) h[3] *= isofac;
-      }
-    } else {
-      error->all(FLERR,"Fix {} cannot maintain volume with 3 barostated dimensions", style);
+    int iso_sum = p_isoch[0] + p_isoch[1] + p_isoch[2];
+    if (iso_sum == 2) isofac = sqrt(isofac);
+    if (p_isoch[0]) {
+      // Scale x
+      oldlo = domain->boxlo[0];
+      oldhi = domain->boxhi[0];
+      domain->boxlo[0] = (oldlo-fixedpoint[0])*isofac + fixedpoint[0];
+      domain->boxhi[0] = (oldhi-fixedpoint[0])*isofac + fixedpoint[0];
+    }
+    if (p_isoch[1]) {
+      // Scale y
+      oldlo = domain->boxlo[1];
+      oldhi = domain->boxhi[1];
+      domain->boxlo[1] = (oldlo-fixedpoint[1])*isofac + fixedpoint[1];
+      domain->boxhi[1] = (oldhi-fixedpoint[1])*isofac + fixedpoint[1];
+      if (scalexy) h[5] *= isofac;
+    }
+    if (p_isoch[2]) {
+      oldlo = domain->boxlo[2];
+      oldhi = domain->boxhi[2];
+      domain->boxlo[2] = (oldlo-fixedpoint[2])*isofac + fixedpoint[2];
+      domain->boxhi[2] = (oldhi-fixedpoint[2])*isofac + fixedpoint[2];
+      if (scalexz) h[4] *= isofac;
+      if (scaleyz) h[3] *= isofac;
     }
   }
 
