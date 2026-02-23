@@ -388,9 +388,9 @@ strain with constant volume, the :doc:`fix deform <fix_deform>` command using
 *volume* keyword is more likely to suit your needs.
 
 .. note::
-   If large strain are caused by the barostat because the initial configuration
+   If large strains are caused by the barostat because the initial configuration
    is far from pressure equilibrium or equilibrated too fast, the system will
-   see large strain on the other dimensions as well. It is recommended to
+   see large strains on the other dimensions as well. It is recommended to
    perform preliminary NPT equilibration if necessary using standard NPT
    simulations.
 
@@ -722,9 +722,9 @@ Default
 """""""
 
 The keyword defaults are tchain = 3, pchain = 3, mtk = yes, tloop = 1, ploop =
-1, nreset = 0, drag = 0.0, dilate = all, couple = none, flip = yes, isochoric =
-no, scaleyz = scalexz = scalexy = yes if periodic in second dimension and not
-coupled to barostat, otherwise no.
+1, nreset = 0, drag = 0.0, dilate = all, couple = none, flip = yes, scaleyz =
+scalexz = scalexy = yes if periodic in second dimension and not coupled to
+barostat, otherwise no.
 
 ----------
 
