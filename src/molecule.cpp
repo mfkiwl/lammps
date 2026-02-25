@@ -3591,7 +3591,8 @@ void Molecule::generate_angles()
 
   if (angleflag == 1) {
     error->warning(FLERR, "Generating angles will overwrite angle data from molecule template.");
-    memory->destroy(num_angle);
+    nangletypes = 0;
+    nangles = 0;
     memory->destroy(angle_type);
     memory->destroy(angle_atom1);
     memory->destroy(angle_atom2);
@@ -3680,7 +3681,8 @@ void Molecule::generate_dihedrals()
 
   if (dihedralflag == 1) {
     error->warning(FLERR, "Generating dihedrals will overwrite dihedral data from molecule template.");
-    memory->destroy(num_dihedral);
+    ndihedraltypes = 0;
+    ndihedrals = 0;
     memory->destroy(dihedral_type);
     memory->destroy(dihedral_atom1);
     memory->destroy(dihedral_atom2);
@@ -3803,7 +3805,8 @@ void Molecule::generate_impropers()
 
   if (improperflag == 1) {
     error->warning(FLERR, "Generating impropers will overwrite improper data from molecule template.");
-    memory->destroy(num_improper);
+    nimpropertypes = 0;
+    nimpropers = 0;
     memory->destroy(improper_type);
     memory->destroy(improper_atom1);
     memory->destroy(improper_atom2);
@@ -3869,6 +3872,7 @@ void Molecule::generate_impropers()
     if (!signed_itype) error->one(FLERR, "Unable to infer improper type from bonds.");
     itype = std::abs(signed_itype);
     if (signed_itype < 0) {
+      // rearrange atoms based on the order found by infer_impropertype
       std::array<tagint, 4> tags = {atom1, atom2, atom3, atom4};
       for (int iatom = 0; iatom < 4; iatom++)
         *iptrs[iatom] = tags[iorder[iatom]];
