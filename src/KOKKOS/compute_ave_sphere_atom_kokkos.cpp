@@ -22,6 +22,7 @@
 #include "comm.h"
 #include "domain.h"
 #include "force.h"
+#include "kokkos.h"
 #include "memory_kokkos.h"
 #include "neigh_request.h"
 #include "neighbor_kokkos.h"
@@ -36,6 +37,8 @@ ComputeAveSphereAtomKokkos<DeviceType>::ComputeAveSphereAtomKokkos(LAMMPS *lmp, 
   ComputeAveSphereAtom(lmp, narg, arg)
 {
   kokkosable = 1;
+  forward_comm_device = 1;
+
   atomKK = (AtomKokkos *) atom;
   execution_space = ExecutionSpaceFromDevice<DeviceType>::space;
   datamask_read = EMPTY_MASK;
@@ -72,6 +75,9 @@ void ComputeAveSphereAtomKokkos<DeviceType>::init()
 template<class DeviceType>
 void ComputeAveSphereAtomKokkos<DeviceType>::compute_peratom()
 {
+  int prev_auto_sync = lmp->kokkos->auto_sync;
+  lmp->kokkos->auto_sync = 0;
+
   invoked_peratom = update->ntimestep;
 
   // grow result array if necessary
@@ -86,9 +92,7 @@ void ComputeAveSphereAtomKokkos<DeviceType>::compute_peratom()
 
   // need velocities of ghost atoms
 
-  atomKK->sync(Host,V_MASK);
   comm->forward_comm(this);
-  atomKK->modified(Host,V_MASK);
 
   // invoke full neighbor list (will copy or build if necessary)
 
@@ -125,7 +129,12 @@ void ComputeAveSphereAtomKokkos<DeviceType>::compute_peratom()
 
   k_result.modify<DeviceType>();
   k_result.sync_host();
+  atomKK->k_v.clear_sync_state();
+
+  lmp->kokkos->auto_sync = prev_auto_sync;
 }
+
+/* ---------------------------------------------------------------------- */
 
 template<class DeviceType>
 // NOLINTNEXTLINE
@@ -222,7 +231,10 @@ int ComputeAveSphereAtomKokkos<DeviceType>::pack_forward_comm_kokkos(int n, DAT:
   atomKK->sync(execution_space,V_MASK);
   v = atomKK->k_v.view<DeviceType>();
 
+  copymode = 1;
   Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType, TagComputeAveSphereAtomPackForwardComm>(0,n),*this);
+  copymode = 0;
+
   return n*3;
 }
 
@@ -248,7 +260,9 @@ void ComputeAveSphereAtomKokkos<DeviceType>::unpack_forward_comm_kokkos(int n, i
   atomKK->sync(execution_space,V_MASK);
   v = atomKK->k_v.view<DeviceType>();
 
+  copymode = 1;
   Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType, TagComputeAveSphereAtomUnpackForwardComm>(0,n),*this);
+  copymode = 0;
 
   atomKK->modified(execution_space,V_MASK);
 }
