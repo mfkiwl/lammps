@@ -294,11 +294,13 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
       if (iarg+4 > narg) utils::missing_cmd_args(FLERR,"dump image body", error);
       bodyflag = YES;
       if (strcmp(arg[iarg+1],"type") == 0) bodycolor = TYPE;
+      else if (strcmp(arg[iarg+1],"atom") == 0) bodycolor = ATOM;
       else if (strcmp(arg[iarg+1],"index") == 0) bodycolor = INDEX;
       else
-        error->all(FLERR, iarg+1, "Dump image body only supports color by type or index");
-      if (acolor != TYPE)
-        error->all(FLERR, iarg+1, "Must color atoms by type with body particles");
+        error->all(FLERR, iarg+1, "Dump image body only supports color by type, atom, or index");
+      if ((bodycolor != ATOM) && (acolor != TYPE))
+        error->all(FLERR, iarg+1,
+                   "Must color atoms by type with body particles colored by type or index");
       bodyflag1 = utils::numeric(FLERR,arg[iarg+2],false,lmp);
       bodyflag2 = utils::numeric(FLERR,arg[iarg+3],false,lmp);
       iarg += 4;
@@ -1332,6 +1334,18 @@ void DumpImage::create_image()
       } else if (bodycolor == INDEX) {
         itype = (body[j] % atom->ntypes) + 1;
         color = colortype[itype];
+      } else if (bodycolor == ATOM) {
+        if (acolor == TYPE) {
+          itype = static_cast<int>(buf[m]);
+          color = colortype[itype];
+        } else if (acolor == ELEMENT) {
+          itype = static_cast<int>(buf[m]);
+          color = colorelement[itype];
+        } else if (acolor == ATTRIBUTE) {
+          color = image->map_value2color(0,buf[m]);
+        } else {
+          color = image->color2rgb("white");
+        }
       } else {
         color = image->color2rgb("white");
       }
@@ -1344,8 +1358,12 @@ void DumpImage::create_image()
           image->draw_sphere(bodyarray[k],color,bodyarray[k][3],opacity);
         else if (bodyvec[k] == Graphics::LINE)
           image->draw_cylinder(&bodyarray[k][0],&bodyarray[k][3],color,bodyarray[k][6],3,opacity);
-        else if (bodyvec[k] == Graphics::TRI)
+        else if (bodyvec[k] == Graphics::TRI) {
+          // brighten flat surfaces a little bit
+          image->ambientColor[0] = image->ambientColor[1] = image->ambientColor[2] = 0.2;
           image->draw_triangle(&bodyarray[k][0],&bodyarray[k][3],&bodyarray[k][6],color,opacity);
+          image->ambientColor[0] = image->ambientColor[1] = image->ambientColor[2] = 0.0;
+        }
       }
 
       m += size_one;
@@ -1846,15 +1864,14 @@ void DumpImage::create_image()
           double yhi = MIN(myreg->yhi, domain->boxhi[1]);
           double zhi = MIN(myreg->zhi, domain->boxhi[2]);
 
-          corners = cornerdata{
-              vec3{xlo, ylo, zlo},
-              vec3{xlo + myreg->xz, ylo + myreg->yz, zhi},
-              vec3{xlo + myreg->xy + myreg->xz, yhi + myreg->yz, zhi},
-              vec3{xlo + myreg->xy, yhi, zlo},
-              vec3{xhi, ylo, zlo},
-              vec3{xhi + myreg->xz, ylo + myreg->yz, zhi},
-              vec3{xhi + myreg->xy + myreg->xz, yhi + myreg->yz, zhi},
-              vec3{xhi + myreg->xy, yhi, zlo}};
+          corners = cornerdata{vec3{xlo, ylo, zlo},
+                               vec3{xlo + myreg->xz, ylo + myreg->yz, zhi},
+                               vec3{xlo + myreg->xy + myreg->xz, yhi + myreg->yz, zhi},
+                               vec3{xlo + myreg->xy, yhi, zlo},
+                               vec3{xhi, ylo, zlo},
+                               vec3{xhi + myreg->xz, ylo + myreg->yz, zhi},
+                               vec3{xhi + myreg->xy + myreg->xz, yhi + myreg->yz, zhi},
+                               vec3{xhi + myreg->xy, yhi, zlo}};
         }
 
         for (int i = 0; i < 8; ++i)
