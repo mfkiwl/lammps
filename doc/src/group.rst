@@ -288,7 +288,7 @@ the group (see above).
 
 .. versionadded:: TBD
 
-The optional *within* keyword with its *cutoff* argment adds atoms to a
+The optional *within* keyword with its *cutoff* argument adds atoms to a
 dynamic group that are within the given cutoff distance from any of the
 atoms selected for the dynamic group.  Since this requires processing a
 neighbor list and computing distances for potentially many pairs of
