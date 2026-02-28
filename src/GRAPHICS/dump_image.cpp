@@ -2582,12 +2582,24 @@ int DumpImage::modify_param(int narg, char **arg)
   }
 
   if (strcmp(arg[0],"color") == 0) {
-    if (narg < 5) utils::missing_cmd_args(FLERR, "dump_modify color", error);
-    int flag = image->addcolor(arg[1],utils::numeric(FLERR,arg[2],false,lmp),
-                               utils::numeric(FLERR,arg[3],false,lmp),
-                               utils::numeric(FLERR,arg[4],false,lmp));
-    if (flag) error->all(FLERR, argoff + 1 + flag, "Incorrect dump_modify color command");
-    return 5;
+    if (narg < 3) utils::missing_cmd_args(FLERR, "dump_modify color", error);
+    if (utils::strmatch(arg[2], "^0x[0-9a-fA-F]+$")) {
+      char *ptr = nullptr;
+      auto val = strtol(arg[2], &ptr, 16);
+      double rval =  ((val & 0xff0000) >> 16) / 255.0;
+      double gval =  ((val & 0x00ff00) >> 8) / 255.0;
+      double bval =  (val & 0x0000ff) / 255.0;
+      int flag = image->addcolor(arg[1], rval, gval, bval);
+      if (flag) error->all(FLERR, argoff + 1 + flag, "Incorrect dump_modify color command");
+      return 3;
+    } else {
+      if (narg < 5) utils::missing_cmd_args(FLERR, "dump_modify color", error);
+      int flag = image->addcolor(arg[1],utils::numeric(FLERR,arg[2],false,lmp),
+                                 utils::numeric(FLERR,arg[3],false,lmp),
+                                 utils::numeric(FLERR,arg[4],false,lmp));
+      if (flag) error->all(FLERR, argoff + 1 + flag, "Incorrect dump_modify color command");
+      return 5;
+    }
   }
 
   if (strcmp(arg[0],"ccolor") == 0) {

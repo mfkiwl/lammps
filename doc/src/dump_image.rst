@@ -181,9 +181,10 @@ Syntax
          color = name of color for simulation box lines and processor subdomain lines
        *subboxtrans* arg = transparency
          transparency = transparency for simulation subbox lines (value between 0 (invisible) and 1 (fully opaque))
-       *color* args = name R G B
+       *color* args = name R G B *or* name hex
          name = name of color
          R,G,B = red/green/blue numeric values from 0.0 to 1.0
+         hex = 24-bit RGB color in hexadecimal
        *ccolor* args = computeID color
          computeID = ID of the compute
          color = name of color for image objects provided by this compute when using "const" color style
@@ -218,6 +219,7 @@ Examples
 
    labelmap atom 1 C 2 H 3 O 4 N
    dump_modify 1 acolor C gray acolor H white acolor O red acolor N blue
+   dump_modify 1 color gray80 0.8 0.8 0.8 color gray20 0x333333
 
 Description
 """""""""""
@@ -1134,12 +1136,22 @@ dump_modify color option.
 
 ----------
 
+.. versionchanged:: TBD
+
+   add support for entering colors in hexadecimal
+
 The *color* keyword allows definition of a new color name, in addition
 to the 140-predefined colors (see below), and associates three
 red/green/blue RGB values with that color name.  The color name can
 then be used with any other dump_modify keyword that takes a color
-name as a value.  The RGB values should each be floating point values
-between 0.0 and 1.0 inclusive.
+name as a value.  The RGB values should be either specified as three
+floating point values between 0.0 and 1.0 inclusive or as a single
+24-bit hexadecimal number. The following two commands are equivalent.
+
+.. code-block:: LAMMPS
+
+   dump_modify 1 color mygray 0.431 0.498 0.502
+   dump_modify 1 color mygray 0x6e7f80
 
 When a color name is converted to RGB values, the user-defined color
 names are searched first, then the 140 pre-defined color names.  This
