@@ -562,7 +562,7 @@ atom coordinates and any other atom properties that needs to be updated
 for ghost atoms owned by each processor. "Comm/pair" controls additional
 communication in pair styles, such as pair_style EAM. "Comm/fix" controls
 additional communication in fixes, such as fix SHAKE. Similarly,
-"comm/compute" controls additional communication in computes. 
+"comm/compute" controls additional communication in computes.
 
 The *comm* keyword is simply a short-cut to set the same value for all
 the comm keywords.
