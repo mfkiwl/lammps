@@ -62,14 +62,14 @@ fix label all graphics/labels ${vizsteps} text " Hydrogen bonds donated:  $(c_hb
                                           text "Hydrogen bonds accepted: $(c_hb2:%02.0f)" 210 30 0.0 &
                                                size 24 backcolor darkgray
 # create colored arrows to go with text labels
-fix obj   all graphics/objects ${vizsteps} arrow 5 80.0 61.0 39 80.0 67.0 39 0.3 0.2 &
-                                   arrow 6 80.0 61.0 37.2 80.0 67.0 37.2 0.3 0.2
+fix obj   all graphics/objects ${vizsteps} arrow 5 80.0 57.0 35.0 80.0 66.0 35.0 0.3 0.2 &
+                                           arrow 6 80.0 57.0 33.5 80.0 66.0 33.5 0.3 0.2
 
 # combine the graphics into visualization
 dump viz viz image ${vizsteps} hbonds-*.ppm element element size 800 800 zoom 2.1 view 80 0 bond atom 0.3&
-                       fsaa yes ssao yes 12384 0.6 shiny 0.1 box no 0.1 center s 0.5 0.52 0.52 &
+                       fsaa yes ssao yes 12384 0.6 shiny 0.1 box no 0.1 center s 0.65 0.49 0.42 &
                        compute hb1 const -0.4 0.3 compute hb2 const -0.4 0.3 &
-                       fix label const 1 0 fix obj type 0.0 0.0 fix graphics element 1 0.1
+                       fix label const 1 0 fix obj type 0.0 0.0
 dump_modify viz pad 5 boxcolor white backcolor darkgray backcolor2 silver &
     element C C O H N C C C O H H S O H ccolor hb1 cyan ccolor hb2 magenta
 
