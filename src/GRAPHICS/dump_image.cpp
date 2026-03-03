@@ -1448,6 +1448,7 @@ void DumpImage::create_image()
         if (atom2 < 0 || !chooseghost[atom2]) continue;
         if (newton_bond == 0 && tag[atom1] > tag[atom2]) continue;
         if (btype == 0) continue;
+        if (btype < 0) btype = -btype;
 
         if (bcolor == ATOM) {
           if (acolor == TYPE) {
@@ -1464,9 +1465,7 @@ void DumpImage::create_image()
             color2 = image->color2rgb("white");
           }
         } else if (bcolor == TYPE) {
-          itype = btype;
-          if (itype < 0) itype = -itype;
-          color = bcolortype[itype];
+          color = bcolortype[btype];
         }
 
         if (bdiam == NUMERIC) {
@@ -1482,9 +1481,7 @@ void DumpImage::create_image()
             diameter = MIN(bufcopy[atom1][1],bufcopy[atom2][1]);
           }
         } else if (bdiam == TYPE) {
-          itype = btype;
-          if (itype < 0) itype = -itype;
-          diameter = bdiamtype[itype];
+          diameter = bdiamtype[btype];
         }
 
         // draw cylinder in 2 pieces if bcolor = ATOM
@@ -1502,15 +1499,15 @@ void DumpImage::create_image()
           xmid[2] = x[atom1][2] + 0.5*delz;
           if (bcolor == ATOM)
             image->draw_cylinder(x[atom1],xmid,color1,diameter,3,aopacity[type[atom1]]);
-          else image->draw_cylinder(x[atom1],xmid,color,diameter,3,bopacity[itype]);
+          else image->draw_cylinder(x[atom1],xmid,color,diameter,3,bopacity[btype]);
           xmid[0] = x[atom2][0] - 0.5*delx;
           xmid[1] = x[atom2][1] - 0.5*dely;
           xmid[2] = x[atom2][2] - 0.5*delz;
           if (bcolor == ATOM)
             image->draw_cylinder(xmid,x[atom2],color2,diameter,3,aopacity[type[atom1]]);
-          else image->draw_cylinder(xmid,x[atom2],color,diameter,3,bopacity[itype]);
+          else image->draw_cylinder(xmid,x[atom2],color,diameter,3,bopacity[btype]);
 
-        } else image->draw_cylinder(x[atom1],x[atom2],color,diameter,3,bopacity[itype]);
+        } else image->draw_cylinder(x[atom1],x[atom2],color,diameter,3,bopacity[btype]);
       }
     }
   }
