@@ -1,6 +1,7 @@
 .. index:: angle_style class2
 .. index:: angle_style class2/kk
 .. index:: angle_style class2/omp
+.. index:: angle_style class2xe
 .. index:: angle_style class2/p6
 
 angle_style class2 command
@@ -108,6 +109,75 @@ since it is the same value from the :math:`E_a` formula.
 
 ----------
 
+The *class2xe* angle style uses the potential
+
+.. math::
+    
+   E_a & = K_2 (\theta - \theta_0)^2 + K_3 (\theta - \theta_0)^3 + K_4(\theta - \theta_0)^4 \\
+   E_{bb} & =  D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{jk} - r_2)} \right] \\
+   E_{ba} & = D_1 \left[ 1 - e^{-\alpha_1 (r_{ij} - r_1)} \right] \left[\theta - \theta_0\right] + D_2 \left[ 1 - e^{-\alpha_2 (r_{jk} - r_2)} \right] \left[\theta - \theta_0\right] 
+
+where :math:`E_a` is the angle term, :math:`E_{bb}` is a bond-bond
+term, and :math:`E_{ba}` is a bond-angle term.  :math:`\theta_0` is
+the equilibrium angle and :math:`r_1` and :math:`r_2` are the
+equilibrium bond lengths.
+
+See :ref:`(Kemppainen) <angle-Kemppainen>` for a description of the class2-xe force field.
+
+Coefficients for the :math:`E_a`, :math:`E_{bb}`, and :math:`E_{ba}`
+formulas must be defined for each angle type via the :doc:`angle_coeff
+<angle_coeff>` command as in the example above, or in the data file or
+restart files read by the :doc:`read_data <read_data>` or
+:doc:`read_restart <read_restart>` commands.
+
+These are the 4 coefficients for the :math:`E_a` formula:
+
+* :math:`\theta_0` (degrees)
+* :math:`K_2` (energy)
+* :math:`K_3` (energy)
+* :math:`K_4` (energy)
+
+:math:`\theta_0` is specified in degrees, but LAMMPS converts it to
+radians internally; hence the various :math:`K` are effectively energy
+per radian\^2 or radian\^3 or radian\^4.
+
+For the :math:`E_{bb}` formula, each line in a :doc:`angle_coeff
+<angle_coeff>` command in the input script lists 5 coefficients, the
+first of which is "bb" to indicate they are BondBond coefficients.  In
+a data file, these coefficients should be listed under a "BondBond
+Coeffs" heading and you must leave out the "bb", i.e. only list 4
+coefficients after the angle type.
+
+* bb
+* :math:`D` (energy)
+* :math:`\alpha` (inverse distance)
+* :math:`r_1` (distance)
+* :math:`r_2` (distance)
+
+For the :math:`E_{ba}` formula, each line in a :doc:`angle_coeff
+<angle_coeff>` command in the input script lists 7 coefficients, the
+first of which is "ba" to indicate they are BondAngle coefficients.
+In a data file, these coefficients should be listed under a "BondAngle
+Coeffs" heading and you must leave out the "ba", i.e. only list 6
+coefficients after the angle type.
+
+* ba
+* :math:`D_1` (energy)
+* :math:`D_2` (energy)
+* :math:`\alpha_1` (inverse distance)
+* :math:`\alpha_2` (inverse distance)
+* :math:`r_1` (distance)
+* :math:`r_2` (distance)
+
+The :math:`\theta_0` value in the :math:`E_{ba}` formula is not specified,
+since it is the same value from the :math:`E_a` formula.
+
+----------
+
+.. include:: accel_styles.rst
+
+----------
+
 The *class2/p6* angle style uses the *class2* potential expanded to sixth order:
 
 .. math::
@@ -154,3 +224,7 @@ none
 .. _angle-Sun:
 
 **(Sun)** Sun, J Phys Chem B 102, 7338-7364 (1998).
+
+.. _angle-Kemppainen:
+
+**(Kemppainen)** Kemppainen, npj Computational Materials 11, 341 (2025).

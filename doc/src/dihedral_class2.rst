@@ -1,11 +1,15 @@
 .. index:: dihedral_style class2
 .. index:: dihedral_style class2/omp
 .. index:: dihedral_style class2/kk
+.. index:: dihedral_style class2xe
 
 dihedral_style class2 command
 =============================
 
 Accelerator Variants: *class2/omp*, *class2/kk*
+
+dihedral_style class2xe command
+===============================
 
 Syntax
 """"""
@@ -156,6 +160,86 @@ listed under a *BondBond13 Coeffs* heading and you must leave out the
 
 ----------
 
+The *class2xe* dihedral style uses the potential
+
+.. math::
+
+   E_{mbt}  = & \left[ 1 - e^{-\alpha_2 (r_{jk} - r_2)} \right] [ A_1 \cos (\phi) + A_2 \cos (2\phi) + A_3 \cos (3\phi) ] \\
+   E_{ebt}  = & \left[ 1 - e^{-\alpha_1 (r_{ij} - r_1)} \right] [ B_1 \cos (\phi) + B_2 \cos (2\phi) + B_3 \cos (3\phi) ] + \\
+              & \left[ 1 - e^{-\alpha_3 (r_{kl} - r_3)} \right] [ C_1 \cos (\phi) + C_2 \cos (2\phi) + C_3 \cos (3\phi) ] \\
+   E_{bb13} = & D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{kl} - r_3)} \right]
+
+where :math:`E_{mbt}` is a middle-bond-torsion term,
+:math:`E_{ebt}` is an end-bond-torsion term, and :math:`E_{bb13}` is a bond-bond-13 term.
+
+:math:`\theta_1` and :math:`\theta_2` are equilibrium angles and :math:`r_1`, :math:`r_2`, and
+:math:`r_3` are equilibrium bond lengths.
+
+See :ref:`(Kemppainen) <dihedral-Kemppainen>` for a description of the class2-xe force field.
+
+Coefficients for the :math:`E_{mbt}`, :math:`E_{ebt}`,
+and :math:`E_{bb13}` formulas must be
+defined for each dihedral type via the :doc:`dihedral_coeff <dihedral_coeff>`
+command as in the example above, or in the data file
+or restart files read by the :doc:`read_data <read_data>` or
+:doc:`read_restart <read_restart>` commands.
+
+For the :math:`E_{mbt}` formula, each line in a
+:doc:`dihedral_coeff <dihedral_coeff>` command in the input script lists
+6 coefficients, the first of which is *mbt* to indicate they are
+MiddleBondTorsion coefficients.  In a data file, these coefficients
+should be listed under a *MiddleBondTorsion Coeffs* heading and you
+must leave out the *mbt*, i.e. only list 5 coefficients after the
+dihedral type.
+
+* *mbt*
+* :math:`\alpha_2` (inverse distance)
+* :math:`A_1` (energy/distance)
+* :math:`A_2` (energy/distance)
+* :math:`A_3` (energy/distance)
+* :math:`r_2` (distance)
+
+For the :math:`E_{ebt}` formula, each line in a
+:doc:`dihedral_coeff <dihedral_coeff>` command in the input script lists
+11 coefficients, the first of which is *ebt* to indicate they are
+EndBondTorsion coefficients.  In a data file, these coefficients
+should be listed under a *EndBondTorsion Coeffs* heading and you must
+leave out the *ebt*, i.e. only list 10 coefficients after the dihedral
+type.
+
+* *ebt*
+* :math:`\alpha_1` (inverse distance)
+* :math:`\alpha_3` (inverse distance)
+* :math:`B_1` (energy/distance)
+* :math:`B_2` (energy/distance)
+* :math:`B_3` (energy/distance)
+* :math:`C_1` (energy/distance)
+* :math:`C_2` (energy/distance)
+* :math:`C_3` (energy/distance)
+* :math:`r_1` (distance)
+* :math:`r_3` (distance)
+
+For the :math:`E_{bb13}` formula, each line in a
+:doc:`dihedral_coeff <dihedral_coeff>` command in the input script lists
+5 coefficients, the first of which is *bb13* to indicate they are
+BondBond13 coefficients.  In a data file, these coefficients should be
+listed under a *BondBond13 Coeffs* heading and you must leave out the
+*bb13*, i.e. only list 4 coefficients after the dihedral type.
+
+* *bb13*
+* :math:`D` (energy)
+* :math:`\alpha` (inverse distance)
+* :math:`r_1` (distance)
+* :math:`r_3` (distance)
+
+The dihedral, AngleTorsion and AngleAngleTorsion terms remain unchanged.
+
+----------
+
+.. include:: accel_styles.rst
+
+----------
+
 Restrictions
 """"""""""""
 
@@ -178,3 +262,7 @@ none
 .. _dihedral-Sun:
 
 **(Sun)** Sun, J Phys Chem B 102, 7338-7364 (1998).
+
+.. _dihedral-Kemppainen:
+
+**(Kemppainen)** Kemppainen, npj Computational Materials 11, 341 (2025).
