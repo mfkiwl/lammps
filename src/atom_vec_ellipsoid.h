@@ -34,12 +34,16 @@ class AtomVecEllipsoid : virtual public AtomVec {
   struct Bonus {
     double shape[3];
     double quat[4];
-    double block[2];
-    double inertia[3];
-    BlockType type;
     int ilocal;
   };
   struct Bonus *bonus;
+
+  struct BonusSuper : public Bonus {
+    double block[2];
+    double inertia[3];
+    BlockType type;
+  };
+  struct BonusSuper *bonus_super;
 
   AtomVecEllipsoid(class LAMMPS *);
   ~AtomVecEllipsoid() override;
@@ -95,6 +99,23 @@ class AtomVecEllipsoid : virtual public AtomVec {
   static double radius_ellipsoid(double *, double *, BlockType);
   static void inertia_ellipsoid_principal(double *, double, double *,
                                    double *block, BlockType);
+  
+
+  template <bool is_super>
+  int pack_comm_bonus_templated(int, int *, double *);
+
+  template <bool is_super>
+  void unpack_comm_bonus_templated(int, int, double *); 
+  
+  template <bool is_super>
+  int pack_border_bonus_templated(int, int *, double *);
+
+  template <bool is_super>
+  int unpack_border_bonus_templated(int, int, double *);
+
+  void process_args(int, char **) override;
+
+
 };
 
 }    // namespace LAMMPS_NS

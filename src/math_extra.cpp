@@ -610,8 +610,20 @@ void inertia_triangle(double *idiag, double *quat, double /*mass*/,
 /* ----------------------------------------------------------------------
    compute the volume of the ellipsoid
    shape = 3 radii of ellipsoid
-   block = blockiness exponents of super-ellipsoid
    return volume of the ellipsoid
+------------------------------------------------------------------------- */
+
+double volume_ellipsoid(double *shape)
+{
+  double unitvol = MY_4PI3;
+  return unitvol * shape[0] * shape[1] * shape[2];
+}
+
+/* ----------------------------------------------------------------------
+   compute the volume of the (super)ellipsoid
+   shape = 3 radii of (super)ellipsoid
+   block = blockiness exponents of (super)ellipsoid
+   return volume of the (super)ellipsoid
 ------------------------------------------------------------------------- */
 
 double volume_ellipsoid(double *shape, double *block, int flag_super)
@@ -627,8 +639,6 @@ double volume_ellipsoid(double *shape, double *block, int flag_super)
   }
   return unitvol * shape[0] * shape[1] * shape[2];
 }
-
-
 
 /* ----------------------------------------------------------------------
    build rotation matrix for a small angle rotation around the X axis

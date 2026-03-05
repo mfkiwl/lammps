@@ -42,15 +42,13 @@ AtomVecEllipsoid::AtomVecEllipsoid(LAMMPS *lmp) :
   bonus_flag = 1;
 
   size_forward_bonus = 4;
-  size_border_bonus = 13;
-  size_restart_bonus_one = 13;
-  size_data_bonus = 10;
+  size_border_bonus = 8;
+  size_restart_bonus_one = 8;
+  size_data_bonus = 8;
 
   atom->ellipsoid_flag = 1;
+  atom->superellipsoid_flag = 1;
   atom->rmass_flag = atom->angmom_flag = atom->torque_flag = 1;
-
-  // Circumscribed radius, not physical radius
-  atom->radius_flag = 1;
 
   nlocal_bonus = nghost_bonus = nmax_bonus = 0;
 
@@ -59,15 +57,15 @@ AtomVecEllipsoid::AtomVecEllipsoid(LAMMPS *lmp) :
   // order of fields in a string does not matter
   // except: fields_data_atom & fields_data_vel must match data file
 
-  fields_grow = {"radius", "rmass", "angmom", "torque", "ellipsoid"};
-  fields_copy = {"radius", "rmass", "angmom"};
+  fields_grow = {"rmass", "angmom", "torque", "ellipsoid"};
+  fields_copy = {"rmass", "angmom"};
   fields_comm_vel = {"angmom"};
   fields_reverse = {"torque"};
   fields_border = {"radius", "rmass"};
-  fields_border_vel = {"radius", "rmass", "angmom"};
-  fields_exchange = {"radius", "rmass", "angmom"};
-  fields_restart = {"radius", "rmass", "angmom"};
-  fields_create = {"radius", "rmass", "angmom", "ellipsoid"};
+  fields_border_vel = {"rmass", "angmom"};
+  fields_exchange = {"rmass", "angmom"};
+  fields_restart = {"rmass", "angmom"};
+  fields_create = {"rmass", "angmom", "ellipsoid"};
   fields_data_atom = {"id", "type", "ellipsoid", "rmass", "x"};
   fields_data_vel = {"id", "v", "angmom"};
 
@@ -78,7 +76,10 @@ AtomVecEllipsoid::AtomVecEllipsoid(LAMMPS *lmp) :
 
 AtomVecEllipsoid::~AtomVecEllipsoid()
 {
-  memory->sfree(bonus);
+  if (atom->superellipsoid_flag)
+    memory->sfree(bonus_super);
+  else
+    memory->sfree(bonus);
 }
 
 /* ----------------------------------------------------------------------
@@ -89,9 +90,9 @@ AtomVecEllipsoid::~AtomVecEllipsoid()
 void AtomVecEllipsoid::grow_pointers()
 {
   ellipsoid = atom->ellipsoid;
-  radius = atom->radius;
   rmass = atom->rmass;
   angmom = atom->angmom;
+  if (atom->superellipsoid_flag) radius = atom->radius;
 }
 
 /* ----------------------------------------------------------------------
@@ -103,7 +104,12 @@ void AtomVecEllipsoid::grow_bonus()
   nmax_bonus = grow_nmax_bonus(nmax_bonus);
   if (nmax_bonus < 0) error->one(FLERR, "Per-processor system is too big");
 
-  bonus = (Bonus *) memory->srealloc(bonus, nmax_bonus * sizeof(Bonus), "atom:bonus");
+  if (atom->superellipsoid_flag) {
+    bonus_super = (BonusSuper *) memory->srealloc(bonus_super, nmax_bonus * sizeof(BonusSuper),
+                                                  "atom:bonus_super");
+  } else {
+    bonus = (Bonus *) memory->srealloc(bonus, nmax_bonus * sizeof(Bonus), "atom:bonus");
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -122,7 +128,10 @@ void AtomVecEllipsoid::copy_bonus(int i, int j, int delflag)
   // if atom I has bonus data, reset I's bonus.ilocal to loc J
   // do NOT do this if self-copy (I=J) since I's bonus data is already deleted
 
-  if (ellipsoid[i] >= 0 && i != j) bonus[ellipsoid[i]].ilocal = j;
+  if (atom->superellipsoid_flag) {
+    if (ellipsoid[i] >= 0 && i != j) bonus_super[ellipsoid[i]].ilocal = j;
+  } else if (ellipsoid[i] >= 0 && i != j)
+    bonus[ellipsoid[i]].ilocal = j;
   ellipsoid[j] = ellipsoid[i];
 }
 
@@ -133,8 +142,13 @@ void AtomVecEllipsoid::copy_bonus(int i, int j, int delflag)
 
 void AtomVecEllipsoid::copy_bonus_all(int i, int j)
 {
-  ellipsoid[bonus[i].ilocal] = j;
-  memcpy(&bonus[j], &bonus[i], sizeof(Bonus));
+  if (atom->superellipsoid_flag) {
+    ellipsoid[bonus_super[i].ilocal] = j;
+    memcpy(&bonus_super[j], &bonus_super[i], sizeof(BonusSuper));
+  } else {
+    ellipsoid[bonus[i].ilocal] = j;
+    memcpy(&bonus[j], &bonus[i], sizeof(Bonus));
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -152,8 +166,8 @@ void AtomVecEllipsoid::clear_bonus()
 }
 
 /* ---------------------------------------------------------------------- */
-
-int AtomVecEllipsoid::pack_comm_bonus(int n, int *list, double *buf)
+template <bool is_super>
+int AtomVecEllipsoid::pack_comm_bonus_templated(int n, int *list, double *buf)
 {
   int i, j, m;
   double *quat;
@@ -162,7 +176,11 @@ int AtomVecEllipsoid::pack_comm_bonus(int n, int *list, double *buf)
   for (i = 0; i < n; i++) {
     j = list[i];
     if (ellipsoid[j] >= 0) {
-      quat = bonus[ellipsoid[j]].quat;
+      if (is_super) {
+        quat = bonus_super[ellipsoid[j]].quat;
+      } else {
+        quat = bonus[ellipsoid[j]].quat;
+      }
       buf[m++] = quat[0];
       buf[m++] = quat[1];
       buf[m++] = quat[2];
@@ -173,9 +191,18 @@ int AtomVecEllipsoid::pack_comm_bonus(int n, int *list, double *buf)
   return m;
 }
 
-/* ---------------------------------------------------------------------- */
+int AtomVecEllipsoid::pack_comm_bonus(int n, int *list, double *buf)
+{
+  if (atom->superellipsoid_flag) {
+    return pack_comm_bonus_templated<true>(n, list, buf);
+  } else {
+    return pack_comm_bonus_templated<false>(n, list, buf);
+  }
+}
 
-void AtomVecEllipsoid::unpack_comm_bonus(int n, int first, double *buf)
+/* ---------------------------------------------------------------------- */
+template <bool is_super>
+void AtomVecEllipsoid::unpack_comm_bonus_templated(int n, int first, double *buf)
 {
   int i, m, last;
   double *quat;
@@ -184,7 +211,11 @@ void AtomVecEllipsoid::unpack_comm_bonus(int n, int first, double *buf)
   last = first + n;
   for (i = first; i < last; i++) {
     if (ellipsoid[i] >= 0) {
-      quat = bonus[ellipsoid[i]].quat;
+      if (is_super) {
+        quat = bonus_super[ellipsoid[i]].quat;
+      } else {
+        quat = bonus[ellipsoid[i]].quat;
+      }
       quat[0] = buf[m++];
       quat[1] = buf[m++];
       quat[2] = buf[m++];
@@ -193,9 +224,18 @@ void AtomVecEllipsoid::unpack_comm_bonus(int n, int first, double *buf)
   }
 }
 
-/* ---------------------------------------------------------------------- */
+void AtomVecEllipsoid::unpack_comm_bonus(int n, int first, double *buf)
+{
+  if (atom->superellipsoid_flag) {
+    unpack_comm_bonus_templated<true>(n, first, buf);
+  } else {
+    unpack_comm_bonus_templated<false>(n, first, buf);
+  }
+}
 
-int AtomVecEllipsoid::pack_border_bonus(int n, int *list, double *buf)
+/* ---------------------------------------------------------------------- */
+template <bool is_super>
+int AtomVecEllipsoid::pack_border_bonus_templated(int n, int *list, double *buf)
 {
   int i, j, m;
   double *shape, *quat, *block, *inertia;
@@ -207,10 +247,16 @@ int AtomVecEllipsoid::pack_border_bonus(int n, int *list, double *buf)
       buf[m++] = ubuf(0).d;
     else {
       buf[m++] = ubuf(1).d;
-      shape = bonus[ellipsoid[j]].shape;
-      quat = bonus[ellipsoid[j]].quat;
-      block = bonus[ellipsoid[j]].block;
-      inertia = bonus[ellipsoid[j]].inertia;
+      if (is_super) {
+        shape = bonus_super[ellipsoid[j]].shape;
+        quat = bonus_super[ellipsoid[j]].quat;
+        block = bonus_super[ellipsoid[j]].block;
+        inertia = bonus_super[ellipsoid[j]].inertia;
+      } else {
+        shape = bonus[ellipsoid[j]].shape;
+        quat = bonus[ellipsoid[j]].quat;
+      }
+
       buf[m++] = shape[0];
       buf[m++] = shape[1];
       buf[m++] = shape[2];
@@ -218,20 +264,32 @@ int AtomVecEllipsoid::pack_border_bonus(int n, int *list, double *buf)
       buf[m++] = quat[1];
       buf[m++] = quat[2];
       buf[m++] = quat[3];
-      buf[m++] = block[0];
-      buf[m++] = block[1];
-      buf[m++] = inertia[0];
-      buf[m++] = inertia[1];
-      buf[m++] = inertia[2];
+
+      if (is_super) {
+        buf[m++] = block[0];
+        buf[m++] = block[1];
+        buf[m++] = inertia[0];
+        buf[m++] = inertia[1];
+        buf[m++] = inertia[2];
+      }
     }
   }
 
   return m;
 }
 
-/* ---------------------------------------------------------------------- */
+int AtomVecEllipsoid::pack_border_bonus(int n, int *list, double *buf)
+{
+  if (atom->superellipsoid_flag) {
+    return pack_border_bonus_templated<true>(n, list, buf);
+  } else {
+    return pack_border_bonus_templated<false>(n, list, buf);
+  }
+}
 
-int AtomVecEllipsoid::unpack_border_bonus(int n, int first, double *buf)
+/* ---------------------------------------------------------------------- */
+template <bool is_super>
+int AtomVecEllipsoid::unpack_border_bonus_templated(int n, int first, double *buf)
 {
   int i, j, m, last;
   double *shape, *quat, *block, *inertia;
@@ -244,10 +302,15 @@ int AtomVecEllipsoid::unpack_border_bonus(int n, int first, double *buf)
     else {
       j = nlocal_bonus + nghost_bonus;
       if (j == nmax_bonus) grow_bonus();
-      shape = bonus[j].shape;
-      quat = bonus[j].quat;
-      block = bonus[j].block;
-      inertia = bonus[j].inertia;
+      if (is_super) {
+        shape = bonus_super[j].shape;
+        quat = bonus_super[j].quat;
+        block = bonus_super[j].block;
+        inertia = bonus_super[j].inertia;
+      } else {
+        shape = bonus[j].shape;
+        quat = bonus[j].quat;
+      }
       shape[0] = buf[m++];
       shape[1] = buf[m++];
       shape[2] = buf[m++];
@@ -255,22 +318,34 @@ int AtomVecEllipsoid::unpack_border_bonus(int n, int first, double *buf)
       quat[1] = buf[m++];
       quat[2] = buf[m++];
       quat[3] = buf[m++];
-      block[0] = buf[m++];
-      block[1] = buf[m++];
-      inertia[0] = buf[m++];
-      inertia[1] = buf[m++];
-      inertia[2] = buf[m++];
-      // Particle type inferred from block to reduce comm
-      // TODO: is this a good idea or is that not saving much compared to
-      //       passing the flag in the buffer?
-      bonus[j].type = determine_type(block);
-      bonus[j].ilocal = i;
+      if (is_super) {
+        block[0] = buf[m++];
+        block[1] = buf[m++];
+        inertia[0] = buf[m++];
+        inertia[1] = buf[m++];
+        inertia[2] = buf[m++];
+        // Particle type inferred from block to reduce comm
+        // TODO: is this a good idea or is that not saving much compared to
+        //       passing the flag in the buffer?
+        bonus_super[j].type = determine_type(block);
+        bonus_super[j].ilocal = i;
+      } else {
+        bonus[j].ilocal = i;
+      }
       ellipsoid[i] = j;
       nghost_bonus++;
     }
   }
-
   return m;
+}
+
+int AtomVecEllipsoid::unpack_border_bonus(int n, int first, double *buf)
+{
+  if (atom->superellipsoid_flag) {
+    return unpack_border_bonus_templated<true>(n, first, buf);
+  } else {
+    return unpack_border_bonus_templated<false>(n, first, buf);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -287,24 +362,38 @@ int AtomVecEllipsoid::pack_exchange_bonus(int i, double *buf)
   else {
     buf[m++] = ubuf(1).d;
     int j = ellipsoid[i];
-    double *shape = bonus[j].shape;
-    double *quat = bonus[j].quat;
-    double *block = bonus[j].block;
-    double *inertia = bonus[j].inertia;
-    buf[m++] = shape[0];
-    buf[m++] = shape[1];
-    buf[m++] = shape[2];
-    buf[m++] = quat[0];
-    buf[m++] = quat[1];
-    buf[m++] = quat[2];
-    buf[m++] = quat[3];
-    buf[m++] = block[0];
-    buf[m++] = block[1];
-    buf[m++] = inertia[0];
-    buf[m++] = inertia[1];
-    buf[m++] = inertia[2];
-  }
+    if (atom->superellipsoid_flag) {
+      double *shape = bonus_super[j].shape;
+      double *quat = bonus_super[j].quat;
+      double *block = bonus_super[j].block;
+      double *inertia = bonus_super[j].inertia;
 
+      buf[m++] = shape[0];
+      buf[m++] = shape[1];
+      buf[m++] = shape[2];
+      buf[m++] = quat[0];
+      buf[m++] = quat[1];
+      buf[m++] = quat[2];
+      buf[m++] = quat[3];
+      buf[m++] = block[0];
+      buf[m++] = block[1];
+      buf[m++] = inertia[0];
+      buf[m++] = inertia[1];
+      buf[m++] = inertia[2];
+
+    } else {
+      double *shape = bonus[j].shape;
+      double *quat = bonus[j].quat;
+
+      buf[m++] = shape[0];
+      buf[m++] = shape[1];
+      buf[m++] = shape[2];
+      buf[m++] = quat[0];
+      buf[m++] = quat[1];
+      buf[m++] = quat[2];
+      buf[m++] = quat[3];
+    }
+  }
   return m;
 }
 
@@ -318,25 +407,38 @@ int AtomVecEllipsoid::unpack_exchange_bonus(int ilocal, double *buf)
     ellipsoid[ilocal] = -1;
   else {
     if (nlocal_bonus == nmax_bonus) grow_bonus();
-    double *shape = bonus[nlocal_bonus].shape;
-    double *quat = bonus[nlocal_bonus].quat;
-    double *block = bonus[nlocal_bonus].block;
-    double *inertia = bonus[nlocal_bonus].inertia;
-    BlockType &type = bonus[nlocal_bonus].type;
-    shape[0] = buf[m++];
-    shape[1] = buf[m++];
-    shape[2] = buf[m++];
-    quat[0] = buf[m++];
-    quat[1] = buf[m++];
-    quat[2] = buf[m++];
-    quat[3] = buf[m++];
-    block[0] = buf[m++];
-    block[1] = buf[m++];
-    inertia[0] = buf[m++];
-    inertia[1] = buf[m++];
-    inertia[2] = buf[m++];
-    type = determine_type(block);
-    bonus[nlocal_bonus].ilocal = ilocal;
+    if (atom->superellipsoid_flag) {
+      double *shape = bonus_super[nlocal_bonus].shape;
+      double *quat = bonus_super[nlocal_bonus].quat;
+      double *block = bonus_super[nlocal_bonus].block;
+      double *inertia = bonus_super[nlocal_bonus].inertia;
+      BlockType &type = bonus_super[nlocal_bonus].type;
+      shape[0] = buf[m++];
+      shape[1] = buf[m++];
+      shape[2] = buf[m++];
+      quat[0] = buf[m++];
+      quat[1] = buf[m++];
+      quat[2] = buf[m++];
+      quat[3] = buf[m++];
+      block[0] = buf[m++];
+      block[1] = buf[m++];
+      inertia[0] = buf[m++];
+      inertia[1] = buf[m++];
+      inertia[2] = buf[m++];
+      type = determine_type(block);
+      bonus[nlocal_bonus].ilocal = ilocal;
+    } else {
+      double *shape = bonus[nlocal_bonus].shape;
+      double *quat = bonus[nlocal_bonus].quat;
+      shape[0] = buf[m++];
+      shape[1] = buf[m++];
+      shape[2] = buf[m++];
+      quat[0] = buf[m++];
+      quat[1] = buf[m++];
+      quat[2] = buf[m++];
+      quat[3] = buf[m++];
+      bonus[nlocal_bonus].ilocal = ilocal;
+    }
     ellipsoid[ilocal] = nlocal_bonus++;
   }
 
@@ -379,18 +481,28 @@ int AtomVecEllipsoid::pack_restart_bonus(int i, double *buf)
   else {
     buf[m++] = ubuf(1).d;
     int j = ellipsoid[i];
-    buf[m++] = bonus[j].shape[0];
-    buf[m++] = bonus[j].shape[1];
-    buf[m++] = bonus[j].shape[2];
-    buf[m++] = bonus[j].quat[0];
-    buf[m++] = bonus[j].quat[1];
-    buf[m++] = bonus[j].quat[2];
-    buf[m++] = bonus[j].quat[3];
-    buf[m++] = bonus[j].block[0];
-    buf[m++] = bonus[j].block[1];
-    buf[m++] = bonus[j].inertia[0];
-    buf[m++] = bonus[j].inertia[1];
-    buf[m++] = bonus[j].inertia[2];
+    if (atom->superellipsoid_flag) {
+      buf[m++] = bonus_super[j].shape[0];
+      buf[m++] = bonus_super[j].shape[1];
+      buf[m++] = bonus_super[j].shape[2];
+      buf[m++] = bonus_super[j].quat[0];
+      buf[m++] = bonus_super[j].quat[1];
+      buf[m++] = bonus_super[j].quat[2];
+      buf[m++] = bonus_super[j].quat[3];
+      buf[m++] = bonus_super[j].block[0];
+      buf[m++] = bonus_super[j].block[1];
+      buf[m++] = bonus_super[j].inertia[0];
+      buf[m++] = bonus_super[j].inertia[1];
+      buf[m++] = bonus_super[j].inertia[2];
+    } else {
+      buf[m++] = bonus[j].shape[0];
+      buf[m++] = bonus[j].shape[1];
+      buf[m++] = bonus[j].shape[2];
+      buf[m++] = bonus[j].quat[0];
+      buf[m++] = bonus[j].quat[1];
+      buf[m++] = bonus[j].quat[2];
+      buf[m++] = bonus[j].quat[3];
+    }
   }
 
   return m;
@@ -409,25 +521,38 @@ int AtomVecEllipsoid::unpack_restart_bonus(int ilocal, double *buf)
     ellipsoid[ilocal] = -1;
   else {
     if (nlocal_bonus == nmax_bonus) grow_bonus();
-    double *shape = bonus[nlocal_bonus].shape;
-    double *quat = bonus[nlocal_bonus].quat;
-    double *block = bonus[nlocal_bonus].block;
-    double *inertia = bonus[nlocal_bonus].inertia;
-    BlockType &type = bonus[nlocal_bonus].type;
-    shape[0] = buf[m++];
-    shape[1] = buf[m++];
-    shape[2] = buf[m++];
-    quat[0] = buf[m++];
-    quat[1] = buf[m++];
-    quat[2] = buf[m++];
-    quat[3] = buf[m++];
-    block[0] = buf[m++];
-    block[1] = buf[m++];
-    inertia[0] = buf[m++];
-    inertia[1] = buf[m++];
-    inertia[2] = buf[m++];
-    type = determine_type(block);
-    bonus[nlocal_bonus].ilocal = ilocal;
+    if (atom->superellipsoid_flag) {
+      double *shape = bonus_super[nlocal_bonus].shape;
+      double *quat = bonus_super[nlocal_bonus].quat;
+      double *block = bonus_super[nlocal_bonus].block;
+      double *inertia = bonus_super[nlocal_bonus].inertia;
+      BlockType &type = bonus_super[nlocal_bonus].type;
+      shape[0] = buf[m++];
+      shape[1] = buf[m++];
+      shape[2] = buf[m++];
+      quat[0] = buf[m++];
+      quat[1] = buf[m++];
+      quat[2] = buf[m++];
+      quat[3] = buf[m++];
+      block[0] = buf[m++];
+      block[1] = buf[m++];
+      inertia[0] = buf[m++];
+      inertia[1] = buf[m++];
+      inertia[2] = buf[m++];
+      type = determine_type(block);
+      bonus_super[nlocal_bonus].ilocal = ilocal;
+    } else {
+      double *shape = bonus[nlocal_bonus].shape;
+      double *quat = bonus[nlocal_bonus].quat;
+      shape[0] = buf[m++];
+      shape[1] = buf[m++];
+      shape[2] = buf[m++];
+      quat[0] = buf[m++];
+      quat[1] = buf[m++];
+      quat[2] = buf[m++];
+      quat[3] = buf[m++];
+      bonus[nlocal_bonus].ilocal = ilocal;
+    }
     ellipsoid[ilocal] = nlocal_bonus++;
   }
 
@@ -444,15 +569,15 @@ void AtomVecEllipsoid::data_atom_bonus(int m, const std::vector<std::string> &va
 
   if (nlocal_bonus == nmax_bonus) grow_bonus();
 
-  double *shape = bonus[nlocal_bonus].shape;
   int ivalue = 1;
+  double shape[3];
   shape[0] = 0.5 * utils::numeric(FLERR, values[ivalue++], true, lmp);
   shape[1] = 0.5 * utils::numeric(FLERR, values[ivalue++], true, lmp);
   shape[2] = 0.5 * utils::numeric(FLERR, values[ivalue++], true, lmp);
   if (shape[0] <= 0.0 || shape[1] <= 0.0 || shape[2] <= 0.0)
     error->one(FLERR, "Invalid shape in Ellipsoids section of data file");
 
-  double *quat = bonus[nlocal_bonus].quat;
+  double quat[4];
   quat[0] = utils::numeric(FLERR, values[ivalue++], true, lmp);
   quat[1] = utils::numeric(FLERR, values[ivalue++], true, lmp);
   quat[2] = utils::numeric(FLERR, values[ivalue++], true, lmp);
@@ -460,30 +585,56 @@ void AtomVecEllipsoid::data_atom_bonus(int m, const std::vector<std::string> &va
   MathExtra::qnormalize(quat);
 
   // Blockiness exponents can be given optionally for superellipsoids
+  if (atom->superellipsoid_flag) {
+    // assign shape and quat to bonus data structure
+    BonusSuper *b = &bonus_super[nlocal_bonus];
+    b->shape[0] = shape[0];
+    b->shape[1] = shape[1];
+    b->shape[2] = shape[2];
+    b->quat[0] = quat[0];
+    b->quat[1] = quat[1];
+    b->quat[2] = quat[2];
+    b->quat[3] = quat[3];
 
-  double *block = bonus[nlocal_bonus].block;
-  BlockType &type = bonus[nlocal_bonus].type;
-  if (ivalue == values.size()) {
-    block[0] = block[1] = 2.0;
-    type = BlockType::ELLIPSOID;
+    double *block = bonus_super[nlocal_bonus].block;
+    BlockType &type = bonus_super[nlocal_bonus].type;
+    if (ivalue == values.size()) {
+      block[0] = block[1] = 2.0;
+      type = BlockType::ELLIPSOID;
+    } else {
+      block[0] = utils::numeric(FLERR, values[ivalue++], true, lmp);
+      block[1] = utils::numeric(FLERR, values[ivalue++], true, lmp);
+      type = determine_type(block);
+    }
+    // reset ellipsoid mass
+    // previously stored density in rmass
+
+    rmass[m] *= MathExtra::volume_ellipsoid(shape, block, type);
+
+    // Principal moments of inertia
+
+    inertia_ellipsoid_principal(shape, rmass[m], bonus_super[nlocal_bonus].inertia, block, type);
+
+    radius[m] = radius_ellipsoid(shape, block, type);
+    bonus[nlocal_bonus].ilocal = m;
+
+  } else {
+    // assign shape and quat to bonus data structure
+    Bonus *b = &bonus[nlocal_bonus];
+    b->shape[0] = shape[0];
+    b->shape[1] = shape[1];
+    b->shape[2] = shape[2];
+    b->quat[0] = quat[0];
+    b->quat[1] = quat[1];
+    b->quat[2] = quat[2];
+    b->quat[3] = quat[3];
+
+    // reset ellipsoid mass
+    // previously stored density in rmass
+    rmass[m] *= MathExtra::volume_ellipsoid(shape);
+    bonus[nlocal_bonus].ilocal = m;
   }
-  else {
-    block[0] = utils::numeric(FLERR, values[ivalue++], true, lmp);
-    block[1] = utils::numeric(FLERR, values[ivalue++], true, lmp);
-    type = determine_type(block);
-  }
 
-  // reset ellipsoid mass
-  // previously stored density in rmass
-
-  rmass[m] *= MathExtra::volume_ellipsoid(shape, block, type);
-
-  // Principal moments of inertia
-
-  inertia_ellipsoid_principal(shape, rmass[m], bonus[nlocal_bonus].inertia, block, type);
-
-  radius[m] = radius_ellipsoid(shape, block, type);
-  bonus[nlocal_bonus].ilocal = m;
   ellipsoid[m] = nlocal_bonus++;
 }
 
@@ -494,7 +645,10 @@ void AtomVecEllipsoid::data_atom_bonus(int m, const std::vector<std::string> &va
 double AtomVecEllipsoid::memory_usage_bonus()
 {
   double bytes = 0;
-  bytes += nmax_bonus * sizeof(Bonus);
+  if (atom->superellipsoid_flag)
+    bytes += nmax_bonus * sizeof(BonusSuper);
+  else
+    bytes += nmax_bonus * sizeof(Bonus);
   return bytes;
 }
 
@@ -505,8 +659,8 @@ double AtomVecEllipsoid::memory_usage_bonus()
 void AtomVecEllipsoid::create_atom_post(int ilocal)
 {
   rmass[ilocal] = 1.0;
-  radius[ilocal] = 0.0;
   ellipsoid[ilocal] = -1;
+  if (atom->superellipsoid_flag) radius[ilocal] = 0.0;
 }
 
 /* ----------------------------------------------------------------------
@@ -538,8 +692,7 @@ void AtomVecEllipsoid::data_atom_post(int ilocal)
 
 void AtomVecEllipsoid::pack_data_pre(int ilocal)
 {
-  double *shape, *block;
-  BlockType type;
+  double *shape;
 
   ellipsoid_flag = atom->ellipsoid[ilocal];
   rmass_one = atom->rmass[ilocal];
@@ -550,10 +703,15 @@ void AtomVecEllipsoid::pack_data_pre(int ilocal)
     ellipsoid[ilocal] = 1;
 
   if (ellipsoid_flag >= 0) {
-    shape = bonus[ellipsoid_flag].shape;
-    block = bonus[ellipsoid_flag].block;
-    type = bonus[ellipsoid_flag].type;
-    rmass[ilocal] /= MathExtra::volume_ellipsoid(shape, block, type);
+    if (atom->superellipsoid_flag) {
+      shape = bonus_super[ellipsoid_flag].shape;
+      double *block = bonus_super[ellipsoid_flag].block;
+      BlockType type = bonus_super[ellipsoid_flag].type;
+      rmass[ilocal] /= MathExtra::volume_ellipsoid(shape, block, type);
+    } else {
+      shape = bonus[ellipsoid_flag].shape;
+      rmass[ilocal] /= MathExtra::volume_ellipsoid(shape);
+    }
   }
 }
 
@@ -585,15 +743,25 @@ int AtomVecEllipsoid::pack_data_bonus(double *buf, int /*flag*/)
     if (buf) {
       buf[m++] = ubuf(tag[i]).d;
       j = ellipsoid[i];
-      buf[m++] = 2.0 * bonus[j].shape[0];
-      buf[m++] = 2.0 * bonus[j].shape[1];
-      buf[m++] = 2.0 * bonus[j].shape[2];
-      buf[m++] = bonus[j].quat[0];
-      buf[m++] = bonus[j].quat[1];
-      buf[m++] = bonus[j].quat[2];
-      buf[m++] = bonus[j].quat[3];
-      buf[m++] = bonus[j].block[0];
-      buf[m++] = bonus[j].block[1];
+      if (atom->superellipsoid_flag) {
+        buf[m++] = 2.0 * bonus_super[j].shape[0];
+        buf[m++] = 2.0 * bonus_super[j].shape[1];
+        buf[m++] = 2.0 * bonus_super[j].shape[2];
+        buf[m++] = bonus_super[j].quat[0];
+        buf[m++] = bonus_super[j].quat[1];
+        buf[m++] = bonus_super[j].quat[2];
+        buf[m++] = bonus_super[j].quat[3];
+        buf[m++] = bonus_super[j].block[0];
+        buf[m++] = bonus_super[j].block[1];
+      } else {
+        buf[m++] = 2.0 * bonus[j].shape[0];
+        buf[m++] = 2.0 * bonus[j].shape[1];
+        buf[m++] = 2.0 * bonus[j].shape[2];
+        buf[m++] = bonus[j].quat[0];
+        buf[m++] = bonus[j].quat[1];
+        buf[m++] = bonus[j].quat[2];
+        buf[m++] = bonus[j].quat[3];
+      }
     } else
       m += size_data_bonus;
   }
@@ -608,11 +776,19 @@ int AtomVecEllipsoid::pack_data_bonus(double *buf, int /*flag*/)
 void AtomVecEllipsoid::write_data_bonus(FILE *fp, int n, double *buf, int /*flag*/)
 {
   int i = 0;
-  while (i < n) {
-    utils::print(fp, "{} {} {} {} {} {} {} {} {} {}\n", ubuf(buf[i]).i, buf[i + 1], buf[i + 2], buf[i + 3],
-               buf[i + 4], buf[i + 5], buf[i + 6], buf[i + 7], buf[i + 8], buf[i + 9]);
-
-    i += size_data_bonus;
+  if (atom->superellipsoid_flag) {
+    while (i < n) {
+      utils::print(fp, "{} {} {} {} {} {} {} {} {} {}\n", ubuf(buf[i]).i, buf[i + 1], buf[i + 2],
+                   buf[i + 3], buf[i + 4], buf[i + 5], buf[i + 6], buf[i + 7], buf[i + 8],
+                   buf[i + 9]);
+      i += size_data_bonus;
+    }
+  } else {
+    while (i < n) {
+      utils::print(fp, "{} {} {} {} {} {} {} {}\n", ubuf(buf[i]).i, buf[i + 1], buf[i + 2],
+                   buf[i + 3], buf[i + 4], buf[i + 5], buf[i + 6], buf[i + 7]);
+      i += size_data_bonus;
+    }
   }
 }
 
@@ -631,17 +807,29 @@ void AtomVecEllipsoid::read_data_general_to_restricted(int nlocal_previous, int 
   // quat_g2r = quat that rotates from general to restricted triclinic
   // quat_new = ellipsoid quat converted to restricted triclinic
 
-  double quat_g2r[4],quat_new[4];
-  MathExtra::mat_to_quat(domain->rotate_g2r,quat_g2r);
+  double quat_g2r[4], quat_new[4];
+  MathExtra::mat_to_quat(domain->rotate_g2r, quat_g2r);
 
-  for (int i = nlocal_previous; i < nlocal; i++) {
-    if (ellipsoid[i] < 0) continue;
-    j = ellipsoid[i];
-    MathExtra::quatquat(quat_g2r,bonus[j].quat,quat_new);
-    bonus[j].quat[0] = quat_new[0];
-    bonus[j].quat[1] = quat_new[1];
-    bonus[j].quat[2] = quat_new[2];
-    bonus[j].quat[3] = quat_new[3];
+  if (atom->superellipsoid_flag) {
+    for (int i = nlocal_previous; i < nlocal; i++) {
+      if (ellipsoid[i] < 0) continue;
+      j = ellipsoid[i];
+      MathExtra::quatquat(quat_g2r, bonus_super[j].quat, quat_new);
+      bonus_super[j].quat[0] = quat_new[0];
+      bonus_super[j].quat[1] = quat_new[1];
+      bonus_super[j].quat[2] = quat_new[2];
+      bonus_super[j].quat[3] = quat_new[3];
+    }
+  } else {
+    for (int i = nlocal_previous; i < nlocal; i++) {
+      if (ellipsoid[i] < 0) continue;
+      j = ellipsoid[i];
+      MathExtra::quatquat(quat_g2r, bonus[j].quat, quat_new);
+      bonus[j].quat[0] = quat_new[0];
+      bonus[j].quat[1] = quat_new[1];
+      bonus[j].quat[2] = quat_new[2];
+      bonus[j].quat[3] = quat_new[3];
+    }
   }
 }
 
@@ -655,23 +843,32 @@ void AtomVecEllipsoid::write_data_restricted_to_general()
 {
   AtomVec::write_data_restricted_to_general();
 
-  memory->create(quat_hold,nlocal_bonus,4,"atomvec:quat_hold");
+  memory->create(quat_hold, nlocal_bonus, 4, "atomvec:quat_hold");
 
-  for (int i = 0; i < nlocal_bonus; i++)
-    memcpy(quat_hold[i],bonus[i].quat,4*sizeof(double));
+  for (int i = 0; i < nlocal_bonus; i++) memcpy(quat_hold[i], bonus[i].quat, 4 * sizeof(double));
 
   // quat_r2g = quat that rotates from restricted to general triclinic
   // quat_new = ellipsoid quat converted to general triclinic
 
-  double quat_r2g[4],quat_new[4];
-  MathExtra::mat_to_quat(domain->rotate_r2g,quat_r2g);
+  double quat_r2g[4], quat_new[4];
+  MathExtra::mat_to_quat(domain->rotate_r2g, quat_r2g);
+  if (atom->superellipsoid_flag) {
 
-  for (int i = 0; i < nlocal_bonus; i++) {
-    MathExtra::quatquat(quat_r2g,bonus[i].quat,quat_new);
-    bonus[i].quat[0] = quat_new[0];
-    bonus[i].quat[1] = quat_new[1];
-    bonus[i].quat[2] = quat_new[2];
-    bonus[i].quat[3] = quat_new[3];
+    for (int i = 0; i < nlocal_bonus; i++) {
+      MathExtra::quatquat(quat_r2g, bonus_super[i].quat, quat_new);
+      bonus_super[i].quat[0] = quat_new[0];
+      bonus_super[i].quat[1] = quat_new[1];
+      bonus_super[i].quat[2] = quat_new[2];
+      bonus_super[i].quat[3] = quat_new[3];
+    }
+  } else {
+    for (int i = 0; i < nlocal_bonus; i++) {
+      MathExtra::quatquat(quat_r2g, bonus[i].quat, quat_new);
+      bonus[i].quat[0] = quat_new[0];
+      bonus[i].quat[1] = quat_new[1];
+      bonus[i].quat[2] = quat_new[2];
+      bonus[i].quat[3] = quat_new[3];
+    }
   }
 }
 
@@ -685,10 +882,12 @@ void AtomVecEllipsoid::write_data_restricted_to_general()
 void AtomVecEllipsoid::write_data_restore_restricted()
 {
   AtomVec::write_data_restore_restricted();
-
-  for (int i = 0; i < nlocal_bonus; i++)
-    memcpy(bonus[i].quat,quat_hold[i],4*sizeof(double));
-
+  if (atom->superellipsoid_flag) {
+    for (int i = 0; i < nlocal_bonus; i++)
+      memcpy(bonus_super[i].quat, quat_hold[i], 4 * sizeof(double));
+  } else {
+    for (int i = 0; i < nlocal_bonus; i++) memcpy(bonus[i].quat, quat_hold[i], 4 * sizeof(double));
+  }
   memory->destroy(quat_hold);
   quat_hold = nullptr;
 }
@@ -704,40 +903,60 @@ void AtomVecEllipsoid::set_shape(int i, double shapex, double shapey, double sha
   if (ellipsoid[i] < 0) {
     if (shapex == 0.0 && shapey == 0.0 && shapez == 0.0) return;
     if (nlocal_bonus == nmax_bonus) grow_bonus();
-    double *shape = bonus[nlocal_bonus].shape;
-    double *quat = bonus[nlocal_bonus].quat;
-    double *block = bonus[nlocal_bonus].block;
-    double *inertia = bonus[nlocal_bonus].inertia;
-    BlockType &type = bonus[nlocal_bonus].type;
-    shape[0] = shapex;
-    shape[1] = shapey;
-    shape[2] = shapez;
-    quat[0] = 1.0;
-    quat[1] = 0.0;
-    quat[2] = 0.0;
-    quat[3] = 0.0;
-    block[0] = 2;
-    block[1] = 2;
-    type = BlockType::ELLIPSOID;
-    inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
-    radius[i] = radius_ellipsoid(shape, block, type);
-    bonus[nlocal_bonus].ilocal = i;
+    if (atom->superellipsoid_flag) {
+      double *shape = bonus_super[nlocal_bonus].shape;
+      double *quat = bonus_super[nlocal_bonus].quat;
+      double *block = bonus_super[nlocal_bonus].block;
+      double *inertia = bonus_super[nlocal_bonus].inertia;
+      BlockType &type = bonus_super[nlocal_bonus].type;
+      shape[0] = shapex;
+      shape[1] = shapey;
+      shape[2] = shapez;
+      quat[0] = 1.0;
+      quat[1] = 0.0;
+      quat[2] = 0.0;
+      quat[3] = 0.0;
+      block[0] = 2;
+      block[1] = 2;
+      type = BlockType::ELLIPSOID;
+      inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
+      radius[i] = radius_ellipsoid(shape, block, type);
+      bonus_super[nlocal_bonus].ilocal = i;
+    } else {
+      double *shape = bonus[nlocal_bonus].shape;
+      double *quat = bonus[nlocal_bonus].quat;
+      shape[0] = shapex;
+      shape[1] = shapey;
+      shape[2] = shapez;
+      quat[0] = 1.0;
+      quat[1] = 0.0;
+      quat[2] = 0.0;
+      quat[3] = 0.0;
+      bonus[nlocal_bonus].ilocal = i;
+    }
     ellipsoid[i] = nlocal_bonus++;
   } else if (shapex == 0.0 && shapey == 0.0 && shapez == 0.0) {
     copy_bonus_all(nlocal_bonus - 1, ellipsoid[i]);
     nlocal_bonus--;
     ellipsoid[i] = -1;
-    radius[i] = 0.0;
+    if (atom->superellipsoid_flag) radius[i] = 0.0;
   } else {
-    double *shape = bonus[ellipsoid[i]].shape;
-    double *block = bonus[ellipsoid[i]].block;
-    double *inertia = bonus[ellipsoid[i]].inertia;
-    BlockType type = bonus[ellipsoid[i]].type;
-    shape[0] = shapex;
-    shape[1] = shapey;
-    shape[2] = shapez;
-    inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
-    radius[i] = radius_ellipsoid(shape, block, type);
+    if (atom->superellipsoid_flag) {
+      double *shape = bonus_super[ellipsoid[i]].shape;
+      double *block = bonus_super[ellipsoid[i]].block;
+      double *inertia = bonus_super[ellipsoid[i]].inertia;
+      BlockType type = bonus_super[ellipsoid[i]].type;
+      shape[0] = shapex;
+      shape[1] = shapey;
+      shape[2] = shapez;
+      inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
+      radius[i] = radius_ellipsoid(shape, block, type);
+    } else {
+      double *shape = bonus[ellipsoid[i]].shape;
+      shape[0] = shapex;
+      shape[1] = shapey;
+      shape[2] = shapez;
+    }
   }
 }
 
@@ -749,13 +968,15 @@ void AtomVecEllipsoid::set_shape(int i, double shapex, double shapey, double sha
 
 void AtomVecEllipsoid::set_block(int i, double blockn1, double blockn2)
 {
+  if (!atom->superellipsoid_flag)
+    error->one(FLERR, "Cannot set blockiness exponents for non-superellipsoid atom");
   if (ellipsoid[i] < 0) {
     if (nlocal_bonus == nmax_bonus) grow_bonus();
-    double *shape = bonus[nlocal_bonus].shape;
-    double *quat = bonus[nlocal_bonus].quat;
-    double *block = bonus[nlocal_bonus].block;
-    double *inertia = bonus[nlocal_bonus].inertia;
-    BlockType &type = bonus[nlocal_bonus].type;
+    double *shape = bonus_super[nlocal_bonus].shape;
+    double *quat = bonus_super[nlocal_bonus].quat;
+    double *block = bonus_super[nlocal_bonus].block;
+    double *inertia = bonus_super[nlocal_bonus].inertia;
+    BlockType &type = bonus_super[nlocal_bonus].type;
     shape[0] = 0.5;
     shape[1] = 0.5;
     shape[2] = 0.5;
@@ -765,16 +986,16 @@ void AtomVecEllipsoid::set_block(int i, double blockn1, double blockn2)
     quat[1] = 0.0;
     quat[2] = 0.0;
     quat[3] = 0.0;
-    bonus[nlocal_bonus].ilocal = i;
+    bonus_super[nlocal_bonus].ilocal = i;
     type = determine_type(block);
     inertia_ellipsoid_principal(shape, rmass[i], inertia, block, type);
     radius[i] = radius_ellipsoid(shape, block, type);
     ellipsoid[i] = nlocal_bonus++;
   } else {
-    double *shape = bonus[ellipsoid[i]].shape;
-    double *block = bonus[ellipsoid[i]].block;
-    double *inertia = bonus[ellipsoid[i]].inertia;
-    BlockType &type = bonus[ellipsoid[i]].type;
+    double *shape = bonus_super[ellipsoid[i]].shape;
+    double *block = bonus_super[ellipsoid[i]].block;
+    double *inertia = bonus_super[ellipsoid[i]].inertia;
+    BlockType &type = bonus_super[ellipsoid[i]].type;
     block[0] = blockn1;
     block[1] = blockn2;
     type = determine_type(block);
@@ -783,8 +1004,9 @@ void AtomVecEllipsoid::set_block(int i, double blockn1, double blockn2)
   }
 }
 
-AtomVecEllipsoid::BlockType AtomVecEllipsoid::determine_type(double* block) {
- BlockType flag(BlockType::GENERAL);
+AtomVecEllipsoid::BlockType AtomVecEllipsoid::determine_type(double *block)
+{
+  BlockType flag(BlockType::GENERAL);
   if ((std::fabs(block[0] - 2) <= EPSILON_BLOCK) && (std::fabs(block[1] - 2) <= EPSILON_BLOCK))
     flag = BlockType::ELLIPSOID;
   else if (std::fabs(block[0] - block[1]) <= EPSILON_BLOCK)
@@ -794,13 +1016,15 @@ AtomVecEllipsoid::BlockType AtomVecEllipsoid::determine_type(double* block) {
 
 double AtomVecEllipsoid::radius_ellipsoid(double *shape, double *block, BlockType flag_type)
 {
-  if (flag_type == BlockType::ELLIPSOID)
-    return std::max(std::max(shape[0], shape[1]), shape[2]);
+  if (flag_type == BlockType::ELLIPSOID) return std::max(std::max(shape[0], shape[1]), shape[2]);
 
   // Super ellipsoid
   double a = shape[0], b = shape[1], c = shape[2];
   double n1 = block[0], n2 = block[1];
-  if (shape[0] < shape[1]) {a = shape[1]; b = shape[0];}
+  if (shape[0] < shape[1]) {
+    a = shape[1];
+    b = shape[0];
+  }
 
   // Cylinder approximation for n2=2
 
@@ -857,5 +1081,39 @@ void AtomVecEllipsoid::inertia_ellipsoid_principal(double *shape, double mass, d
     idiag[0] = dens * (m1 + m2);
     idiag[1] = dens * (m0 + m2);
     idiag[2] = dens * (m0 + m1);
+  }
+}
+
+void AtomVecEllipsoid::process_args(int narg, char **arg)
+{
+  if (narg == 0) return;
+
+  int iarg = 0;
+  while (iarg < narg) {
+    if (strcmp(arg[iarg], "superellipsoid") == 0) {
+      atom->superellipsoid_flag = 1;
+      // Circumscribed radius, not physical radius
+      atom->radius_flag = 1;
+
+      // Allocate bonus data for blockiness
+      size_border_bonus = 13;
+      size_restart_bonus_one = 13;
+      size_data_bonus = 10;
+
+      // Add radius to the arrays for communication
+      fields_grow.push_back("radius");
+      fields_copy.push_back("radius");
+      fields_border.push_back("radius");
+      fields_border_vel.push_back("radius");
+      fields_exchange.push_back("radius");
+      fields_restart.push_back("radius");
+      fields_create.push_back("radius");
+
+      setup_fields();
+
+      iarg++;
+    } else {
+      error->all(FLERR, fmt::format("Unknown atom_style ellipsoid argument: {}", arg[iarg]));
+    }
   }
 }

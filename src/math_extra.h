@@ -122,7 +122,8 @@ void inertia_triangle(double *v0, double *v1, double *v2, double mass, double *i
 void inertia_triangle(double *idiag, double *quat, double mass, double *inertia);
 
 // volume of ellipsoid
-double volume_ellipsoid(double *shape, double *block = nullptr, int flag_super = 0);
+double volume_ellipsoid(double *shape);
+double volume_ellipsoid(double *shape, double *block, int flag_super);
 
 // triclinic bounding box of a sphere
 
