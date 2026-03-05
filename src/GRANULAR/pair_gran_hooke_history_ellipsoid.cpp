@@ -164,7 +164,7 @@ void PairGranHookeHistoryEllipsoid::compute(int eflag, int vflag)
   int newton_pair = force->newton_pair;
   double *special_lj = force->special_lj;
   auto avec_ellipsoid = dynamic_cast<AtomVecEllipsoid *>(atom->style_match("ellipsoid"));
-  AtomVecEllipsoid::Bonus *bonus = avec_ellipsoid->bonus;
+  AtomVecEllipsoid::BonusSuper *bonus = avec_ellipsoid->bonus_super;
   int *ellipsoid = atom->ellipsoid;
 
   inum = list->inum;
@@ -590,10 +590,10 @@ void PairGranHookeHistoryEllipsoid::init_style()
 
   // error and warning checks
 
-  if (!atom->radius_flag || !atom->rmass_flag || !atom->angmom_flag || !atom->ellipsoid_flag)
+  if (!atom->radius_flag || !atom->rmass_flag || !atom->angmom_flag || !atom->superellipsoid_flag)
     error->all(
         FLERR,
-        "Pair gran/h/ellipsoid* requires atom attributes radius, rmass, angmom and ellipdoid flag");
+        "Pair gran/h/ellipsoid* requires atom attributes radius, rmass, angmom and superellipdoid flag");
   if (comm->ghost_velocity == 0)
     error->all(FLERR, "Pair gran/h/ellipsoid* requires ghost atoms store velocity");
 
@@ -820,7 +820,7 @@ double PairGranHookeHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
     return 0.0;
   }
   auto avec_ellipsoid = dynamic_cast<AtomVecEllipsoid *>(atom->style_match("ellipsoid"));
-  AtomVecEllipsoid::Bonus *bonus = avec_ellipsoid->bonus;
+  AtomVecEllipsoid::BonusSuper *bonus = avec_ellipsoid->bonus_super;
   int *ellipsoid = atom->ellipsoid;
   double shapei[3], blocki[3], shapej[3], blockj[3], Ri[3][3], Rj[3][3];
   MathExtra::copy3(bonus[ellipsoid[i]].shape, shapei);

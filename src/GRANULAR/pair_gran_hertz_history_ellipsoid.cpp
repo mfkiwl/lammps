@@ -111,7 +111,7 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
   int newton_pair = force->newton_pair;
   double *special_lj = force->special_lj;
   auto avec_ellipsoid = dynamic_cast<AtomVecEllipsoid *>(atom->style_match("ellipsoid"));
-  AtomVecEllipsoid::Bonus *bonus = avec_ellipsoid->bonus;
+  AtomVecEllipsoid::BonusSuper *bonus = avec_ellipsoid->bonus_super;
   int *ellipsoid = atom->ellipsoid;
 
   inum = list->inum;
@@ -548,7 +548,7 @@ double PairGranHertzHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
     return 0.0;
   }
   auto avec_ellipsoid = dynamic_cast<AtomVecEllipsoid *>(atom->style_match("ellipsoid"));
-  AtomVecEllipsoid::Bonus *bonus = avec_ellipsoid->bonus;
+  AtomVecEllipsoid::BonusSuper *bonus = avec_ellipsoid->bonus_super;
   int *ellipsoid = atom->ellipsoid;
   double shapei[3], blocki[3], shapej[3], blockj[3], Ri[3][3], Rj[3][3];
   MathExtra::copy3(bonus[ellipsoid[i]].shape, shapei);
