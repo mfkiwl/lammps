@@ -232,7 +232,7 @@ void AngleClass2xe::compute(int eflag, int vflag)
     f3[1] -= vy21 + b2*dely2 + vy22;
     f3[2] -= vz21 + b2*delz2 + vz22;
 
-    if (eflag) eangle += ba_d1[type]*(1 - ba_ralpha1)*dtheta + ba_d2[type]*(1 - ba_ralpha1)*dtheta;
+    if (eflag) eangle += ba_d1[type]*(1 - ba_ralpha1)*dtheta + ba_d2[type]*(1 - ba_ralpha2)*dtheta;
 
     // apply force to each of 3 atoms
 
@@ -510,7 +510,7 @@ double AngleClass2xe::single(int type, int i1, int i2, int i3)
   dr2 = r2 - ba_r2[type];
   double ba_ralpha1 = exp(-ba_alpha1[type]*dr1);
   double ba_ralpha2 = exp(-ba_alpha2[type]*dr2);
-  energy += ba_d1[type]*(1 - ba_ralpha1)*dtheta + ba_d2[type]*(1 - ba_ralpha1)*dtheta;
+  energy += ba_d1[type]*(1 - ba_ralpha1)*dtheta + ba_d2[type]*(1 - ba_ralpha2)*dtheta;
 
   return energy;
 }
