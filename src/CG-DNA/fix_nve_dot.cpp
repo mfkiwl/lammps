@@ -26,6 +26,8 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathExtra;
 
+static constexpr double INERTIA = 0.2;          // moment of inertia prefactor for ellipsoid
+
 /* ---------------------------------------------------------------------- */
 
 FixNVEDot::FixNVEDot(LAMMPS *lmp, int narg, char **arg) :
@@ -58,7 +60,7 @@ void FixNVEDot::init()
 
 void FixNVEDot::initial_integrate(int /*vflag*/)
 {
-  double *quat;
+  double *shape,*quat;
   double fquat[4],conjqm[4],inertia[3];
 
   AtomVecEllipsoid::Bonus *bonus = avec->bonus;
@@ -83,6 +85,7 @@ void FixNVEDot::initial_integrate(int /*vflag*/)
 
       dthlfm = dthlf / rmass[i];
       quat = bonus[ellipsoid[i]].quat;
+      shape = bonus[ellipsoid[i]].shape;
 
       // update momentum by 1/2 step
       v[i][0] += dthlfm * f[i][0];
@@ -110,9 +113,9 @@ void FixNVEDot::initial_integrate(int /*vflag*/)
       conjqm[3] += dt * fquat[3];
 
       // principal moments of inertia
-      inertia[0] = bonus[ellipsoid[i]].inertia[0];
-      inertia[1] = bonus[ellipsoid[i]].inertia[1];
-      inertia[2] = bonus[ellipsoid[i]].inertia[2];
+      inertia[0] = INERTIA*rmass[i] * (shape[1]*shape[1]+shape[2]*shape[2]);
+      inertia[1] = INERTIA*rmass[i] * (shape[0]*shape[0]+shape[2]*shape[2]);
+      inertia[2] = INERTIA*rmass[i] * (shape[0]*shape[0]+shape[1]*shape[1]);
 
       // rotate quaternion and quaternion 4-momentum by full step
       no_squish_rotate(3,conjqm,quat,inertia,dthlf);

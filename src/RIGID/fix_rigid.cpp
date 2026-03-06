@@ -1299,7 +1299,7 @@ void FixRigid::set_xv()
   int xbox,ybox,zbox;
   double x0,x1,x2,v0,v1,v2,fc0,fc1,fc2,massone;
   double xy,xz,yz;
-  double exone[3],eyone[3],ezone[3],vr[6],p[3][3];
+  double ione[3],exone[3],eyone[3],ezone[3],vr[6],p[3][3];
 
   double **x = atom->x;
   double **v = atom->v;
@@ -1404,7 +1404,7 @@ void FixRigid::set_xv()
 
   if (extended) {
     double theta_body,theta;
-    double *quatatom,*inertiaatom;
+    double *shape,*quatatom,*inertiaatom;
 
     AtomVecEllipsoid::Bonus *ebonus = nullptr;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
@@ -1428,13 +1428,16 @@ void FixRigid::set_xv()
         omega_one[i][1] = omega[ibody][1];
         omega_one[i][2] = omega[ibody][2];
       } else if (eflags[i] & ELLIPSOID) {
-        inertiaatom = ebonus[ellipsoid[i]].inertia;
+        shape = ebonus[ellipsoid[i]].shape;
         quatatom = ebonus[ellipsoid[i]].quat;
         MathExtra::quatquat(quat[ibody],orient[i],quatatom);
         MathExtra::qnormalize(quatatom);
+        ione[0] = EINERTIA*rmass[i] * (shape[1]*shape[1] + shape[2]*shape[2]);
+        ione[1] = EINERTIA*rmass[i] * (shape[0]*shape[0] + shape[2]*shape[2]);
+        ione[2] = EINERTIA*rmass[i] * (shape[0]*shape[0] + shape[1]*shape[1]);
         MathExtra::q_to_exyz(quatatom,exone,eyone,ezone);
-        MathExtra::omega_to_angmom(omega[ibody],exone,eyone,ezone,
-                                   inertiaatom,angmom_one[i]);
+        MathExtra::omega_to_angmom(omega[ibody],exone,eyone,ezone,ione,
+                                   angmom_one[i]);
       } else if (eflags[i] & LINE) {
         if (quat[ibody][3] >= 0.0) theta_body = 2.0*acos(quat[ibody][0]);
         else theta_body = -2.0*acos(quat[ibody][0]);
@@ -1479,7 +1482,7 @@ void FixRigid::set_v()
   int xbox,ybox,zbox;
   double x0,x1,x2,v0,v1,v2,fc0,fc1,fc2,massone;
   double xy,xz,yz;
-  double exone[3],eyone[3],ezone[3],delta[3],vr[6];
+  double ione[3],exone[3],eyone[3],ezone[3],delta[3],vr[6];
 
   double **x = atom->x;
   double **v = atom->v;
@@ -1565,7 +1568,7 @@ void FixRigid::set_v()
   // set omega, angmom of each extended particle
 
   if (extended) {
-    double *quatatom,*inertiaatom;
+    double *shape,*quatatom,*inertiaatom;
 
     AtomVecEllipsoid::Bonus *ebonus;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
@@ -1585,11 +1588,14 @@ void FixRigid::set_v()
         omega_one[i][1] = omega[ibody][1];
         omega_one[i][2] = omega[ibody][2];
       } else if (eflags[i] & ELLIPSOID) {
-        inertiaatom = ebonus[ellipsoid[i]].inertia;
+        shape = ebonus[ellipsoid[i]].shape;
         quatatom = ebonus[ellipsoid[i]].quat;
+        ione[0] = EINERTIA*rmass[i] * (shape[1]*shape[1] + shape[2]*shape[2]);
+        ione[1] = EINERTIA*rmass[i] * (shape[0]*shape[0] + shape[2]*shape[2]);
+        ione[2] = EINERTIA*rmass[i] * (shape[0]*shape[0] + shape[1]*shape[1]);
         MathExtra::q_to_exyz(quatatom,exone,eyone,ezone);
-        MathExtra::omega_to_angmom(omega[ibody],exone,eyone,ezone,
-                                   inertiaatom,angmom_one[i]);
+        MathExtra::omega_to_angmom(omega[ibody],exone,eyone,ezone,ione,
+                                   angmom_one[i]);
       } else if (eflags[i] & LINE) {
         omega_one[i][0] = omega[ibody][0];
         omega_one[i][1] = omega[ibody][1];
@@ -1841,7 +1847,7 @@ void FixRigid::setup_bodies_static()
 
   if (extended) {
     double ivec[6];
-    double *quatatom,*inertiaatom;
+    double *shape,*quatatom,*inertiaatom;
     double length,theta;
 
     for (i = 0; i < nlocal; i++) {
@@ -1855,9 +1861,9 @@ void FixRigid::setup_bodies_static()
         sum[ibody][1] += SINERTIA*massone * radius[i]*radius[i];
         sum[ibody][2] += SINERTIA*massone * radius[i]*radius[i];
       } else if (eflags[i] & ELLIPSOID) {
-        inertiaatom = ebonus[ellipsoid[i]].inertia;
+        shape = ebonus[ellipsoid[i]].shape;
         quatatom = ebonus[ellipsoid[i]].quat;
-        MathExtra::inertia_ellipsoid(inertiaatom,quatatom,massone,ivec);
+        MathExtra::inertia_ellipsoid(shape,quatatom,massone,ivec);
         sum[ibody][0] += ivec[0];
         sum[ibody][1] += ivec[1];
         sum[ibody][2] += ivec[2];
@@ -2066,7 +2072,7 @@ void FixRigid::setup_bodies_static()
 
   if (extended) {
     double ivec[6];
-    double *inertiaatom;
+    double *shape,*inertiaatom;
     double length;
 
     for (i = 0; i < nlocal; i++) {
@@ -2080,8 +2086,8 @@ void FixRigid::setup_bodies_static()
         sum[ibody][1] += SINERTIA*massone * radius[i]*radius[i];
         sum[ibody][2] += SINERTIA*massone * radius[i]*radius[i];
       } else if (eflags[i] & ELLIPSOID) {
-        inertiaatom = ebonus[ellipsoid[i]].inertia;
-        MathExtra::inertia_ellipsoid(inertiaatom,orient[i],massone,ivec);
+        shape = ebonus[ellipsoid[i]].shape;
+        MathExtra::inertia_ellipsoid(shape,orient[i],massone,ivec);
         sum[ibody][0] += ivec[0];
         sum[ibody][1] += ivec[1];
         sum[ibody][2] += ivec[2];
