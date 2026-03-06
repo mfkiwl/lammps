@@ -126,7 +126,7 @@ equilibrium bond lengths.
 
 See :ref:`(Kemppainen) <angle-Kemppainen>` for a description of the class2-xe force field and see
 :doc:`Howto bioFF <Howto_bioFF>` page for a motivation for the Class2-xe force field, how it models
-bond dissociations, and the limitations of bond breaking.
+bond dissociation, and the limitations of bond breaking.
 
 Coefficients for the :math:`E_a`, :math:`E_{bb}`, and :math:`E_{ba}`
 formulas must be defined for each angle type via the :doc:`angle_coeff
