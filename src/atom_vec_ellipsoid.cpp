@@ -47,7 +47,7 @@ AtomVecEllipsoid::AtomVecEllipsoid(LAMMPS *lmp) :
   size_data_bonus = 8;
 
   atom->ellipsoid_flag = 1;
-  atom->superellipsoid_flag = 1;
+  atom->superellipsoid_flag = 0;
   atom->rmass_flag = atom->angmom_flag = atom->torque_flag = 1;
 
   nlocal_bonus = nghost_bonus = nmax_bonus = 0;
@@ -61,7 +61,7 @@ AtomVecEllipsoid::AtomVecEllipsoid(LAMMPS *lmp) :
   fields_copy = {"rmass", "angmom"};
   fields_comm_vel = {"angmom"};
   fields_reverse = {"torque"};
-  fields_border = {"radius", "rmass"};
+  fields_border = {"rmass"};
   fields_border_vel = {"rmass", "angmom"};
   fields_exchange = {"rmass", "angmom"};
   fields_restart = {"rmass", "angmom"};
@@ -426,7 +426,7 @@ int AtomVecEllipsoid::unpack_exchange_bonus(int ilocal, double *buf)
       inertia[1] = buf[m++];
       inertia[2] = buf[m++];
       type = determine_type(block);
-      bonus[nlocal_bonus].ilocal = ilocal;
+      bonus_super[nlocal_bonus].ilocal = ilocal;
     } else {
       double *shape = bonus[nlocal_bonus].shape;
       double *quat = bonus[nlocal_bonus].quat;
@@ -616,7 +616,7 @@ void AtomVecEllipsoid::data_atom_bonus(int m, const std::vector<std::string> &va
     inertia_ellipsoid_principal(shape, rmass[m], bonus_super[nlocal_bonus].inertia, block, type);
 
     radius[m] = radius_ellipsoid(shape, block, type);
-    bonus[nlocal_bonus].ilocal = m;
+    bonus_super[nlocal_bonus].ilocal = m;
 
   } else {
     // assign shape and quat to bonus data structure

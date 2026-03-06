@@ -109,7 +109,7 @@ double ComputeERotateAsphere::compute_scalar()
 
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit) {
-      if (ellipsoid && ebonus && (ellipsoid[i] >= 0)) {
+      if (ellipsoid && (ebonus || ebonus_super) && (ellipsoid[i] >= 0)) {
 
         if (atom->superellipsoid_flag) {
           shape = ebonus_super[ellipsoid[i]].shape;
@@ -130,7 +130,7 @@ double ComputeERotateAsphere::compute_scalar()
           
         // wbody = angular velocity in body frame
 
-        MathExtra::quat_to_mat(ebonus[ellipsoid[i]].quat,rot);
+        MathExtra::quat_to_mat(quat,rot);
         MathExtra::transpose_matvec(rot,angmom[i],wbody);
         wbody[0] /= inertia[0];
         wbody[1] /= inertia[1];

@@ -63,7 +63,7 @@ void FixNVEAsphere::initial_integrate_templated()
 {
   double dtfm;
   double omega[3];
-  double *inertia,*quat;
+  double *inertia,*quat, *shape;
 
   AtomVecEllipsoid::Bonus *bonus = nullptr;
   AtomVecEllipsoid::BonusSuper *bonus_super = nullptr;
