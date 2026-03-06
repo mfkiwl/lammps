@@ -112,7 +112,7 @@ since it is the same value from the :math:`E_a` formula.
 The *class2xe* angle style uses the potential
 
 .. math::
-    
+
    \begin{aligned}
    E_a & = K_2 (\theta - \theta_0)^2 + K_3 (\theta - \theta_0)^3 + K_4(\theta - \theta_0)^4 \\
    E_{bb} & =  D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{jk} - r_2)} \right] \\
