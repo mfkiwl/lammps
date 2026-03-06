@@ -177,7 +177,9 @@ where :math:`E_{mbt}` is a middle-bond-torsion term,
 :math:`\theta_1` and :math:`\theta_2` are equilibrium angles and :math:`r_1`, :math:`r_2`, and
 :math:`r_3` are equilibrium bond lengths.
 
-See :ref:`(Kemppainen) <dihedral-Kemppainen>` for a description of the class2-xe force field.
+See :ref:`(Kemppainen) <dihedral-Kemppainen>` for a description of the class2-xe force field and see
+:doc:`Howto bioFF <Howto_bioFF>` page for a motivation for the Class2-xe force field, how it models
+bond dissociations, and the limitations of bond breaking.
 
 Coefficients for the :math:`E_{mbt}`, :math:`E_{ebt}`,
 and :math:`E_{bb13}` formulas must be
