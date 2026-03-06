@@ -1135,7 +1135,6 @@ TEST_F(AtomStyleTest, ellipsoid)
     expected.molecular      = Atom::ATOMIC;
     expected.tag_enable     = 1;
     expected.ellipsoid_flag = 1;
-    expected.radius_flag    = 1;
     expected.rmass_flag     = 1;
     expected.angmom_flag    = 1;
     expected.torque_flag    = 1;
@@ -1227,7 +1226,6 @@ TEST_F(AtomStyleTest, ellipsoid)
     auto *type      = lmp->atom->type;
     auto *ellipsoid = lmp->atom->ellipsoid;
     auto *rmass     = lmp->atom->rmass;
-    auto *radius    = lmp->atom->radius;
     auto *avec      = dynamic_cast<AtomVecEllipsoid *>(lmp->atom->avec);
     auto *bonus     = avec->bonus;
     EXPECT_NEAR(x[GETIDX(1)][0], -2.0, EPSILON);
@@ -1313,46 +1311,6 @@ TEST_F(AtomStyleTest, ellipsoid)
     EXPECT_NEAR(bonus[3].quat[1], sqrt(5.0 / 30.0), EPSILON);
     EXPECT_NEAR(bonus[3].quat[2], sqrt(5.0 / 30.0), EPSILON);
     EXPECT_NEAR(bonus[3].quat[3], sqrt(5.0 / 30.0), EPSILON);
-    EXPECT_NEAR(bonus[0].block[0], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[0].block[1], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[1].block[0], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[1].block[1], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[2].block[0], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[2].block[1], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[3].block[0], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[3].block[1], 2.0, EPSILON);
-    EXPECT_NEAR(radius[GETIDX(1)], 0.5, EPSILON);
-    EXPECT_NEAR(radius[GETIDX(2)], 0.5, EPSILON);
-    EXPECT_NEAR(radius[GETIDX(3)], 1.5, EPSILON);
-    EXPECT_NEAR(radius[GETIDX(4)], 1.5, EPSILON);
-    ASSERT_FALSE(bonus[0].type);
-    ASSERT_FALSE(bonus[1].type);
-    ASSERT_FALSE(bonus[2].type);
-    ASSERT_FALSE(bonus[3].type);
-
-    BEGIN_HIDE_OUTPUT();
-    command("set atom 5 block 8.0 8.0");
-    command("set atom 6 shape 4.0 0.5 1.6 block 4.0 2.0");
-    END_HIDE_OUTPUT();
-    ASSERT_EQ(ellipsoid[GETIDX(5)], 4);
-    ASSERT_EQ(ellipsoid[GETIDX(6)], 5);
-    EXPECT_NEAR(bonus[4].shape[0], 0.5, EPSILON);
-    EXPECT_NEAR(bonus[4].shape[1], 0.5, EPSILON);
-    EXPECT_NEAR(bonus[4].shape[2], 0.5, EPSILON);
-    EXPECT_NEAR(bonus[5].shape[0], 2.0, EPSILON);
-    EXPECT_NEAR(bonus[5].shape[1], 0.25, EPSILON);
-    EXPECT_NEAR(bonus[5].shape[2], 0.8, EPSILON);
-    EXPECT_NEAR(bonus[4].block[0], 8.0, EPSILON);
-    EXPECT_NEAR(bonus[4].block[1], 8.0, EPSILON);
-    EXPECT_NEAR(bonus[5].block[0], 4.0, EPSILON);
-    EXPECT_NEAR(bonus[5].block[1], 2.0, EPSILON);
-    EXPECT_NEAR(radius[GETIDX(5)], 0.5*sqrt(3.0), EPSILON);
-    EXPECT_NEAR(radius[GETIDX(6)], sqrt(4.64), EPSILON);
-    ASSERT_TRUE(bonus[4].type);
-    ASSERT_TRUE(bonus[5].type);
-    BEGIN_HIDE_OUTPUT();
-    command("set atom 5*6 shape 0.0 0.0 0.0");
-    END_HIDE_OUTPUT();
 
     BEGIN_HIDE_OUTPUT();
     command("group two id 2:4:2");
@@ -4288,7 +4246,6 @@ TEST_F(AtomStyleTest, full_ellipsoid)
     expected.tag_enable     = 1;
     expected.molecule_flag  = 1;
     expected.ellipsoid_flag = 1;
-    expected.radius_flag    = 1;
     expected.q_flag         = 1;
     expected.rmass_flag     = 1;
     expected.torque_flag    = 1;
@@ -4944,7 +4901,6 @@ TEST_F(AtomStyleTest, oxdna)
     expected.tag_enable     = 1;
     expected.molecule_flag  = 1;
     expected.ellipsoid_flag = 1;
-    expected.radius_flag    = 1;
     expected.rmass_flag     = 1;
     expected.torque_flag    = 1;
     expected.angmom_flag    = 1;
