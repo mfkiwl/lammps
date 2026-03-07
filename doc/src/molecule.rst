@@ -175,22 +175,23 @@ dihedrals, and/or impropers, and assign their angle types, dihedral
 types, and/or improper types.  New interactions are discovered by
 traversing the bond graph defined in the *Bonds* section, and new types
 are inferred using :doc:`type label<Howto_type_labels>`.  Type labels
-must be defined to use the *auto* keyword.  The *auto* keyword requires
-the same specific convention for the type labels format as the
-*check_labels* keyword.  The *auto* value is a single string that should
-contain one or more of the characters 'a', 'd', and 'i', which
-correspond to angles, dihedrals, and impropers, respectively.  For
-example, the keyword/value pair *auto adi* will generate angle,
-dihedral, and improper information, while *auto di* will only generate
-information for dihedrals and impropers but not for angles.  Angles are
-generated from all unique 1-2-3 paths through the bond graph.  Dihedrals
-are generated from all unique 1-2-3-4 paths through the bond graph, as
-long as there are no duplicate atoms in the dihedral.  Impropers are
-generated from all atoms bonded to exactly three neighbors.  Types are
-inferred based on the atom types of the atoms involved, following the
-same hyphen-delimited naming convention required by the *check_labels*
-keyword.  If a matching type cannot be found, LAMMPS will generate an
-error.
+for angle, dihedral, and improper types must already be defined (e.g.,
+by the read_data command), to use the *auto* keyword, and each of the
+labels must be defined as a list with its constituent atom type labels
+separated by hyphens, as described for the *check_labels* keyword.  The
+*auto* value is a single string that should contain one or more of the
+characters 'a', 'd', and 'i', which correspond to angles, dihedrals, and
+impropers, respectively.  For example, the keyword/value pair *auto adi*
+will generate angle, dihedral, and improper information, while *auto di*
+will only generate information for dihedrals and impropers but not for
+angles.  Angles are generated from all unique 1-2-3 paths through the
+bond graph.  Dihedrals are generated from all unique 1-2-3-4 paths
+through the bond graph, as long as there are no duplicate atoms in the
+dihedral.  Impropers are generated from all atoms bonded to exactly
+three neighbors.  The type assigned to each generated 2-, 3- and 4-body
+interaction is found by searching the list of type labels for a match,
+e.g., 'c1-c2-c3' or 'c3-c2-c1' in the case of a 3-atom angle.   If a
+matching type cannot be found, LAMMPS will generate an error.
 
 .. note::
 
