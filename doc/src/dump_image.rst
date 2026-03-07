@@ -500,15 +500,16 @@ spheres, the same as if they were regular atoms.
 
    added *index* and *atom* color styles
 
-The there are currently three supported settings for the *color* value:
-*type*, *index*, or *atom*.  With the *type* setting the line particles
-will be colored according to the atom type of the particle.  With the
-*index* setting the coloring follows the line index instead.  With the
-*atom* setting, the color follows the coloring selected for coloring
-atoms (including using color maps).  For *type* and *index* settings,
-the value is mapped to the colors of atom types thus the coloring style
-for atoms **must** be set to *type*.  The list of colors is by default
-the list of atom type colors as follows:
+There are currently three supported settings for the *color* value:
+*type*, *index*, or *atom*.  With the *type* setting the line segment
+particles will be colored according to the atom type of the particle.
+With the *index* setting, colors from the list of available per-atom
+type colors are assigned to the line particles in a non-deterministic
+round-robin fashion.  With the *atom* setting, the color follows the
+coloring selected for coloring atoms (including using color maps).  For
+*type* and *index* settings, the value is mapped to the colors of atom
+types thus the coloring style for atoms **must** be set to *type*.  The
+list of colors is by default the list of atom type colors as follows:
 
 * type 1 = red
 * type 2 = green
@@ -541,15 +542,16 @@ be drawn as spheres, the same as if they were regular atoms.
 
    added *index* and *atom* color styles
 
-The there are currently three supported settings for the *color* value:
-*type*, *index*, or *atom*.  With the *type* setting the triangles
-will be colored according to the atom type of the particle.  With the
-*index* setting the coloring follows the triangle index instead.  With the
-*atom* setting, the color follows the coloring selected for coloring
-atoms (including using color maps).  For *type* and *index* settings,
-the value is mapped to the colors of atom types thus the coloring style
-for atoms **must** be set to *type*.  The list of colors is by default
-the list of atom type colors as follows:
+There are currently three supported settings for the *color* value:
+*type*, *index*, or *atom*.  With the *type* setting the triangles will
+be colored according to the atom type of the particle.  With the *index*
+setting, colors from the list of available per-atom type colors are
+assigned to the triangulated particles in a non-deterministic
+round-robin fashion.  With the *atom* setting, the color follows the
+coloring selected for coloring atoms (including using color maps).  For
+*type* and *index* settings, the value is mapped to the colors of atom
+types thus the coloring style for atoms **must** be set to *type*.  The
+list of colors is by default the list of atom type colors as follows:
 
 * type 1 = red
 * type 2 = green
@@ -580,15 +582,16 @@ atoms.
 
    added *index* and *atom* color styles
 
-The there are currently three supported settings for the *color* value:
+There are currently three supported settings for the *color* value:
 *type*, *index*, or *atom*.  With the *type* setting the ellipsoids will
 be colored according to the atom type of the particle.  With the *index*
-setting the coloring follows the ellipsoid index instead.  With the
-*atom* setting, the color follows the coloring selected for coloring
-atoms (including using color maps).  For *type* and *index* settings,
-the value is mapped to the colors of atom types thus the coloring style
-for atoms **must** be set to *type*.  The list of colors is by default
-the list of atom type colors as follows:
+setting, colors from the list of available per-atom type colors are
+assigned to the ellipsoid particles in a non-deterministic round-robin
+fashion.  With the *atom* setting, the color follows the coloring
+selected for coloring atoms (including using color maps).  For *type*
+and *index* settings, the value is mapped to the colors of atom types
+thus the coloring style for atoms **must** be set to *type*.  The list
+of colors is by default the list of atom type colors as follows:
 
 * type 1 = red
 * type 2 = green
@@ -651,15 +654,16 @@ parameters mean for each body style.
 
    added *atom* color style
 
-The there are currently three supported settings for the *color* value:
+There are currently three supported settings for the *color* value:
 *type*, *index*, or *atom*.  With the *atom* setting, the color follows
 the coloring selected for coloring atoms (including using color maps).
 With the *type* setting the body particles will be colored according to
-the atom type of the particle.  With the *index* setting the coloring
-follows the body index instead.  For the *type* and *index* settings,
-the value (type or index) is mapped to the colors of atom types thus
-the coloring style for atoms **must** be set to *type*.  The list of
-colors is by default as follows:
+the atom type of the particle.  With the *index* setting, colors from
+the list of available per-atom type colors are assigned to the body
+particles in a non-deterministic round-robin fashion.  For the *type*
+and *index* settings, the value (type or index) is mapped to the colors
+of atom types thus the coloring style for atoms **must** be set to
+*type*.  The list of colors is by default as follows:
 
 * type 1 = red
 * type 2 = green
