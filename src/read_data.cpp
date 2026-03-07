@@ -2466,13 +2466,26 @@ int ReadData::reallocate(int **pcount, int cmax, int amax)
 
 void ReadData::open(const std::string &file)
 {
-  if (platform::has_compress_extension(file)) {
+  // do we have a windows redirect?
+  // read the first (and only) line and see if it is a valid path
+  char buffer[CHUNK];
+  char *target = (char *)file.c_str();
+  fp = fopen(target, "r");
+  if (fp) {
+    char *target = fgets(buffer, CHUNK, fp);
+    // restore if no data or no path
+    if (!target || !platform::file_is_readable(target))
+      target = (char *)file.c_str();
+    fclose(fp);
+  }
+
+  if (platform::has_compress_extension(target)) {
     compressed = 1;
-    fp = platform::compressed_read(file);
+    fp = platform::compressed_read(target);
     if (!fp) error->one(FLERR, "Cannot open compressed file {}", file);
   } else {
     compressed = 0;
-    fp = fopen(file.c_str(), "r");
+    fp = fopen(target, "r");
     if (!fp) error->one(FLERR, "Cannot open file {}: {}", file, utils::getsyserror());
   }
 }
