@@ -486,9 +486,9 @@ of query functions is available on the OpenKIM webpage at
 
 .. note::
 
-   The *get_available_models* function's output is postprocessed to LAMMPS to only
-   save the names of the installed models to the variable. Models that were found
-   by the query but not installed are written to the LAMMPS log file.
+   The *get_available_models* function's output is post-processed by LAMMPS so that
+   only the names of models that are currently installed are stored in the variable.
+   Matching models that are not installed are instead written to the LAMMPS log file.
 
 .. note::
 
