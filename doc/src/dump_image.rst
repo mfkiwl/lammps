@@ -24,7 +24,7 @@ Syntax
 * color = atom attribute that determines color of each atom
 * diameter = atom attribute that determines size of each atom
 * zero or more keyword/value pairs may be appended
-* keyword = *atom* or *adiam* or *autobond* or *bond* or *grid* or *line* or *tri* or *ellipsoid* or *body* or *fix* or *size* or *view* or *center* or *up* or *zoom* or *box* or *axes* or *region* or *subbox* or *shiny* or *fsaa* or *ssao*
+* keyword = *atom* or *adiam* or *autobond* or *bond* or *grid* or *line* or *tri* or *ellipsoid* or *body* or *compute* or *fix* or *size* or *view* or *center* or *up* or *zoom* or *box* or *axes* or *region* or *subbox* or *shiny* or *fsaa* or *ssao*
 
   .. parsed-literal::
 
@@ -44,23 +44,27 @@ Syntax
            f_ID = per-grid vector calculated by a fix with ID
            f_ID[I] = Ith column of per-grid array calculated by a fix with ID
        *line* = color width
-         color = *type*
+         color = *type* or *index* or *atom*
          width = numeric value for line width (distance units)
        *tri* = color tflag width
-         color = *type*
+         color = *type* or *index* or *atom*
          tflag = 1 for just triangle, 2 for just tri edges, 3 for both
          width = numeric value for triangle edge width (distance units)
        *ellipsoid* = color eflag level width
-         color = *type*
+         color = *type* or *index* or *atom*
          eflag = 1 for triangles, 2 for wireframe, 3 for both
          level = mesh refinement level, value between 1 (low resolution) and 6 (ultra high resolution)
          width = diameter of wireframe edges (distance units) (ignored for triangles)
        *body* = color bflag1 bflag2
-         color = *type* or *index*
+         color = *type* or *index* or *atom*
          bflag1,bflag2 = 2 numeric flags to affect how bodies are drawn
+       *compute* = computeID color cflag1 cflag2
+         computeID = ID of computes that generates objects to draw
+         color = *type* or *element* or *const*
+         cflag1,cflag2 = 2 numeric flags to affect how compute objects are drawn
        *fix* = fixID color fflag1 fflag2
          fixID = ID of fix that generates objects to draw
-         color = *type*
+         color = *type* or *element* or *const*
          fflag1,fflag2 = 2 numeric flags to affect how fix objects are drawn
        *size* values = width height = size of images
          width = width of image in # of pixels
@@ -83,7 +87,7 @@ Syntax
          yes/no = do or do not draw simulation box lines
          diam = diameter of box lines as fraction of shortest box length
        *axes* values = axes length diam = draw xyz axes
-         axes = *yes* or *no* = do or do not draw xyz axes lines next to simulation box
+         axes = *yes* or *no* or *center* or *lowerleft* or *lowerright* or *upperleft* or *upperright* = do or do not draw xyz axes arrows and select location
          length = length of axes lines as fraction of respective box lengths
          diam = diameter of axes lines as fraction of shortest box length
        *region* values = region-ID color drawstyle [opacity (optional) npoints (optional) diameter (optional)]
@@ -177,15 +181,22 @@ Syntax
          color = name of color for simulation box lines and processor subdomain lines
        *subboxtrans* arg = transparency
          transparency = transparency for simulation subbox lines (value between 0 (invisible) and 1 (fully opaque))
-       *color* args = name R G B
+       *color* args = name R G B *or* name hex
          name = name of color
          R,G,B = red/green/blue numeric values from 0.0 to 1.0
-       *fcolor* args = fix-ID color
-         fix-ID = ID of the fix
-         color = name of color for image objects provided by this fix
-       *ftrans* args = fix-ID transparency
-         fix-ID = ID of the fix
-         transparency = transparency for image objects provided by this fix when using "const" color style
+         hex = 24-bit RGB color in hexadecimal
+       *ccolor* args = computeID color
+         computeID = ID of the compute
+         color = name of color for image objects provided by this compute when using "const" color style
+       *ctrans* args = computeID transparency
+         computeID = ID of the compute
+         transparency = transparency for image objects provided by this compute
+       *fcolor* args = fixID color
+         fixID = ID of the fix
+         color = name of color for image objects provided by this fix when using "const" color style
+       *ftrans* args = fixID transparency
+         fixID = ID of the fix
+         transparency = transparency for image objects provided by this fix
        *bitrate* arg = rate
          rate = target bitrate for movie in kbps
        *framerate* arg = fps
@@ -208,6 +219,7 @@ Examples
 
    labelmap atom 1 C 2 H 3 O 4 N
    dump_modify 1 acolor C gray acolor H white acolor O red acolor N blue
+   dump_modify 1 color gray80 0.8 0.8 0.8 color gray20 0x333333
 
 Description
 """""""""""
@@ -251,7 +263,7 @@ Here are five sample images, rendered as JPEG or PNG files.
 A detailed discussion of advanced graphics settings and workflows
 with examples is provided in the :doc:`Howto_viz` howto.
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
    support for writing compressed TGA files
 
@@ -332,6 +344,10 @@ prefixed by "c\_", "f\_", or "v\_", respectively.  Note that the
 *diameter* setting can be overridden with a numeric value applied to all
 atoms by the optional *adiam* keyword.
 
+.. versionchanged:: 11Feb2026
+
+   Replaced colors "aqua" and "cyan" with "cyan" and "magenta"
+
 If *type* is specified for the *color* setting, then the color of each
 atom is determined by its atom type.  By default the mapping of types
 to colors is as follows:
@@ -340,8 +356,8 @@ to colors is as follows:
 * type 2 = green
 * type 3 = blue
 * type 4 = yellow
-* type 5 = aqua
-* type 6 = cyan
+* type 5 = cyan
+* type 6 = magenta
 
 and repeats itself for types :math:`> 6`.  This mapping can be changed by the
 "dump_modify acolor" command, as described below.
@@ -443,12 +459,16 @@ If *type* is specified for the *color* value, then the color of each
 bond is determined by its bond type.  By default the mapping of bond
 types to colors is as follows:
 
+.. versionchanged:: 11Feb2026
+
+   Replaced colors "aqua" and "cyan" with "cyan" and "magenta"
+
 * type 1 = red
 * type 2 = green
 * type 3 = blue
 * type 4 = yellow
-* type 5 = aqua
-* type 6 = cyan
+* type 5 = cyan
+* type 6 = magenta
 
 and repeats itself for bond types > 6.  This mapping can be changed by
 the "dump_modify bcolor" command, as described below.
@@ -474,20 +494,34 @@ as described below.
 The *line* keyword can be used when :doc:`atom_style line <atom_style>`
 is used to define particles as line segments, and will draw them as
 lines.  If this keyword is not used, such particles will be drawn as
-spheres, the same as if they were regular atoms.  The only setting
-currently allowed for the *color* value is *type*, which will color
-the lines according to the atom type of the particle.  By default the
-mapping of types to colors is as follows:
+spheres, the same as if they were regular atoms.
+
+.. versionchanged:: TBD
+
+   added *index* and *atom* color styles
+
+The there are currently three supported settings for the *color* value:
+*type*, *index*, or *atom*.  With the *type* setting the line particles
+will be colored according to the atom type of the particle.  With the
+*index* setting the coloring follows the line index instead.  With the
+*atom* setting, the color follows the coloring selected for coloring
+atoms (including using color maps).  For *type* and *index* settings,
+the value is mapped to the colors of atom types thus the coloring style
+for atoms **must** be set to *type*.  The list of colors is by default
+the list of atom type colors as follows:
 
 * type 1 = red
 * type 2 = green
 * type 3 = blue
 * type 4 = yellow
-* type 5 = aqua
-* type 6 = cyan
+* type 5 = cyan
+* type 6 = magenta
 
-and repeats itself for types > 6.  There is not yet an option to
-change this via the dump_modify command.
+and repeats itself for types > 6.  This list can by changed with the
+:doc:`dump_modify acolor <dump_image>` command.  If more different
+colors than atom types are desired, the *number of atom types* must be
+*increased* correspondingly when using either the :doc:`create_box
+<create_box>` or the :doc:`read_data <read_data>` command.
 
 The line *width* can only be a numeric value, which specifies that all
 lines will be drawn as cylinders with that diameter, e.g. 1.0, which
@@ -501,23 +535,38 @@ used to define particles as triangles, and will draw them as triangles
 or edges (3 lines) or both, depending on the setting for *tflag*\ .  If
 edges are drawn, the *width* setting determines the diameters of the
 line segments.  If this keyword is not used, triangle particles will
-be drawn as spheres, the same as if they were regular atoms.  The only
-setting currently allowed for the *color* value is *type*, which will
-color the triangles according to the atom type of the particle.  By
-default the mapping of types to colors is as follows:
+be drawn as spheres, the same as if they were regular atoms.
+
+.. versionchanged:: TBD
+
+   added *index* and *atom* color styles
+
+The there are currently three supported settings for the *color* value:
+*type*, *index*, or *atom*.  With the *type* setting the triangles
+will be colored according to the atom type of the particle.  With the
+*index* setting the coloring follows the triangle index instead.  With the
+*atom* setting, the color follows the coloring selected for coloring
+atoms (including using color maps).  For *type* and *index* settings,
+the value is mapped to the colors of atom types thus the coloring style
+for atoms **must** be set to *type*.  The list of colors is by default
+the list of atom type colors as follows:
 
 * type 1 = red
 * type 2 = green
 * type 3 = blue
 * type 4 = yellow
-* type 5 = aqua
-* type 6 = cyan
+* type 5 = cyan
+* type 6 = magenta
 
-and repeats itself for types > 6.
+and repeats itself for types > 6.  This list can by changed with the
+:doc:`dump_modify acolor <dump_image>` command.  If more different
+colors than atom types are desired, the *number of atom types* must be
+*increased* correspondingly when using either the :doc:`create_box
+<create_box>` or the :doc:`read_data <read_data>` command.
 
 ----------
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
 The *ellipsoid* keyword can be used when :doc:`atom_style ellipsoid
 <atom_style>` is used to define particles as ellipsoids, and will draw
@@ -525,18 +574,34 @@ them as a mesh of triangles or edges or both, depending on the setting
 for *eflag*\ .  If edges are drawn, the *width* setting determines the
 diameters of the line segments.  If this keyword is not used, ellipsoid
 particles will be drawn as spheres, the same as if they were regular
-atoms.  The only setting currently allowed for the *color* value is
-*type*, which will color the triangles according to the atom type of the
-particle.  By default the mapping of types to colors is as follows:
+atoms.
+
+.. versionchanged:: TBD
+
+   added *index* and *atom* color styles
+
+The there are currently three supported settings for the *color* value:
+*type*, *index*, or *atom*.  With the *type* setting the ellipsoids will
+be colored according to the atom type of the particle.  With the *index*
+setting the coloring follows the ellipsoid index instead.  With the
+*atom* setting, the color follows the coloring selected for coloring
+atoms (including using color maps).  For *type* and *index* settings,
+the value is mapped to the colors of atom types thus the coloring style
+for atoms **must** be set to *type*.  The list of colors is by default
+the list of atom type colors as follows:
 
 * type 1 = red
 * type 2 = green
 * type 3 = blue
 * type 4 = yellow
-* type 5 = aqua
-* type 6 = cyan
+* type 5 = cyan
+* type 6 = magenta
 
-and repeats itself for types > 6.
+and repeats itself for types > 6.  This list can by changed with the
+:doc:`dump_modify acolor <dump_image>` command.  If more different
+colors than atom types are desired, the *number of atom types* must be
+*increased* correspondingly when using either the :doc:`create_box
+<create_box>` or the :doc:`read_data <read_data>` command.
 
 The *level* setting determines the number of triangles in the mesh of
 triangles and thus the resolution of the representation of the
@@ -567,73 +632,88 @@ is used to define body particles with internal state
 body style.  If this keyword is not used, such particles will be drawn
 as spheres, the same as if they were regular atoms.
 
-The :doc:`Howto body <Howto_body>` page describes the body styles
-LAMMPS currently supports, and provides more details as to the kind of
-body particles they represent and how they are drawn by this dump
-image command.  For all the body styles, individual atoms can be
-either a body particle or a usual point (non-body) particle.  Non-body
-particles will be drawn the same way they would be as a regular atom.
-The *bflag1* and *bflag2* settings are numerical values which are
-passed to the body style to affect how the drawing of a body particle
-is done.  See the :doc:`Howto body <Howto_body>` page for a
-description of what these parameters mean for each body style.
+The :doc:`Howto body <Howto_body>` page describes the body styles LAMMPS
+currently supports, and provides more details as to the kind of body
+particles they represent and how they are drawn by this dump image
+command.  For all the body styles, individual atoms can be either a body
+particle or a usual point (non-body) particle.  Non-body particles will
+be drawn the same way they would be as a regular atom.  The *bflag1* and
+*bflag2* settings are numerical values which are passed to the body
+style to affect how the drawing of a body particle is done.  See the
+:doc:`Howto body <Howto_body>` page for a description of what these
+parameters mean for each body style.
 
-.. versionchanged:: TDB
+.. versionchanged:: 11Feb2026
 
-The there are currently two supported settings for the *color* value:
-*type*, or *index*.  With the *type* setting the body particles will be
-colored according to the atom type of the particle.  With the *index*
-setting the coloring follows the body index instead.  For both settings,
-the value (type or index) is mapped to the colors of atom types.  The
-list of colors is by default as follows:
+   added *index* color style
+
+.. versionchanged:: TBD
+
+   added *atom* color style
+
+The there are currently three supported settings for the *color* value:
+*type*, *index*, or *atom*.  With the *atom* setting, the color follows
+the coloring selected for coloring atoms (including using color maps).
+With the *type* setting the body particles will be colored according to
+the atom type of the particle.  With the *index* setting the coloring
+follows the body index instead.  For the *type* and *index* settings,
+the value (type or index) is mapped to the colors of atom types thus
+the coloring style for atoms **must** be set to *type*.  The list of
+colors is by default as follows:
 
 * type 1 = red
 * type 2 = green
 * type 3 = blue
 * type 4 = yellow
-* type 5 = aqua
-* type 6 = cyan
+* type 5 = cyan
+* type 6 = magenta
 
 and repeats itself for types > 6.  This list can by changed with the
 :doc:`dump_modify acolor <dump_image>` command.  If more different
-colors than atom types are desired, the number of atom types must be
-increased when using either the :doc:`create_box <create_box>` or the
-:doc:`read_data <read_data>` command.
+colors than atom types are desired, the *number of atom types* must be
+*increased* correspondingly when using either the :doc:`create_box
+<create_box>` or the :doc:`read_data <read_data>` command.
 
 ----------
 
-.. versionchanged:: TBD
+.. versionchanged:: 11Feb2026
 
-   Support for several fix styles added and more flexible color selection
+   Support for computes and several fix styles added and more flexible color selection
 
-The *fix* keyword can be used with a :doc:`fix <fix>` that produces
-objects to be drawn.  The fix keyword may be used multiple times to include visualizations of
-graphics objects from multiple fixes.  The fix keyword is followed by
-the :doc:`fix ID <fix>` of the fix, the color style setting and two
-numerical values *fflag1* and *fflag2*.
+The *compute* keyword can be used with a :doc:`compute style <compute>`
+that produces information about objects to be drawn. Similarly, the
+*fix* keyword can be used with a :doc:`fix style <fix>` that produces
+information about objects to be drawn.  The compute or fix keywords may
+be used multiple times to include visualizations of graphics objects
+from multiple computes and fixes.  The *compute* keyword is followed by
+the :doc:`compute ID <compute>` of the compute, the color style setting
+and two numerical values *cflag1* and *cflag2*.  The *fix* keyword is
+followed by the :doc:`fix ID <fix>` of the fix, the color style setting
+and two numerical values *fflag1* and *fflag2*.
 
 The color style may be either *type*, *element*, or *const*.  The first
 two will use the same color as assigned to the corresponding atom type
-and thus it depends on the fix which atom type it associates with any
-object.  Often this will be atom type 1.  For the *const* type a
-constant color will be used that can be changed with a *dump_modify
-fcolor* command (see below).  By default the constant color will be
-"red" (same as the default color for atom type 1).
+and thus it depends on the implementation of the compute or fix which
+atom type it associates with any object.  Often this will be atom
+type 1.  For the *const* type a constant color will be used that can be
+changed with a *dump_modify ccolor* or *dump_modify fcolor* command (see
+below).  By default the constant color will be "white".
 
-The *fflag1* and *fflag2* settings are numerical values which are used
-by *dump image* to adjust how the drawing of the objects communicated by
-the fix is done.  See the documentation of the individual fixes for a
-description of what these parameters mean for the graphics objects
-provided by those fixes.
+The *cflag1* and *cflag2* or *fflag1* and *fflag2* settings are
+numerical values which are used by *dump image* to adjust how the
+drawing of the objects communicated by the fix is done.  See the
+documentation of the individual computes and fixes for a description of
+what these parameters mean for the graphics objects provided by those
+fixes.
 
-More details and some examples for including graphics objects from fix
-commands are in the :doc:`Howto_viz` howto.
+More details and some examples for including graphics objects from compute
+and fix commands are in the :doc:`Howto_viz` howto.
 
 ----------
 
 .. versionadded:: 10Sep2025
 
-.. versionchanged:: TBD
+.. versionchanged:: 11Feb2026
 
    draw style *transparent* was added
 
@@ -740,16 +820,23 @@ is a fraction of the shortest box length in x,y,z (for 3d) or x,y (for
 2d).  The color of the box boundaries can be set with the "dump_modify
 boxcolor" command.
 
+.. versionchanged:: 11Feb2026
+
 The *axes* keyword determines if and how the coordinate axes are
-rendered as thin cylinders in the image.  If *no* is set, then the
-axes are not drawn and the *length* and *diam* settings are ignored.
-If *yes* is set, 3 thin cylinders are drawn to represent the x,y,z
-axes in colors red,green,blue.  The origin of these cylinders will be
-offset from the lower left corner of the box by 10%.  The *length*
-setting determines how long the cylinders will be as a fraction of the
-respective box lengths.  The *diam* setting determines their thickness
-as a fraction of the shortest box length in x,y,z (for 3d) or x,y (for
-2d).
+rendered in the image as arrows with the letters 'X', 'Y', and 'Z' to
+indicate the direction.  If *no* is set, then the axes are not drawn and
+the *length* and *diam* settings are ignored.  If *yes* or *lowerleft*
+is set, 3 arrows are drawn to represent the x,y,z axes in colors red,
+green, and blue, respectively.  The origin of these arrows will be
+offset from the lower left corner of the box by 10%.  If *center* is set
+the origin of the arrows will be in the center of the box. If
+*lowerright* is set, the origin of the arrows will be offset by 20% of
+the lower right corner of the box. If *upperleft* or *upperight* are set
+the origin of the arrows will be placed similar to the lower corner
+arrows, but offset by 20% from the top.  The *length* setting determines
+how long the cylinders will be as a fraction of the respective box
+lengths.  The *diam* setting determines their thickness as a fraction of
+the shortest box length in x,y,z (for 3d) or x,y (for 2d).
 
 The *subbox* keyword determines if and how processor subdomain
 boundaries are rendered as thin cylinders in the image.  If *no* is
@@ -1019,7 +1106,7 @@ The *backcolor* sets the background color of the images.  The color
 name can be any of the 140 pre-defined colors (see below) or a color
 name defined by the dump_modify color option.
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
 The *backcolor2* sets a second background color of the images to create
 a vertical background gradient.  The regular background color is the
@@ -1094,12 +1181,22 @@ dump_modify color option.
 
 ----------
 
+.. versionchanged:: TBD
+
+   add support for entering colors in hexadecimal
+
 The *color* keyword allows definition of a new color name, in addition
 to the 140-predefined colors (see below), and associates three
 red/green/blue RGB values with that color name.  The color name can
 then be used with any other dump_modify keyword that takes a color
-name as a value.  The RGB values should each be floating point values
-between 0.0 and 1.0 inclusive.
+name as a value.  The RGB values should be either specified as three
+floating point values between 0.0 and 1.0 inclusive or as a single
+24-bit hexadecimal number. The following two commands are equivalent.
+
+.. code-block:: LAMMPS
+
+   dump_modify 1 color mygray 0.431 0.498 0.502
+   dump_modify 1 color mygray 0x6e7f80
 
 When a color name is converted to RGB values, the user-defined color
 names are searched first, then the 140 pre-defined color names.  This
@@ -1110,7 +1207,7 @@ pre-defined color names with new RBG values.
 
 **Transparency settings for atoms bonds and standard visualization objects**
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
 Various graphical objects in *dump image* output can be rendered in a
 transparent fashion using the so-called screen-door transparency method.
@@ -1127,7 +1224,7 @@ combination with *fsaa on*.
 
 ----------
 
-.. versionadded:: TBD
+.. versionadded:: 11Feb2026
 
 The *fcolor* keyword sets the color of any image objects created by a
 fix when using the color style "const".  The first argument is the fix ID
@@ -1252,13 +1349,13 @@ The defaults for the dump image and dump movie keywords are as follows:
 
 The defaults for the dump_modify keywords specific to dump image and dump movie are as follows:
 
-* acolor = \* red/green/blue/yellow/aqua/cyan
+* acolor = \* red/green/blue/yellow/cyan/magenta
 * adiam = \* 1.0
 * amap = min max cf 0.0 2 min blue max red
 * atrans = 1.0
 * backcolor = black
 * backcolor2 = none
-* bcolor = \* red/green/blue/yellow/aqua/cyan
+* bcolor = \* red/green/blue/yellow/cyan/magenta
 * bdiam = \* 0.5
 * btrans = 1.0
 * boxcolor = yellow
