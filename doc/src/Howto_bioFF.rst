@@ -188,29 +188,42 @@ documentation for the formula it computes.
 ClassII-xe
 ----------
 
-The computationally efficient simulation of condensed phase materials such as metals, polymers,
-and composites can be achieved with fixed bond force fields. Two popular fixed bond force fields
-for such materials are COMPASS and PCFF. Both use a ClassII-based functional form, where harmonic
-interactions add in anharmonic vibrational modes via the quartic Taylor-series expansion of the
-Hamiltonian operator of quantum mechanics. In addition, ClassII-based force fields add
-inter-molecular coupling via cross-term interactions, which also add in more complex anharmonic
-vibrational modes. The primary materials that COMPASS and PCFF allow for modeling are structural,
-where it is often desired to be able to computationally predict the mechanical response of the material.
-However, the underlying harmonic bonds and harmonic cross-terms limit the reliability of the physics
-during a straining simulation. To overcome the harmonic bonding limitations, a Morse bond can be used
-in place of the quartic bond; the cross-terms still remain as harmonic. To overcome the limitation of
-the cross-terms that couple bond stretch to other higher-order interactions (angles, dihedrals, and
+The computationally efficient simulation of condensed phase materials
+such as metals, polymers, and composites can be achieved with fixed bond
+force fields. Two popular fixed bond force fields for such materials are
+COMPASS :ref:`(Sun) <howto-Sun>` and PCFF :ref:`(Maple) <howto-Maple>`.
+Both use a ClassII-based functional form, where harmonic interactions
+add in anharmonic vibrational modes via the quartic Taylor-series
+expansion of the Hamiltonian operator of quantum mechanics. In addition,
+ClassII-based force fields add inter-molecular coupling via cross-term
+interactions, which also add in more complex vibrational modes. The
+primary materials that COMPASS and PCFF allow for modeling are
+structural, where it is often desired to be able to computationally
+predict the mechanical response of the material. However, the
+underlying harmonic bonds and harmonic cross-terms limit the reliability
+of the physics during a straining simulation. To overcome the harmonic
+bonding limitations, a Morse bond :ref:`(Morse) <howto-Morse>` can be
+used in place of the quartic bond; however the cross-terms are still
+harmonic. To overcome the limitation of the cross-terms that couple bond
+stretch to other higher-order interactions (angles, dihedrals, and
 impropers), those respective cross-terms also need to be modified.
 
-The cross-term potentials that model bond stretch coupling to higher-order interactions are like the
-harmonic bonding potential. Thus, the exponential functional form that the Morse bond uses can be
-implemented into the cross-terms. This defines the naming convention for the ClassII-xe functional
-form, where x refers to cross-term and e refers to an exponential function, and defines the purpose
-of the ClassII-xe functional form. See :ref:`(Kemppainen) <howto-Kemppainen>` for a description of
-the ClassII-xe functional form. The purpose is to allow bond dissociation in a Class II-based force
-field via a consistent definition of bond dissociation via the Morse bonding potential and the
-higher-order cross-term coupling potentials. The interaction styles listed below compute the force
-field formulas for the ClassII-xe functional form:
+The cross-term potentials that model bond stretch coupling to
+higher-order interactions are like the harmonic bonding potential.
+Thus, the exponential function that :ref:`(Morse) <howto-Morse>`
+derived for converting a harmonic bonding potential to a bonding
+potential that models bond dissociation (which approximates larger bond
+stretches of the Hamiltonian operator); can be implemented into the
+cross-terms. This defines the naming convention for the ClassII-xe
+functional form, where x refers to cross-term and e refers to an
+exponential function, and defines the purpose of the ClassII-xe
+functional form. The purpose is to allow bond dissociation in a
+ClassII-based force field via a consistent definition of bond
+dissociation via the Morse bonding potential and the higher-order
+cross-term coupling potentials. See
+:ref:`(Kemppainen) <howto-Kemppainen>` for a description of the
+ClassII-xe functional form. The interaction styles listed below
+compute the force field formulas for the ClassII-xe functional form:
 
 * :doc:`bond_style <bond_morse>` morse
 * :doc:`angle_style <angle_class2>` class2xe
@@ -223,45 +236,71 @@ field formulas for the ClassII-xe functional form:
 
 * :doc:`special_bonds <special_bonds>` lj/coul 0 0 1
 
-Since both COMPASS and PCFF are Class II-based, their parameters can be converted into the ClassII-xe
-functional form. Thus, any structural material that COMPASS and PCFF can model can have higher fidelity
-straining simulations to compute the mechanical response of the given material, simply by converting
-their parameters to the ClassII-xe functional form. The conversion from ClassII to ClassII-xe functional
-form requires a bit of reparameterization since the cross-terms make up a bulk of the parameters in the force
-field. To overcome this reparameterization, see the `Pre/Post processing <https://www.lammps.org/prepost.html>`_
-page for LUNAR, where LUNAR can be used to build a model from scratch in either COMPASS or PCFF (using
-atom_typing and all2lmp) and then convert that model to COMPASS-xe or PCFF-xe (using auto_morse_bond_update).
-To establish a consistent naming convention for the new ClassII-xe functional form when converting from
-a parent force field, the -xe suffix should be added to the parent force field name (e.g PCFF vs. PCFF-xe).
+Since both COMPASS and PCFF are Class II-based, their parameters can be
+converted into the ClassII-xe functional form. Thus, any structural
+material that COMPASS and PCFF can model can have higher fidelity
+straining simulations to compute the mechanical response of the given
+material, simply by converting their parameters to the ClassII-xe
+functional form. The conversion from ClassII to ClassII-xe functional
+form requires a bit of reparameterization since the cross-terms make
+up a bulk of the parameters in the force field. To overcome this
+reparameterization, see the
+`Pre/Post processing <https://www.lammps.org/prepost.html>`_
+page for LUNAR, where LUNAR can be used to build a model from scratch
+in either COMPASS or PCFF (using atom_typing and all2lmp) and then
+convert that model to COMPASS-xe or PCFF-xe (using
+auto_morse_bond_update). To establish a consistent naming convention
+for the new ClassII-xe functional form when converting from a parent
+force field, the -xe suffix should be added to the parent force field
+name (e.g. PCFF vs. PCFF-xe).
 
-The usage of the ClassII-xe functional form can only let a bond dissociate; however, to disconnect the
-dissociated bond and remove the higher-order interactions, other
-LAMMPS commands are required, such as :doc:`fix bond/react <fix_bond_react>` or
-:doc:`fix bond/break <fix_bond_break>`. This means ClassII-xe has a limit in its ability to model certain
-mechanical phenomena. Through benchmarking, it was demonstrated that PCFF-xe (without :doc:`fix bond/react <fix_bond_react>`
-or :doc:`fix bond/break <fix_bond_break>`) can model a material up to fracture :ref:`(Kemppainen) <howto-Kemppainen>`.
-Then, post-fraction, the simulation may crash as the bond stretches greater than the processor sub-domain size.
-Thus, any post-fracture phenomena cannot be simulated without the usage of :doc:`fix bond/react <fix_bond_react>` or
-:doc:`fix bond/break <fix_bond_break>`. However, there are still many mechanical properties that can be determined
-in the pre-fraction region, such as tensile and shear modulus, tensile and shear yield strength, Poisson's ratio, etc.
-Thus, depending on your goals, using ClassII-xe alone may provide enough reliable straining ranges to compute the
-mechanical properties of interest and requires very little pre-processing when using LUNAR. Then, if you need
-post-fracture phenomena, you can use ClassII-xe with :doc:`fix bond/react <fix_bond_react>` or
-:doc:`fix bond/break <fix_bond_break>`. However, the usage of both commands requires substantial amounts of model
-and file setup. LUNAR can be used to help with that setup, but it is still quicker from a pre-processing perspective
-to use ClassII-xe without additional LAMMPS commands.
+The usage of the ClassII-xe functional form can only let a bond
+dissociate; however, to disconnect the dissociated bond and remove the
+higher-order interactions, other LAMMPS commands are required, such as
+:doc:`fix bond/react <fix_bond_react>` or
+:doc:`fix bond/break <fix_bond_break>`. This means ClassII-xe has a
+limit in its ability to model certain mechanical phenomena. Through
+benchmarking, it was demonstrated that PCFF-xe (without
+:doc:`fix bond/react <fix_bond_react>` or
+:doc:`fix bond/break <fix_bond_break>`) can model a material up to
+fracture :ref:`(Kemppainen) <howto-Kemppainen>`. Then, post-fracture,
+the simulation may crash as the bond stretches greater than the
+processor communication cutoff distance. Thus, any post-fracture
+phenomena cannot be simulated without the usage of
+:doc:`fix bond/react <fix_bond_react>` or
+:doc:`fix bond/break <fix_bond_break>`. However, there are still many
+mechanical properties that can be determined in the pre-fracture region,
+such as tensile and shear modulus, tensile and shear yield strength,
+Poisson's ratio, etc. Thus, depending on your goals, using ClassII-xe
+alone may provide enough reliable straining ranges to compute the
+mechanical properties of interest and requires very little
+pre-processing when using LUNAR. Then, if you need post-fracture
+phenomena, you can use ClassII-xe with
+:doc:`fix bond/react <fix_bond_react>` or
+:doc:`fix bond/break <fix_bond_break>`. However, the usage of both
+commands requires substantial amounts of model and file setup. LUNAR
+can be used to help with that setup, but it is still quicker from a
+pre-processing perspective to use ClassII-xe without additional
+LAMMPS commands.
 
-Finally, the usage of :doc:`fix bond/break <fix_bond_break>` during a bond-breaking simulation has proven difficult
-in the past because the higher-order interactions are also being strained, and once the bond is removed, a
-discontinuity is added to the energy landscape. This discontinuity often results in the simulation crashing, as
-it results in the flinging of atoms. Thus, to absorb the energy released from this discontinuity, careful selection
-of a thermostat or temperature rescaling may be required. The :doc:`fix bond/react <fix_bond_react>` command can
-handle such discontinuities via the ``stabilization`` keyword, whereby a small local group of atoms involved
-in the discontinuity are integrated with :doc:`fix nve/limit <fix_nve_limit>`. The
-:doc:`fix bond/break <fix_bond_break>` command does not yet have those capabilities. From a pre-processing side
-:doc:`fix bond/break <fix_bond_break>` requires less effort than :doc:`fix bond/react <fix_bond_react>`, thus
-it is up to the discretion of the modeler to make this choice based on the problem they are trying to solve if
-post-fracture phenomena is required for their study.
+Finally, the usage of :doc:`fix bond/break <fix_bond_break>` during a
+bond-breaking simulation has proven difficult in the past because the
+higher-order interactions are also being strained, and once the bond is
+removed, a discontinuity is added to the energy landscape. This
+discontinuity often results in the simulation crashing, as it results in
+the high-velocity/high-energy atomic positions. Thus, to absorb the
+energy released from this discontinuity, careful selection of a
+thermostat or temperature rescaling may be required. The
+:doc:`fix bond/react <fix_bond_react>` command can handle such
+discontinuities via the ``stabilization`` keyword, whereby a small local
+group of atoms involved in the discontinuity are integrated with
+:doc:`fix nve/limit <fix_nve_limit>`. The
+:doc:`fix bond/break <fix_bond_break>` command does not yet have those
+capabilities. From a pre-processing side
+:doc:`fix bond/break <fix_bond_break>` requires less effort than
+:doc:`fix bond/react <fix_bond_react>`, thus it is up to the discretion
+of the modeler to make this choice based on the problem they are trying
+to solve if post-fracture phenomena is required for their study.
 
 DREIDING
 --------
@@ -373,6 +412,14 @@ compatible with a subset of OPLS interactions.
 .. _howto-Jorgensen:
 
 **(Jorgensen)** Jorgensen, Tirado-Rives (1988). J Am Chem Soc, 110, 1657-1666. https://doi.org/10.1021/ja00214a001
+
+.. _howto-Maple:
+
+**(Maple)** Maple, Journal of Computational Chemistry, 15, 162-182 (1994). https://doi.org/10.1002/jcc.540150207
+
+.. _howto-Morse:
+
+**(Morse)** Morse, Physical review, 34, 57 (1929). https://doi.org/10.1103/PhysRev.34.57
 
 .. _howto-Kemppainen:
 

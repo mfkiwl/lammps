@@ -165,21 +165,39 @@ The *class2xe* dihedral style uses the potential
 .. math::
 
    \begin{aligned}
-   E_{mbt}  &= \left[ 1 - e^{-\alpha_2 (r_{jk} - r_2)} \right] [ A_1 \cos (\phi) + A_2 \cos (2\phi) + A_3 \cos (3\phi) ] \\
-   E_{ebt}  &= \left[ 1 - e^{-\alpha_1 (r_{ij} - r_1)} \right] [ B_1 \cos (\phi) + B_2 \cos (2\phi) + B_3 \cos (3\phi) ] + \\
-             & \left[ 1 - e^{-\alpha_3 (r_{kl} - r_3)} \right] [ C_1 \cos (\phi) + C_2 \cos (2\phi) + C_3 \cos (3\phi) ] \\
-   E_{bb13} &= D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{kl} - r_3)} \right]
+   E_{mbt}    = & \left[ 1 - e^{-\alpha_2 (r_{jk} - r_2)} \right] [ A_1 \cos (\phi) + A_2 \cos (2\phi) + A_3 \cos (3\phi) ] \\
+   E_{ebt}    = & \left[ 1 - e^{-\alpha_1 (r_{ij} - r_1)} \right] [ B_1 \cos (\phi) + B_2 \cos (2\phi) + B_3 \cos (3\phi) ] + \\
+                & \left[ 1 - e^{-\alpha_3 (r_{kl} - r_3)} \right] [ C_1 \cos (\phi) + C_2 \cos (2\phi) + C_3 \cos (3\phi) ] \\
+   E_{bb13} = & D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{kl} - r_3)} \right]
    \end{aligned}
 
 where :math:`E_{mbt}` is a middle-bond-torsion term,
-:math:`E_{ebt}` is an end-bond-torsion term, and :math:`E_{bb13}` is a bond-bond-13 term.
+:math:`E_{ebt}` is an end-bond-torsion term, and :math:`E_{bb13}` is a bond-bond-13 term
+(:math:`D` is the dissociation energy).
 
 :math:`\theta_1` and :math:`\theta_2` are equilibrium angles and :math:`r_1`, :math:`r_2`, and
 :math:`r_3` are equilibrium bond lengths.
 
-See :ref:`(Kemppainen) <dihedral-Kemppainen>` for a description of the class2-xe force field and see
-:doc:`Howto bioFF <Howto_bioFF>` page for a motivation for the Class2-xe force field, how it models
-bond dissociation, and the limitations of bond breaking.
+See :ref:`(Kemppainen) <dihedral-Kemppainen>` for a description of the
+classII-xe force field and see :doc:`Howto bioFF <Howto_bioFF>` page
+for a motivation for the ClassII-xe force field.
+
+.. note::
+
+   The *class2xe* dihedral style only describes the dissociation of
+   a bond stretch. However once a bond is dissociated and stretched
+   beyond the processor communication cutoff distance in parallel,
+   the simulation will crash with atoms missing errors. This is
+   often after the material fractures and thus for post-fracture
+   phenomena the bonded interactions need to be removed for proper
+   parallel communication.
+
+   To disconnect the dissociated bond and remove higher order
+   interactions (angles, dihedrals, and impropers) the following
+   LAMMPS commands can be used with the *class2xe* dihedral style
+   :doc:`fix bond/react <fix_bond_react>` or 
+   :doc:`fix bond/break <fix_bond_break>`. See the
+   :doc:`Howto bioFF <Howto_bioFF>` page for more details.
 
 Coefficients for the :math:`E_{mbt}`, :math:`E_{ebt}`,
 and :math:`E_{bb13}` formulas must be

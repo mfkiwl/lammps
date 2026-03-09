@@ -9,6 +9,9 @@ angle_style class2 command
 
 Accelerator Variants: *class2/kk*, *class2/omp*
 
+angle_style class2xe command
+============================
+
 angle_style class2/p6 command
 =============================
 
@@ -114,19 +117,37 @@ The *class2xe* angle style uses the potential
 .. math::
 
    \begin{aligned}
-   E_a & = K_2 (\theta - \theta_0)^2 + K_3 (\theta - \theta_0)^3 + K_4(\theta - \theta_0)^4 \\
-   E_{bb} & =  D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{jk} - r_2)} \right] \\
-   E_{ba} & = D_1 \left[ 1 - e^{-\alpha_1 (r_{ij} - r_1)} \right] \left[\theta - \theta_0\right] + D_2 \left[ 1 - e^{-\alpha_2 (r_{jk} - r_2)} \right] \left[\theta - \theta_0\right]
+   E_a = & K_2 (\theta - \theta_0)^2 + K_3 (\theta - \theta_0)^3 + K_4(\theta - \theta_0)^4 \\
+   E_{bb} = &  D \left[ 1 - e^{-\alpha (r_{ij} - r_1)} \right] \left[ 1 - e^{-\alpha (r_{jk} - r_2)} \right] \\
+   E_{ba} = & D_1 \left[ 1 - e^{-\alpha_1 (r_{ij} - r_1)} \right] \left[\theta - \theta_0\right] + D_2 \left[ 1 - e^{-\alpha_2 (r_{jk} - r_2)} \right] \left[\theta - \theta_0\right]
    \end{aligned}
 
 where :math:`E_a` is the angle term, :math:`E_{bb}` is a bond-bond
-term, and :math:`E_{ba}` is a bond-angle term.  :math:`\theta_0` is
-the equilibrium angle and :math:`r_1` and :math:`r_2` are the
-equilibrium bond lengths.
+term (:math:`D` is the dissociation energy), and :math:`E_{ba}` is
+a bond-angle term (:math:`D_1` and :math:`D_2` are the dissociation
+energies). :math:`\theta_0` is the equilibrium angle and :math:`r_1`
+and :math:`r_2` are the equilibrium bond lengths.
 
-See :ref:`(Kemppainen) <angle-Kemppainen>` for a description of the class2-xe force field and see
-:doc:`Howto bioFF <Howto_bioFF>` page for a motivation for the Class2-xe force field, how it models
-bond dissociation, and the limitations of bond breaking.
+See :ref:`(Kemppainen) <angle-Kemppainen>` for a description of the
+classII-xe force field and see :doc:`Howto bioFF <Howto_bioFF>` page
+for a motivation for the ClassII-xe force field.
+
+.. note::
+
+   The *class2xe* angle style only describes the dissociation of a
+   bond stretch. However once a bond is dissociated and stretched
+   beyond the processor communication cutoff distance in parallel,
+   the simulation will crash with atoms missing errors. This is
+   often after the material fractures and thus for post-fracture
+   phenomena the bonded interactions need to be removed for proper
+   parallel communication.
+
+   To disconnect the dissociated bond and remove higher order
+   interactions (angles, dihedrals, and impropers) the following
+   LAMMPS commands can be used with the *class2xe* angle style
+   :doc:`fix bond/react <fix_bond_react>` or 
+   :doc:`fix bond/break <fix_bond_break>`. See the
+   :doc:`Howto bioFF <Howto_bioFF>` page for more details.
 
 Coefficients for the :math:`E_a`, :math:`E_{bb}`, and :math:`E_{ba}`
 formulas must be defined for each angle type via the :doc:`angle_coeff
