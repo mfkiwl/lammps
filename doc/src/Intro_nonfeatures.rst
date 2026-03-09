@@ -113,4 +113,4 @@ Here are suggestions on how to perform these tasks:
   setup, analysis, plotting, and visualization (via OpenGL) for LAMMPS
   simulations.  It thus provides some functionality for several of the
   above bullets.  Pizza.py is written in `Python <https://www.python.org>`_
-  and is available for download from `this page <https://sjplimp.github.io/download.html>`_.
+  and is available for download from https://lammps.github.io/pizza/.
