@@ -172,7 +172,7 @@ void PairGranHertzHistoryEllipsoid::compute(int eflag, int vflag)
         if (skip_contact_detection)
           touching = false;
         else {
-          // Super-ellipsoid contact detection between atoms i and j
+          // superellipsoid contact detection between atoms i and j
           flagi = bonus[ellipsoid[i]].type;
           flagj = bonus[ellipsoid[j]].type;
           if (touch[jj] == 1) {
@@ -568,7 +568,7 @@ double PairGranHertzHistoryEllipsoid::single(int i, int j, int /*itype*/, int /*
       return 0.0;
     }
   }
-  // Super-ellipsoid contact detection between atoms i and j
+  // superellipsoid contact detection between atoms i and j
   double X0[4], nij[3];
   AtomVecEllipsoid::BlockType flagi, flagj;
   flagi = bonus[ellipsoid[i]].type;

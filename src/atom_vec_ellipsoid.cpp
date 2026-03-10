@@ -1036,7 +1036,7 @@ double AtomVecEllipsoid::radius_ellipsoid(double *shape, double *block, BlockTyp
 
   return sqrt(a * a + b * b + c * c);
 
-  // General super-ellipsoid, Eq. (12) of Podlozhnyuk et al. 2017
+  // General superellipsoid, Eq. (12) of Podlozhnyuk et al. 2017
   // Not sure if exact solution worth it compared to boundig box diagonal
   // If both blockiness exponents are greater than 2, the exact radius does not
   // seem significantly smaller than the bounding box diagonal. At most sqrt(3)~ 70% too large
@@ -1067,7 +1067,7 @@ void AtomVecEllipsoid::inertia_ellipsoid_principal(double *shape, double mass, d
     idiag[1] = dens * (rsq0 + rsq2);
     idiag[2] = dens * (rsq0 + rsq1);
   } else {
-    // super-ellipsoid, Eq. (12) of Jaklic and Solina, 2003
+    // superellipsoid, Eq. (12) of Jaklic and Solina, 2003
     double e1 = 2.0 / block[0], e2 = 2.0 / block[1];
     double beta_tmp1 = std::beta(0.5 * e1, 1 + 2 * e1);
     double beta_tmp2 = std::beta(0.5 * e2, 0.5 * e2);

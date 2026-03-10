@@ -651,7 +651,7 @@ double volume_ellipsoid(double *shape, double *block, int flag_super)
 {
   double unitvol = MY_4PI3;
 
-  // super-ellipsoid, Eq. (12) of Jaklic and Solina, 2003, for p = q = r = 0
+  // superellipsoid, Eq. (12) of Jaklic and Solina, 2003, for p = q = r = 0
 
   if (flag_super) {
     double e1 = 2.0 / block[0], e2 = 2.0 / block[1];
