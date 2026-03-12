@@ -368,18 +368,18 @@ double compute_residual(const double shapefunci, const double* gradi_global,
 
 /* ---------------------------------------------------------------------- */
 
-void compute_jacobian(const double* gradi_global, const double hessi_global[3][3], const double* gradj_global, const double hessj_global[3][3], const double mu2, double* jacobian)
+void compute_jacobian(const double* gradi_global, const double hessi_global[3][3],
+                     const double* gradj_global, const double hessj_global[3][3], const double mu2, double* jacobian)
 {
   // Jacobian (derivative of residual)
-  // 1D column-major matrix for LAPACK/linalg compatibility
   for (int row = 0 ; row < 3 ; row++) {
     for (int col = 0 ; col < 3 ; col++) {
-      jacobian[row + col*4] = hessi_global[row][col] + mu2 * hessj_global[row][col];
+      jacobian[row*4 + col] = hessi_global[row][col] + mu2 * hessj_global[row][col];
     }
-    jacobian[row + 3*4] = gradj_global[row];
+    jacobian[row*4 + 3] = gradj_global[row];
   }
   for (int col = 0 ; col < 3 ; col++) {
-    jacobian[3 + col*4] = gradi_global[col] - gradj_global[col];
+    jacobian[3*4 + col] = gradi_global[col] - gradj_global[col];
   }
   jacobian[15] = 0.0;
 }
@@ -460,10 +460,8 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
     double A_fast[16];
     double b_fast[4];
 
-    for(int r=0; r<4; ++r) {
-        for(int c=0; c<4; ++c) {
-            A_fast[r*4 + c] = jacobian[c*4 + r];
-        }
+    for(int i = 0; i < 16; ++i) {
+        A_fast[i] = jacobian[i];
     }
 
     b_fast[0] = -residual[0]; b_fast[1] = -residual[1];
@@ -487,11 +485,10 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
 
     if (!gauss_elim_solved) {
       // restore matrix
-      for(int r=0; r<4; ++r) {
-        for(int c=0; c<4; ++c) {
-            A_fast[r*4 + c] = jacobian[c*4 + r];
-        }
+      for(int i = 0; i < 16; ++i) {
+        A_fast[i] = jacobian[i];
       }
+
       b_fast[0] = -residual[0]; b_fast[1] = -residual[1];
       b_fast[2] = -residual[2]; b_fast[3] = -residual[3];
        // enforce a minimum regularization to avoid zero pivots in edge cases (flat on flat)
