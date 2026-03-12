@@ -408,15 +408,7 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
   double lsq = MathExtra::distsq3(xci, xcj);
   bool converged(false);
 
-  // Accelerate convergence rate for high blockiness / flat faces
-  // with high root multiplicity N
-  // e.g.: f(x) = x^N , Newton's iterate: x_k+1 = x_k - x_k / N
-  // Estimate N from |x_k+1 - x_k| / |x_k - x_k-1| = 1 - 1/N
-  // within bounds 1 < N < max(block)-1
-  // then multiply Newton's step size by N to recover quadratic convergence
-  double multiplicity(1.0);
   double rhs_old[3];
-  double blockmax = std::fmax(std::fmax(blocki[0],blocki[1]), std::fmax(blockj[0], blockj[1]));
 
   // avg radii for regularization if GEOMETRIC formulation
   double avg_radius_i = 1;
@@ -516,17 +508,13 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
       }
     }
 
-    if (iter > 0)
-      multiplicity = std::fmin(std::fmax(1.0, 1.0 / (1.0 - std::sqrt(MathExtra::lensq3(rhs)/MathExtra::lensq3(rhs_old)))), blockmax - 1.0);
     MathExtra::copy3(rhs, rhs_old);
 
     // Backtracking line search
-    double a(multiplicity), X_line[4];
+    double X_line[4];
     int iter_ls;
+    double a = 1.0;
 
-    if (formulation == FORMULATION_GEOMETRIC) {
-      a = 1.0; // no need for multiplicity scaling
-    }
     // Limit the max step size to avoid jumping too far
     // normalize residual vector if step was limited
     double spatial_residual_norm = std::sqrt(rhs[0]*rhs[0] + rhs[1]*rhs[1] + rhs[2]*rhs[2]);
