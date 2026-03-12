@@ -254,8 +254,10 @@ void FixColvars::set_thermostat_temperature()
         if (!tstat_fix) error->one(FLERR, "Could not find thermostat fix ID {}", tfix_name);
         int tmp = 0;
         auto *tt = reinterpret_cast<double *>(tstat_fix->extract("t_target", tmp));
-        if (tt) t_target = *tt;
-        else error->one(FLERR, "Fix ID {} is not a thermostat fix", tfix_name);
+        if (tt)
+          t_target = *tt;
+        else
+          error->one(FLERR, "Fix ID {} is not a thermostat fix", tfix_name);
       }
     }
   }
@@ -273,7 +275,9 @@ void FixColvars::init_taglist()
     if (proxy->modified_atom_list()) {
       new_taglist_size = num_coords;
       proxy->reset_modified_atom_list();
-    } else new_taglist_size = -1;
+    } else {
+      new_taglist_size = -1;
+    }
   }
   // Broadcast number of colvar atoms; negative means no updates
   MPI_Bcast(&new_taglist_size, 1, MPI_INT, 0, world);
@@ -420,8 +424,10 @@ void FixColvars::setup(int vflag)
           cd[i].y = x[k][1];
           cd[i].z = x[k][2];
         }
-        if (atom->rmass_flag) m[i] = atom->rmass[k];
-        else m[i] = atom->mass[type[k]];
+        if (atom->rmass_flag)
+          m[i] = atom->rmass[k];
+        else
+          m[i] = atom->mass[type[k]];
         if (atom->q_flag) q[i] = atom->q[k];
       }
     }
@@ -467,8 +473,10 @@ void FixColvars::setup(int vflag)
           comm_buf[nme].y = x[k][1];
           comm_buf[nme].z = x[k][2];
         }
-        if (atom->rmass_flag) comm_buf[nme].m = atom->rmass[k];
-        else comm_buf[nme].m = atom->mass[type[k]];
+        if (atom->rmass_flag)
+          comm_buf[nme].m = atom->rmass[k];
+        else
+          comm_buf[nme].m = atom->mass[type[k]];
         if (atom->q_flag) comm_buf[nme].q = atom->q[k];
         ++nme;
       }
@@ -480,9 +488,9 @@ void FixColvars::setup(int vflag)
   // run pre-run setup in colvarproxy
   if (me == 0) proxy->setup();
   // initialize forces
-  if (utils::strmatch(update->integrate_style,"^verlet") || (update->whichflag == 2))
+  if (utils::strmatch(update->integrate_style,"^verlet") || (update->whichflag == 2)) {
     post_force(vflag);
-  else {
+  } else {
     ((Respa *) update->integrate)->copy_flevel_f(nlevels_respa-1);
     post_force_respa(vflag,nlevels_respa-1,0);
     ((Respa *) update->integrate)->copy_f_flevel(nlevels_respa-1);
@@ -789,13 +797,15 @@ double FixColvars::compute_array(int m, int n)
   double value = 0.0;
   if (comm->me == 0) {
     const auto& variables = *proxy->colvars->variables();
-    if (m >= variables.size())
+    if (m >= variables.size()) {
       error->all(FLERR, Error::NOLASTLINE, "f_{}[{}][{}] out-of-bounds: {} collective variables available.",
                  id, m+1, n+1, variables.size());
+    }
     const auto& variable = variables[m]->value();
-    if (n >= variable.size())
+    if (n >= variable.size()) {
       error->all(FLERR, Error::NOLASTLINE, "f_{}[{}][{}] out-of-bounds: collective variable {} has size {}.",
                  id, m+1, n+1, get_thermo_colname(m), variable.size());
+    }
     value = variable[n];
   }
   MPI_Bcast(&value, 1, MPI_DOUBLE, 0, world);
@@ -809,8 +819,10 @@ std::string FixColvars::get_thermo_colname(int m)
   std::string name;
   if (comm->me == 0) {
     auto *variables = proxy->colvars->variables();
-    if ( m < variables->size() ) name = fmt::format("f_{}:{}[{}]", id, (*variables)[m]->name, m+1);
-    else name = "none";
+    if ( m < variables->size() )
+      name = fmt::format("f_{}:{}[{}]", id, (*variables)[m]->name, m+1);
+    else
+      name = "none";
   }
   int name_length = name.length();
   MPI_Bcast(&name_length, 1, MPI_INT, 0, world);
