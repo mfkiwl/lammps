@@ -58,8 +58,6 @@ PairGranularSuperellipsoid::PairGranularSuperellipsoid(LAMMPS *lmp) : Pair(lmp)
   svector = new double[single_extra];
 
   // Currently only option, generalize if more added
-  size_history = 0;
-  nondefault_history_transfer = 0;
 
   neighprev = 0;
   nmax = 0;
@@ -87,9 +85,9 @@ PairGranularSuperellipsoid::PairGranularSuperellipsoid(LAMMPS *lmp) : Pair(lmp)
 
   comm_forward = 1;
 
-  size_history = 0;
+  size_history = 8;
   beyond_contact = 0;
-  nondefault_history_transfer = 0;
+  nondefault_history_transfer = 1;
   heat_flag = 0;
 
   // create dummy fix as placeholder for FixNeighHistory
@@ -894,6 +892,21 @@ void PairGranularSuperellipsoid::unpack_forward_comm(int n, int first, double *b
 }
 
 /* ----------------------------------------------------------------------
+   Transfer history
+------------------------------------------------------------------------- */
+
+void PairGranularSuperellipsoid::transfer_history(double *source, double *target, int /*itype*/,
+                                                     int /*jtype*/)
+{
+  // copy of all history variables (shear, contact point, axis)
+  // TODO: only shear needs to be reversed?
+  for (int i = 0; i < size_history; i++) {
+    if (i < 3) target[i] = -source[i]; //shear
+    target[i] = source[i];
+  }
+}
+
+/* ----------------------------------------------------------------------
    memory usage of local atom-based arrays
 ------------------------------------------------------------------------- */
 
@@ -919,7 +932,7 @@ double PairGranularSuperellipsoid::mix_mean(double val1, double val2)
 
 /* ---------------------------------------------------------------------- */
 
-int PairGranularSuperellipsoid::check_contact()
+bool PairGranularSuperellipsoid::check_contact()
 {
   bool touching;
   if (rsq >= radsum * radsum) {
@@ -1167,7 +1180,7 @@ void PairGranularSuperellipsoid::calculate_forces()
   torquesi[1] = cr1[2] * forces[0] - cr1[0] * forces[2];
   torquesi[2] = cr1[0] * forces[1] - cr1[1] * forces[0];
 
-  torquesj[0] = -cr2[1] * forces[2] - cr2[2] * forces[1];
-  torquesj[1] = -cr2[2] * forces[0] - cr2[0] * forces[2];
-  torquesj[2] = -cr2[0] * forces[1] - cr2[1] * forces[0];
+  torquesj[0] = -cr2[1] * forces[2] + cr2[2] * forces[1];
+  torquesj[1] = -cr2[2] * forces[0] + cr2[0] * forces[2];
+  torquesj[2] = -cr2[0] * forces[1] + cr2[1] * forces[0];
 }

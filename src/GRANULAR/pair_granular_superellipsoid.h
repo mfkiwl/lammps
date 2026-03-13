@@ -45,6 +45,7 @@ class PairGranularSuperellipsoid : public Pair {
   int pack_forward_comm(int, int *, double *, int, int *) override;
   void unpack_forward_comm(int, int, double *) override;
   double memory_usage() override;
+  void transfer_history(double *, double *, int, int) override;
 
  protected:
   int freeze_group_bit;
@@ -94,7 +95,7 @@ class PairGranularSuperellipsoid : public Pair {
   void allocate();
   double mix_geom(double, double);
   double mix_mean(double, double);
-  int check_contact();
+  bool check_contact();
   void calculate_forces();
 
  private:

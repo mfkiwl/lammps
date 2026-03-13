@@ -1076,7 +1076,7 @@ void PairGranHookeHistoryEllipsoid::transfer_history(double *source, double *tar
 {
   // Simple direct copy of all history variables (shear, contact point, axis)
   for (int i = 0; i < size_history; i++) {
-    // if (i < 3) target[i] = -source[i]; //shear
+    if (i < 3) target[i] = -source[i]; //shear
     target[i] = source[i];
   }
 }
