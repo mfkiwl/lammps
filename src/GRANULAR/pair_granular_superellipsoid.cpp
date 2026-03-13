@@ -85,7 +85,9 @@ PairGranularSuperellipsoid::PairGranularSuperellipsoid(LAMMPS *lmp) : Pair(lmp)
 
   comm_forward = 1;
 
-  size_history = 8;
+  default_hist_size = 5;
+  size_history = default_hist_size; // default of 5 values, x0[4] and separating axis
+
   beyond_contact = 0;
   nondefault_history_transfer = 1;
   heat_flag = 0;
@@ -225,11 +227,8 @@ void PairGranularSuperellipsoid::compute(int eflag, int vflag)
       radj = radius[j];
       itype = itype;
       jtype = jtype;
-      shear = &allhistory[size_history * jj];
-      X0_prev = &allhistory[3 + size_history * jj];
-      separating_axis = &allhistory[7 + size_history * jj];
-      int indx_ref = (tag[i] < tag[j]) ? i : j;
-      xref = x[indx_ref];
+      history_data = &allhistory[size_history * jj];
+      xref = (tag[i] < tag[j]) ? xi : xj;
       tagi = tag[i];
       tagj = tag[j];
       flagi = bonus[ellipsoid[i]].type;
@@ -367,7 +366,10 @@ void PairGranularSuperellipsoid::settings(int narg, char **arg)
       error->all(FLERR, "Illegal pair_style command");
   }
 
-  if (bounding_box == 0) size_history--;
+  if (bounding_box == 0) {
+    default_hist_size--;
+    size_history--;
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -410,12 +412,6 @@ void PairGranularSuperellipsoid::coeff(int narg, char **arg)
   }
 
   damping_one = -1;
-
-
-  // convert Kn and Kt from pressure units to force/distance^2
-
-  kn_one /= force->nktv2p; // TODO revert if updating normal force model
-  kt_one /= force->nktv2p;
 
   //Parse optional arguments
   while (iarg < narg) {
@@ -532,6 +528,13 @@ void PairGranularSuperellipsoid::init_style()
     fix_history = dynamic_cast<FixNeighHistory *>(modify->get_fix_by_id("NEIGH_HISTORY_GRANULAR_SE"));
     if (!fix_history) error->all(FLERR,"Could not find pair fix neigh history ID");
   }
+
+  // grow history for contact models, right now this is superfluous and is just a placeholder
+
+  for (int itype = 1; itype <= atom->ntypes; itype++)
+    for (int jtype = 1; jtype <= atom->ntypes; jtype++)
+      if (tangential_model[itype][jtype] == LINEAR_HISTORY)
+        size_history += 3;
 
   // check for FixFreeze and set freeze_group_bit
 
@@ -755,8 +758,7 @@ double PairGranularSuperellipsoid::single(int i, int j, int /*itype*/, int /*jty
 
   // Reset model and copy initial geometric data
 
-  // If history is needed
-  double *history,*allhistory;
+  double *allhistory;
   int jnum = list->numneigh[i];
   int *jlist = list->firstneigh[i];
 
@@ -776,9 +778,7 @@ double PairGranularSuperellipsoid::single(int i, int j, int /*itype*/, int /*jty
   radj = atom->radius[j];
   itype = itype;
   jtype = jtype;
-  shear = &allhistory[size_history * neighprev];
-  X0_prev = &allhistory[3 + size_history * neighprev];
-  separating_axis = &allhistory[7 + size_history * neighprev];
+  history_data = &allhistory[size_history * neighprev];
   int indx_ref = (atom->tag[i] < atom->tag[j]) ? i : j;
   xref = atom->x[indx_ref];
   tagi = atom->tag[i];
@@ -940,74 +940,76 @@ bool PairGranularSuperellipsoid::check_contact()
   } else {
     bool skip_contact_detection(false);
     if (bounding_box) {
+      double *separating_axis = &history_data[4];
       skip_contact_detection = MathExtraSuperellipsoids::check_oriented_bounding_boxes(
           xi, Ri, shapei, xj, Rj, shapej, separating_axis);
     }
-    if (skip_contact_detection)
+    if (skip_contact_detection) {
       touching = false;
-    else {
-      // superellipsoid contact detection between atoms i and j
-      if (touchjj == 1) {
-        // Continued contact: use grain true shape and last contact point with respect to grain i
-        X0[0] = xref[0] + X0_prev[0];
-        X0[1] = xref[1] + X0_prev[1];
-        X0[2] = xref[2] + X0_prev[2];
-        X0[3] = X0_prev[3];
-        // std::cout << "Using old contact point as initial guess between particle " << atom->tag[i] << " and particle " << atom->tag[j] << " : "
-        //           << X0[0] << " " << X0[1] << " " << X0[2] << " Lagrange multiplier mu^2: " << X0[3] << std::endl;
-        int status = MathExtraSuperellipsoids::determine_contact_point(
-            xi, Ri, shapei, blocki, flagi, xj, Rj, shapej, blockj, flagj, X0, nij, contact_formulation);
-        if (status == 0)
-          touching = true;
-        else if (status == 1)
-          touching = false;
-        else {
-          error->warning(FLERR,
-                         "Ellipsoid contact detection (old contact) failed "
-                         "between particle {} and particle {} ",
-                         tagi, tagj);
-        }
+      return touching;
+    }
+
+    double *X0_prev = history_data;
+
+    // superellipsoid contact detection between atoms i and j
+
+    if (touchjj == 1) {
+      // Continued contact: use grain true shape and last contact point with respect to grain i
+      X0[0] = X0_prev[0] + xref[0];
+      X0[1] = X0_prev[1] + xref[1];
+      X0[2] = X0_prev[2] + xref[2];
+      X0[3] = X0_prev[3];
+      // std::cout << "Using old contact point as initial guess between particle " << atom->tag[i] << " and particle " << atom->tag[j] << " : "
+      //           << X0[0] << " " << X0[1] << " " << X0[2] << " Lagrange multiplier mu^2: " << X0[3] << std::endl;
+      int status = MathExtraSuperellipsoids::determine_contact_point(
+          xi, Ri, shapei, blocki, flagi, xj, Rj, shapej, blockj, flagj, X0, nij, contact_formulation);
+      if (status == 0) {
+        touching = true;
+      } else if (status == 1) {
+        touching = false;
       } else {
-        // New contact: Build initial guess incrementally by morphing the particles from spheres to actual shape
+        error->warning(FLERR, "Ellipsoid contact detection (old contact) failed "
+                       "between particle {} and particle {} ", tagi, tagj);
+      }
+    } else {
+      // New contact: Build initial guess incrementally by morphing the particles from spheres to actual shape
 
-        // There might be better heuristic for the "volume equivalent spheres" suggested in the paper
-        // but this is good enough. We might even be able to use radi and radj which is cheaper
-        // MathExtra::scaleadd3(radj / radsum, x[i], radi /radsum, x[j], X0);
+      // There might be better heuristic for the "volume equivalent spheres" suggested in the paper
+      // but this is good enough. We might even be able to use radi and radj which is cheaper
+      // MathExtra::scaleadd3(radj / radsum, x[i], radi /radsum, x[j], X0);
 
-        double reqi = std::cbrt(shapei[0] * shapei[1] * shapei[2]);
-        double reqj = std::cbrt(shapej[0] * shapej[1] * shapej[2]);
-        MathExtra::scaleadd3(reqj / (reqi + reqj), xi, reqi / (reqi + reqj), xj, X0);
-        X0[3] = reqj / reqi;    // Lagrange multiplier mu^2
-        for (int iter_ig = 1; iter_ig <= NUMSTEP_INITIAL_GUESS; iter_ig++) {
-          double frac = iter_ig / double(NUMSTEP_INITIAL_GUESS);
-          shapei[0] = shapei[1] = shapei[2] = reqi;
-          shapej[0] = shapej[1] = shapej[2] = reqj;
-          MathExtra::scaleadd3(1.0 - frac, shapei, frac, shapei0, shapei);
-          MathExtra::scaleadd3(1.0 - frac, shapej, frac, shapej0, shapej);
-          blocki[0] = 2.0 + frac * (blocki0[0] - 2.0);
-          blocki[1] = 2.0 + frac * (blocki0[1] - 2.0);
-          blockj[0] = 2.0 + frac * (blockj0[0] - 2.0);
-          blockj[1] = 2.0 + frac * (blockj0[1] - 2.0);
+      double reqi = std::cbrt(shapei[0] * shapei[1] * shapei[2]);
+      double reqj = std::cbrt(shapej[0] * shapej[1] * shapej[2]);
+      double rsuminv = 1.0 / (reqi + reqj);
+      MathExtra::scaleadd3(reqj * rsuminv, xi, reqi * rsuminv, xj, X0);
+      X0[3] = reqj / reqi;    // Lagrange multiplier mu^2
+      for (int iter_ig = 1; iter_ig <= NUMSTEP_INITIAL_GUESS; iter_ig++) {
+        double frac = iter_ig / double(NUMSTEP_INITIAL_GUESS);
+        shapei[0] = shapei[1] = shapei[2] = reqi;
+        shapej[0] = shapej[1] = shapej[2] = reqj;
+        MathExtra::scaleadd3(1.0 - frac, shapei, frac, shapei0, shapei);
+        MathExtra::scaleadd3(1.0 - frac, shapej, frac, shapej0, shapej);
+        blocki[0] = 2.0 + frac * (blocki0[0] - 2.0);
+        blocki[1] = 2.0 + frac * (blocki0[1] - 2.0);
+        blockj[0] = 2.0 + frac * (blockj0[0] - 2.0);
+        blockj[1] = 2.0 + frac * (blockj0[1] - 2.0);
 
-          // force ellipsoid flag for first initial guess iteration.
-          // Avoid incorrect values of n1/n2 - 2 in second derivatives.
-          int status = MathExtraSuperellipsoids::determine_contact_point(
-              xi, Ri, shapei, blocki,
-              iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi, xj, Rj, shapej,
-              blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj, X0, nij,
-              contact_formulation);
+        // force ellipsoid flag for first initial guess iteration.
+        // Avoid incorrect values of n1/n2 - 2 in second derivatives.
+        int status = MathExtraSuperellipsoids::determine_contact_point(
+            xi, Ri, shapei, blocki,
+            iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagi, xj, Rj, shapej,
+            blockj, iter_ig == 1 ? AtomVecEllipsoid::BlockType::ELLIPSOID : flagj, X0, nij,
+            contact_formulation);
 
-          if (status == 0)
-            touching = true;
-          else if (status == 1)
-            touching = false;
-          else if (iter_ig == NUMSTEP_INITIAL_GUESS) {
-            // keep trying until last iteration to avoid erroring out too early
-            error->warning(FLERR,
-                           "Ellipsoid contact detection (new contact) failed"
-                           "between particle {} and particle {}",
-                           tagi, tagj);
-          }
+        if (status == 0) {
+          touching = true;
+        } else if (status == 1) {
+          touching = false;
+        } else if (iter_ig == NUMSTEP_INITIAL_GUESS) {
+          // keep trying until last iteration to avoid erroring out too early
+          error->warning(FLERR, "Ellipsoid contact detection (new contact) failed"
+                         "between particle {} and particle {}", tagi, tagj);
         }
       }
     }
@@ -1023,10 +1025,14 @@ void PairGranularSuperellipsoid::calculate_forces()
   // Store contact point with respect to grain i for next time step
   // This is crucial for periodic BCs when grains can move by large amount in one time step
   // Keeping the previous contact point relative to global frame would lead to bad initial guess
-  X0_prev[0] = X0[0] - xref[0];
-  X0_prev[1] = X0[1] - xref[1];
-  X0_prev[2] = X0[2] - xref[2];
-  X0_prev[3] = X0[3];
+
+  if (history_update) {
+    double *X0_prev = history_data;
+    X0_prev[0] = X0[0] - xref[0];
+    X0_prev[1] = X0[1] - xref[1];
+    X0_prev[2] = X0[2] - xref[2];
+    X0_prev[3] = X0[3];
+  }
 
   double nji[3] = {-nij[0], -nij[1], -nij[2]};
   // compute overlap depth along normal direction for each grain
@@ -1119,6 +1125,7 @@ void PairGranularSuperellipsoid::calculate_forces()
   if (limit_damping[itype][jtype] && (ccel < 0.0)) ccel = 0.0;
 
   // shear history effects
+  double *shear = &history_data[default_hist_size];
 
   if (history_update) {
     shear[0] += vtr1 * dt;

@@ -16,23 +16,21 @@
 
 #ifdef PAIR_CLASS
 // clang-format off
-PairStyle(granular/superellipsoid,PairGranularSuperellipsoid);
+PairStyle(gran/hooke/history/ellipsoid,PairGranHookeHistoryEllipsoid);
 // clang-format on
 #else
 
-#ifndef LMP_PAIR_GRANULAR_SUPERELLIPSOID_H
-#define LMP_PAIR_GRANULAR_SUPERELLIPSOID_H
+#ifndef LMP_PAIR_GRAN_HOOKE_HISTORY_ELLIPSOID_H
+#define LMP_PAIR_GRAN_HOOKE_HISTORY_ELLIPSOID_H
 
 #include "pair.h"
 
-#include "atom_vec_ellipsoid.h"
-
 namespace LAMMPS_NS {
 
-class PairGranularSuperellipsoid : public Pair {
+class PairGranHookeHistoryEllipsoid : public Pair {
  public:
-  PairGranularSuperellipsoid(class LAMMPS *);
-  ~PairGranularSuperellipsoid() override;
+  PairGranHookeHistoryEllipsoid(class LAMMPS *);
+  ~PairGranHookeHistoryEllipsoid() override;
   void compute(int, int) override;
   void settings(int, char **) override;
   void coeff(int, char **) override;
@@ -40,6 +38,8 @@ class PairGranularSuperellipsoid : public Pair {
   double init_one(int, int) override;
   void write_restart(FILE *) override;
   void read_restart(FILE *) override;
+  void write_restart_settings(FILE *) override;
+  void read_restart_settings(FILE *) override;
   void reset_dt() override;
   double single(int, int, int, int, double, double, double, double &) override;
   int pack_forward_comm(int, int *, double *, int, int *) override;
@@ -48,11 +48,19 @@ class PairGranularSuperellipsoid : public Pair {
   void transfer_history(double *, double *, int, int) override;
 
  protected:
+  double kn, kt, gamman, gammat, xmu;
+  int dampflag;
+  double dt;
   int freeze_group_bit;
+  int use_history;
+  int limit_damping;
+  int bounding_box;
 
   int neighprev;
   double *onerad_dynamic, *onerad_frozen;
   double *maxrad_dynamic, *maxrad_frozen;
+
+  int size_history;
 
   class FixDummy *fix_dummy;
   class FixNeighHistory *fix_history;
@@ -63,55 +71,11 @@ class PairGranularSuperellipsoid : public Pair {
   double *mass_rigid;      // rigid mass for owned+ghost atoms
   int nmax;                // allocated size of mass_rigid
 
-  // Model variables
-  double dt;
-  int **normal_model;
-  int **damping_model;
-  int **tangential_model;
-  int **limit_damping;
-  int default_hist_size;
-
-  // Normal coefficients
-  double **kn, **gamman;     // Hooke + Hertz
-
-  // Tangential coefficients
-  double **kt, **xt, **xmu;  // linear_history
-
-  // Intermediate values for contact model
-  int history_update, touchjj, itype, jtype;
-  double Fnormal, forces[3], torquesi[3], torquesj[3];
-  double radi, radj, meff, Fntot;
-  double *xi, *xj, *vi, *vj;
-  double fs[3], ft[3];
-  double dx[3], nx[3], r, rsq, rinv, Reff, radsum, delta, dR;
-  double vr[3], vn[3], vnnr, vt[3], wr[3], vtr[3], vrel;
-
-  double *quati, *quatj, *angmomi, *angmomj, *inertiai, *inertiaj;
-  double X0[4], nij[3], Ri[3][3], Rj[3][3];
-  double shapei0[3], blocki0[3], shapej0[3], blockj0[3], shapei[3], blocki[3], shapej[3], blockj[3];
-  double *history_data, *xref;
-  AtomVecEllipsoid::BlockType flagi, flagj;
-  tagint tagi, tagj;
+  int contact_formulation;
 
   void allocate();
-  double mix_geom(double, double);
-  double mix_mean(double, double);
-  bool check_contact();
-  void calculate_forces();
 
  private:
-  int size_history;
-  int heat_flag;
-
-  // optional user-specified global cutoff, per-type user-specified cutoffs
-  double **cutoff_type;
-  double cutoff_global;
-  int contact_formulation;
-  int bounding_box;
-  int curvature_model;
-
-  int extra_svector;
-
   // Below not implemented. Placeholder if we decide not to compute local hessian in line search
   static double
   shape_and_gradient_local(const double *, const double *, const double *,
