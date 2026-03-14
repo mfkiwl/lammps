@@ -355,6 +355,8 @@ Currently used when combining data from multiple sources with
    *
    * \param filename  file name */
   void write_map(const std::string &filename);
+
+  void check_labels();    //!< Check if type labels are self-consistent
 };
 
 }    // namespace LAMMPS_NS
