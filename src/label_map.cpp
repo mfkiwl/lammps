@@ -883,9 +883,9 @@ void LabelMap::check_labels()
           std::string dlabel = atom->lmap->find_label(dtype, Atom::DIHEDRAL);
           if (inferred_type == -dtype)
             error->warning(FLERR, "Dihedral between atoms {}, {}, {}, {} has constituent atom types ({}, {}, {}, {}) in reverse order compared to its "
-                                  "dihedral type label ({})", atom1, atom2, atom3, atom4, atom1_label, atom2_label, atom3_label, atom4_label, dlabel);
+                                  "dihedral type label ({})", tag[atom1], tag[atom2], tag[atom3], tag[atom4], atom1_label, atom2_label, atom3_label, atom4_label, dlabel);
           else error->warning(FLERR, "Dihedral between atoms {}, {}, {}, {} has constituent atom types ({}, {}, {}, {}) that do not match its "
-                                     "dihedral label ({})", atom1, atom2, atom3, atom4, atom1_label, atom2_label, atom3_label, atom4_label, dlabel);
+                                     "dihedral label ({})", tag[atom1], tag[atom2], tag[atom3], tag[atom4], atom1_label, atom2_label, atom3_label, atom4_label, dlabel);
         }
       }
     }
