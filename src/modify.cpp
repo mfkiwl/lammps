@@ -300,10 +300,6 @@ void Modify::init()
   if (comm->me == 0 && checkall)
     error->warning(FLERR, "One or more atoms are time integrated more than once"
                    + utils::errorurl(32));
-
-  // runtime check for type label self-consistency
-
-  if (atom->labelmapflag && atom->lmap->checkflag) atom->lmap->check_labels();
 }
 
 /* ----------------------------------------------------------------------
@@ -327,6 +323,10 @@ void Modify::setup(int vflag)
     for (int i = 0; i < nfix; i++) fix[i]->setup(vflag);
   else if (update->whichflag == 2)
     for (int i = 0; i < nfix; i++) fix[i]->min_setup(vflag);
+
+  // runtime check for type label self-consistency
+
+  if (atom->labelmapflag && atom->lmap->checkflag) atom->lmap->check_labels();
 }
 
 /* ----------------------------------------------------------------------
