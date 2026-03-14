@@ -2554,5 +2554,6 @@ double *ColorMap::value2color(double value)
     return mentry[ibin%nentry].color;
   }
 
-  return nullptr;
+  // always return a non-NULL pointer
+  return mentry[0].color;
 }
