@@ -26,34 +26,47 @@ namespace LAMMPS_NS {
 
 Drop in replacement for ``FILE *``. Use as ``SafeFilePtr fp;`` instead of
 ``FILE *fp = nullptr;`` and there is no more need to explicitly call
-``fclose(fp)``.
+``fclose(fp)`` or ``pclose(fp)``.
 
 \endverbatim
 */
 class SafeFilePtr {
  public:
-  SafeFilePtr() : fp(nullptr) {};
-  SafeFilePtr(FILE *_fp) : fp(_fp) {};
+  SafeFilePtr() : fp(nullptr), use_pclose(false) {};
+  SafeFilePtr(bool _use_pclose) : fp(nullptr), use_pclose(_use_pclose) {};
+  SafeFilePtr(FILE *_fp, bool _use_pclose = false) : fp(_fp), use_pclose(_use_pclose) {};
 
   SafeFilePtr(const SafeFilePtr &) = delete;
-  SafeFilePtr(SafeFilePtr &&o) noexcept : fp(o.fp) { o.fp = nullptr; }
+  SafeFilePtr(SafeFilePtr &&o) noexcept : fp(o.fp), use_pclose(o.use_pclose) { o.fp = nullptr; }
   SafeFilePtr &operator=(const SafeFilePtr &) = delete;
 
   ~SafeFilePtr()
   {
-    if (fp) fclose(fp);
+    if (fp) {
+      if (use_pclose)
+        pclose(fp);
+      else
+        fclose(fp);
+    }
   }
 
   SafeFilePtr &operator=(FILE *_fp)
   {
-    if (fp && (fp != _fp)) fclose(fp);
+    if (fp && (fp != _fp)) {
+      if (use_pclose)
+        pclose(fp);
+      else
+        fclose(fp);
+    }
     fp = _fp;
     return *this;
   }
+  void set_pclose(bool _use_pclose) { use_pclose = _use_pclose; }
   operator FILE *() const { return fp; }
 
  private:
   FILE *fp;
+  bool use_pclose;
 };
 }    // namespace LAMMPS_NS
 
