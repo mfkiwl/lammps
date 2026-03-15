@@ -155,14 +155,28 @@ void LabelMap::modify_lmap(int narg, char **arg)
     write_map(arg[1]);
     return;
   } else if (tlabel == "check_labels") {
-    if (strchr(arg[1], 'b'))
-      check_which_labels[0] = 1;
-    if (strchr(arg[1], 'a'))
-      check_which_labels[1] = 1;
-    if (strchr(arg[1], 'd'))
-      check_which_labels[2] = 1;
-    if (strchr(arg[1], 'i'))
-      check_which_labels[3] = 1;
+    if (narg != 2) error->all(FLERR, "Incorrect number of arguments for labelmap write command");
+    int i = 0;
+    char option;
+    while ((option = arg[1][i++]) != '\0') {
+      switch (option) {
+        case 'b':
+          check_which_labels[0] = 1;
+          break;
+        case 'a':
+          check_which_labels[1] = 1;
+          break;
+        case 'd':
+          check_which_labels[2] = 1;
+          break;
+        case 'i':
+          check_which_labels[3] = 1;
+          break;
+        default:
+          error->all(FLERR, "Labelmap command: Illegal check_labels option {}", option);
+          break;
+      }
+    }
     checkflag = 1;
     return;
   } else
