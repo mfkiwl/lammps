@@ -931,7 +931,7 @@ void FixGraphicsIsosurface::end_of_step()
         if (binary)
           error->one(FLERR, Error::NOLASTLINE, "Connot use compression with binary output: {}",
                      filename);
-        fp.set_pclose(true);
+        fp.set_pclose();
         fp = platform::compressed_write(filecurrent);
       } else if (binary) {
         fp = fopen(filecurrent, "wb");

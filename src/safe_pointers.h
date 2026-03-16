@@ -20,20 +20,53 @@
 
 namespace LAMMPS_NS {
 
-/** Class to automatically close a FILE pointer when a class instance goes out of scope.
+/** Class to automatically close a FILE pointer when it goes out of scope
 
 \verbatim embed:rst
 
-Drop in replacement for ``FILE *``. Use as ``SafeFilePtr fp;`` instead of
-``FILE *fp = nullptr;`` and there is no more need to explicitly call
-``fclose(fp)`` or ``pclose(fp)``.
+This is a drop-in replacement for declaring a ``FILE *`` variable and can
+be passed to functions or used in logical expressions the same way.  This
+is particularly useful when a code block will throw an exception, or has
+to close and re-open a file and similar.  It helps to simplify code and
+reduces the risk of memory and file descriptor leaks.
+
+Below are some usage examples:
+
+.. code-block:: c++
+
+  // Replace:
+  FILE *fp = nullptr;
+  // With:
+  SafeFilePtr fp;
+
+  // You can use "fp" as usual:
+  fp = fopen("some.file","r");
+  // a second assignment will automatically close the opened file
+  fp = fopen("other.file", "r");
+
+  // There also is a custom constructor available as a shortcut
+  SafeFilePtr fp(fopen("some.file", "r");
+
+  // You can indicate that a file was opened with popen() to call pclose() instead of fclose()
+  SafeFilePtr fp;
+  if (platform::has_compress_extension(filename)) {
+    fp.set_pclose();
+    fp = platform::compressed_write(filename);
+  } else {
+    fp = fopen(filename, "w");
+  }
+  if (!fp) error->one(FLERR, "Failed to open file {}: {}", filename, utils::getsyserror());
+
+  // reading or writing works without needing to change the source code
+  fputs("write text to file\n", fp);
+  char buffer[100];
+  utils::sfgets(FILE, buffer, 100, fp, filename, error);
 
 \endverbatim
 */
 class SafeFilePtr {
  public:
   SafeFilePtr() : fp(nullptr), use_pclose(false) {};
-  SafeFilePtr(bool _use_pclose) : fp(nullptr), use_pclose(_use_pclose) {};
   SafeFilePtr(FILE *_fp, bool _use_pclose = false) : fp(_fp), use_pclose(_use_pclose) {};
 
   SafeFilePtr(const SafeFilePtr &) = delete;
@@ -61,7 +94,7 @@ class SafeFilePtr {
     fp = _fp;
     return *this;
   }
-  void set_pclose(bool _use_pclose) { use_pclose = _use_pclose; }
+  void set_pclose() { use_pclose = true; }
   operator FILE *() const { return fp; }
 
  private:
