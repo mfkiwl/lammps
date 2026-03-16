@@ -231,9 +231,14 @@ TEST_F(FileOperationsTest, read_lines_from_file)
     if (me == 0) fclose(fp);
 }
 
+// to detect if compiling with C++20 and using std::format instead of fmt::format
+#if __has_include(<version>)
+#include <version>
+#endif
+
 TEST_F(FileOperationsTest, logmesg)
 {
-    char buf[64];
+    char buf[128];
     BEGIN_HIDE_OUTPUT();
     command("echo none");
     END_HIDE_OUTPUT();
@@ -247,12 +252,21 @@ TEST_F(FileOperationsTest, logmesg)
     utils::logmesg(lmp, "six {}\n");
     command("log none");
     std::string out = END_CAPTURE_OUTPUT();
-    memset(buf, 0, 64);
+    memset(buf, 0, 128);
     FILE *fp = fopen("test_logmesg.log", "r");
-    fread(buf, 1, 64, fp);
+    fread(buf, 1, 128, fp);
     fclose(fp);
+
+#if defined(__cpp_lib_format) && (__cpp_lib_format >= 201907L)
+    ASSERT_THAT(
+        out,
+        StrEq("one\ntwo\nthree=3\nformat error: invalid arg-id in format string\nfive\nsix {}\n"));
+    ASSERT_THAT(
+        buf, StrEq("two\nthree=3\nformat error: invalid arg-id in format string\nfive\nsix {}\n"));
+#else
     ASSERT_THAT(out, StrEq("one\ntwo\nthree=3\nargument not found\nfive\nsix {}\n"));
     ASSERT_THAT(buf, StrEq("two\nthree=3\nargument not found\nfive\nsix {}\n"));
+#endif
     remove("test_logmesg.log");
 }
 
