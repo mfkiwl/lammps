@@ -81,7 +81,7 @@ DumpCustomADIOS::DumpCustomADIOS(LAMMPS *lmp, int narg, char **arg) : DumpCustom
   }
 
   internal->columnNames.reserve(nfield);
-  for (int i = 0; i < nfield; ++i) { internal->columnNames.emplace_back(earg[i]); }
+  for (int i = 0; i < nfield; ++i) internal->columnNames.emplace_back(earg[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -89,7 +89,7 @@ DumpCustomADIOS::DumpCustomADIOS(LAMMPS *lmp, int narg, char **arg) : DumpCustom
 DumpCustomADIOS::~DumpCustomADIOS()
 {
   internal->columnNames.clear();
-  if (internal->fh) { internal->fh.Close(); }
+  if (internal->fh) internal->fh.Close();
   delete internal->ad;
   delete internal;
 }
@@ -217,10 +217,10 @@ void DumpCustomADIOS::write()
   internal->fh.Put<uint64_t>("nme", bnme);
   internal->fh.Put<uint64_t>("offset", atomOffset);
   // now write the atoms
-  internal->fh.Put<double>("atoms", buf);
+  internal->fh.Put<double>(internal->varAtoms, buf);
   internal->fh.EndStep();    // I/O will happen now...
 
-  if (multifile) { internal->fh.Close(); }
+  if (multifile) internal->fh.Close();
 }
 
 /* ---------------------------------------------------------------------- */
