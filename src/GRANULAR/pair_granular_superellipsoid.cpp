@@ -549,6 +549,14 @@ void PairGranularSuperellipsoid::init_style()
 
   dt = update->dt;
 
+  // grow history for contact models, right now this is superfluous and is just a placeholder
+
+  for (int itype = 1; itype <= atom->ntypes; itype++)
+    for (int jtype = 1; jtype <= atom->ntypes; jtype++)
+      if (tangential_model[itype][jtype] == CLASSIC ||
+          tangential_model[itype][jtype] == LINEAR_HISTORY)
+        size_history += 3;
+
   // if history is stored and first init, create Fix to store history
   // it replaces FixDummy, created in the constructor
   // this is so its order in the fix list is preserved
@@ -566,14 +574,6 @@ void PairGranularSuperellipsoid::init_style()
         dynamic_cast<FixNeighHistory *>(modify->get_fix_by_id("NEIGH_HISTORY_GRANULAR_SE"));
     if (!fix_history) error->all(FLERR, "Could not find pair fix neigh history ID");
   }
-
-  // grow history for contact models, right now this is superfluous and is just a placeholder
-
-  for (int itype = 1; itype <= atom->ntypes; itype++)
-    for (int jtype = 1; jtype <= atom->ntypes; jtype++)
-      if (tangential_model[itype][jtype] == CLASSIC ||
-          tangential_model[itype][jtype] == LINEAR_HISTORY)
-        size_history += 3;
 
   // check for FixFreeze and set freeze_group_bit
 
