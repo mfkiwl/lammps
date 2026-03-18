@@ -551,11 +551,13 @@ void PairGranularSuperellipsoid::init_style()
 
   // grow history for contact models, right now this is superfluous and is just a placeholder
 
+  int size_history_tangential = 0;
   for (int itype = 1; itype <= atom->ntypes; itype++)
     for (int jtype = 1; jtype <= atom->ntypes; jtype++)
       if (tangential_model[itype][jtype] == CLASSIC ||
           tangential_model[itype][jtype] == LINEAR_HISTORY)
-        size_history += 3;
+        size_history_tangential = 3;
+  size_history += size_history_tangential;
 
   // if history is stored and first init, create Fix to store history
   // it replaces FixDummy, created in the constructor

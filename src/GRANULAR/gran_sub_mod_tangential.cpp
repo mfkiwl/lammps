@@ -247,7 +247,6 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
   magfs = len3(fs);
   if (magfs > Fscrit) {
     if (shrmag != 0.0) {
-
       // Rescale shear force
       scale3(Fscrit / magfs, fs);
 
