@@ -43,9 +43,11 @@ Below are some usage examples:
   fp = fopen("some.file","r");
   // a second assignment will automatically close the opened file
   fp = fopen("other.file", "r");
+  // and assigning nullptr will just close it
+  fp = nullptr;
 
   // There also is a custom constructor available as a shortcut
-  SafeFilePtr fp(fopen("some.file", "r");
+  SafeFilePtr fp(fopen("some.file", "r"));
 
   // You can indicate that a file was opened with popen() to call pclose() instead of fclose()
   SafeFilePtr fp;
@@ -60,7 +62,7 @@ Below are some usage examples:
   // reading or writing works without needing to change the source code
   fputs("write text to file\n", fp);
   char buffer[100];
-  utils::sfgets(FILE, buffer, 100, fp, filename, error);
+  utils::sfgets(FLERR, buffer, 100, fp, filename, error);
 
 \endverbatim
 */
@@ -75,8 +77,21 @@ class SafeFilePtr {
 
   ~SafeFilePtr();
 
+  /** Assign new file pointer and close old one if still open.
+   *
+   * The value of use_pclose determines whether `pclose()` is called or `fclose()`.
+   * Assigning `nullptr` closes the file and resets use_pclose
+   *
+   * \param _fp  new file pointer, may be `nullptr`
+   * \return reference to updated class instance */
   SafeFilePtr &operator=(FILE *_fp);
+
+  /** Flag that the file pointer needs to be closed with `pclose()` instead of `fclose()` */
   void set_pclose() { use_pclose = true; }
+
+  /** Custom type cast operator so that SafeFilePtr can be used where FILE * was used
+   *
+   * \return currently stored/monitored file pointer */
   operator FILE *() const { return fp; }
 
  private:

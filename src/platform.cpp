@@ -994,6 +994,7 @@ bool platform::file_is_writable(const std::string &path)
   } else {
     fp = fopen(path.c_str(), "w");
     if (fp) {
+      fp = nullptr;
       unlink(path);
       return true;
     }

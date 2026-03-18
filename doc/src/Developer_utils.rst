@@ -501,9 +501,11 @@ A typical code segment would look like this:
 Safe pointer classes
 --------------------
 
-These are custom classes to support the `Resource acquisition is initialization
-(RIAA) <https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization>`_
-programming idiom in LAMMPS for certain types of pointers.  Currently there is:
+These are custom classes to support the `Resource Acquisition Is
+Initialization (RAII)
+<https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization>`_
+programming idiom in LAMMPS for certain types of pointers.  Currently
+there is:
 
 .. doxygenclass:: LAMMPS_NS::SafeFilePtr
    :project: progguide

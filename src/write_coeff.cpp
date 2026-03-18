@@ -164,6 +164,7 @@ void WriteCoeff::command(int narg, char **arg)
       }
       fputc('\n', two);
     }
+    one = nullptr;              // implicitly close file
     platform::unlink(file);
   }
   delete[] file;

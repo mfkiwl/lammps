@@ -38,5 +38,6 @@ SafeFilePtr &SafeFilePtr::operator=(FILE *_fp)
       fclose(fp);
   }
   fp = _fp;
+  if (_fp == nullptr) use_pclose = false;
   return *this;
 }
