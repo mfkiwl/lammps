@@ -151,7 +151,7 @@ void PairGranularSuperellipsoid::compute(int eflag, int vflag)
   double *history, *allhistory, **firsthistory;
 
   bool touchflag = false;
-  const bool history_update = update->setupflag == 0;
+  history_update = update->setupflag == 0;
 
   ev_init(eflag, vflag);
 
@@ -1059,7 +1059,7 @@ bool PairGranularSuperellipsoid::check_contact()
         } else if (iter_ig == NUMSTEP_INITIAL_GUESS) {
           // keep trying until last iteration to avoid erroring out too early
           error->warning(FLERR,
-                         "Ellipsoid contact detection (new contact) failed"
+                         "Ellipsoid contact detection (new contact) failed "
                          "between particle {} and particle {}",
                          tagi, tagj);
         }

@@ -26,7 +26,7 @@
 namespace MathExtraSuperellipsoids {
 
 inline constexpr double TIKHONOV_SCALE =
-    1e-14;   
+    1e-14;
 
 static constexpr int ITERMAX_NR = 100;
 static constexpr double TOL_NR_RES = 1e-10 * 1e-10;
@@ -636,9 +636,10 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
     if (converged) break;
   }
 
-  if (!converged){
+  if (!converged) {
     if (shapefunc[0] > 0.0 || shapefunc[1] > 0.0) return 1;
-    return 2;} // not failing if not converged but shapefuncs positive (i.e., no contact)
+    return 2;
+  } // not failing if not converged but shapefuncs positive (i.e., no contact)
               // might be risky to assume no contact if not converged, NR might have gone to a far away point
               // but no guarantee there is no contact
   if (shapefunc[0] > 0.0 || shapefunc[1] > 0.0) return 1;
