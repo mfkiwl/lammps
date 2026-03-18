@@ -243,7 +243,7 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
   //   but not with hooke (sets mass_velocity damping)
 
   scale3(-damp, vtr, fdamp);
-  add(fs, fdamp, fs);
+  add3(fs, fdamp, fs);
 
   // rescale frictional displacements and forces if needed
   magfs = len3(fs);
