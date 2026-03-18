@@ -827,6 +827,7 @@ void LabelMap::check_labels()
       int atom1 = i;
       for (int j = 0; j < atom->num_bond[i]; j++) {
         int btype = atom->bond_type[i][j];
+        if (btype < 1) continue;
         int atom2 = atom->map(atom->bond_atom[i][j]);
         int inferred_type = atom->lmap->infer_bondtype(type[atom1], type[atom2]);
         if (inferred_type != btype) {
@@ -853,6 +854,7 @@ void LabelMap::check_labels()
     for (int i = 0; i < atom->nlocal; i++) {
       for (int j = 0; j < atom->num_angle[i]; j++) {
         int atype = atom->angle_type[i][j];
+        if (atype < 1) continue;
         int atom1 = atom->map(atom->angle_atom1[i][j]);
         int atom2 = atom->map(atom->angle_atom2[i][j]);
         int atom3 = atom->map(atom->angle_atom3[i][j]);
@@ -882,6 +884,7 @@ void LabelMap::check_labels()
     for (int i = 0; i < atom->nlocal; i++) {
       for (int j = 0; j < atom->num_dihedral[i]; j++) {
         int dtype = atom->dihedral_type[i][j];
+        if (dtype < 1) continue;
         int atom1 = atom->map(atom->dihedral_atom1[i][j]);
         int atom2 = atom->map(atom->dihedral_atom2[i][j]);
         int atom3 = atom->map(atom->dihedral_atom3[i][j]);
@@ -913,6 +916,7 @@ void LabelMap::check_labels()
     for (int i = 0; i < atom->nlocal; i++) {
       for (int j = 0; j < atom->num_improper[i]; j++) {
         int itype = atom->improper_type[i][j];
+        if (itype < 1) continue;
         int atom1 = atom->map(atom->improper_atom1[i][j]);
         int atom2 = atom->map(atom->improper_atom2[i][j]);
         int atom3 = atom->map(atom->improper_atom3[i][j]);
