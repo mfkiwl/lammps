@@ -47,9 +47,9 @@ compute block all property/atom block1 block2
 variable phi atom "2/c_block[2]"
 variable theta atom "2/c_block[1]"
 
-dump mydump all custom 1 shapes.lammpstrj id type x y z fx fy fz tqx tqy tqz c_diameter[*] c_orient[*] v_phi v_theta
-# Ovito maps c_orient[*] on its XYZW axes, which is not correct. Map components explicitly
-dump_modify mydump colname c_orient[1] quatw colname c_orient[2] quati colname c_orient[3] quatj colname c_orient[4] quatk
+# dump mydump all custom 1 shapes.lammpstrj id type x y z fx fy fz tqx tqy tqz c_diameter[*] c_orient[*] v_phi v_theta
+# # Ovito maps c_orient[*] on its XYZW axes, which is not correct. Map components explicitly
+# dump_modify mydump colname c_orient[1] quatw colname c_orient[2] quati colname c_orient[3] quatj colname c_orient[4] quatk
 
 set group ball angmom 1.0 0.0 0.5 vy 7.0
 

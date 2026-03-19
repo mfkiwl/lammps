@@ -12,8 +12,8 @@ neighbor 0.5 bin
 neigh_modify   delay 0 every 1 check yes
 
 # Setup Simulation Box
-variable        box_length equal 50
-variable        box_height equal 35
+variable        box_length equal 9
+variable        box_height equal 15
 
 region          box block 0 ${box_length} 0 ${box_length} 0 ${box_height}
 create_box      2 box
@@ -22,13 +22,13 @@ create_box      2 box
 lattice         sc 1.0
 region          floor_reg block 0 ${box_length} 0 ${box_length} 0 0.1
 
-variable        insertion_length equal ${box_length}-5.0
+variable        insertion_length equal ${box_length}-1.0
 
 create_atoms    1 region floor_reg
 
 # Create Falling Particles (Type 2)
-region          drop_zone block 5 ${insertion_length} 5 ${insertion_length} 5 ${box_height}
-create_atoms    2 random 3000 12345 drop_zone overlap 2.0 maxtry 100
+region          drop_zone block 1 ${insertion_length} 1 ${insertion_length} 5 ${box_height}
+create_atoms    2 random 100 12345 drop_zone overlap 2.0 maxtry 100
 
 # Material Properties
 # Type 1: Wall particles
@@ -41,6 +41,7 @@ set             type 2 shape 2.0 1.0 1.0
 variable        blockiness equal 4.0
 set             type 1 block 4.0 4.0 
 set             type 2 block ${blockiness} ${blockiness} 
+set             type 2 quat/random 84729
 
 # Define Groups
 group           wall type 1
@@ -49,11 +50,8 @@ group           mobile type 2
 # Interaction / Pair Style
 # pair_style      gran/hooke/history/ellipsoid 1e4 NULL 20.0 0.0 0.5 0 bounding_box
 # pair_coeff      * *
-pair_style granular/superellipsoid 10.0 curvature_gaussian
-pair_coeff * * hertz 1000.0 50.0 tangential classic 500.0 1.0 0.4 damping mass_velocity
-# Hertz model instead
-# pair_coeff      * * hertz 1000.0 0.0 tangential linear_history 285.714 0.0 0.5 damping viscoelastic
-
+pair_style granular/superellipsoid curvature_gaussian
+pair_coeff * * hertz 1000.0 500.0 tangential classic 500.0 1.0 0.4 damping viscoelastic
 # Computes and Output
 compute         diameter all property/atom shapex shapey shapez
 compute         orient all property/atom quatw quati quatj quatk
@@ -63,9 +61,9 @@ compute         block all property/atom block1 block2
 variable        phi atom "2/c_block[2]"
 variable        theta atom "2/c_block[1]"
 
-dump            mydump all custom 100 dump_drop_algebraic_block_${blockiness}_friction2.lammpstrj id type x y z fx fy fz tqx tqy tqz c_diameter[*] c_orient[*] v_phi v_theta
-# Explicit mapping for Ovito
-dump_modify     mydump colname c_orient[1] quatw colname c_orient[2] quati colname c_orient[3] quatj colname c_orient[4] quatk
+# dump            mydump all custom 1000 dump_drop_algebraic_block_${blockiness}.lammpstrj id type x y z fx fy fz tqx tqy tqz c_diameter[*] c_orient[*] v_phi v_theta
+# # Explicit mapping for Ovito
+# dump_modify     mydump colname c_orient[1] quatw colname c_orient[2] quati colname c_orient[3] quatj colname c_orient[4] quatk
 
 # Prevent the frozen wall particles (type 1) from interacting with each other
 neigh_modify exclude group wall wall
@@ -79,8 +77,8 @@ fix             3 mobile nve/asphere
 compute rke all erotate/asphere
 
 # Run
-thermo          100
+thermo          1000
 thermo_style  custom time step ke c_rke 
 
 timestep        0.0001
-run             20000000
+run             200000
