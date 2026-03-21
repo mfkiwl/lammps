@@ -789,6 +789,7 @@ void FixColvars::setup_colvars()
     size_array_rows = sizes_array[0];
     size_array_cols = sizes_array[1];
   }
+  output->thermo->colname_auto();
 }
 
 double FixColvars::compute_array(int m, int n)
