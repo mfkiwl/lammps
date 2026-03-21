@@ -175,26 +175,6 @@ This fix accesses a global array of the current values of each collective variab
 * `f_ID[I][1]` for a scalar-valued collective variable
 * `f_ID[I][1], ..., f_ID[I][N]` for a vector-valued collective variable
 
-Almost all collective variables are scalars:
-
-* distances (``distance``, ``distanceZ``, ``distanceXY``, ``distanceInv``)
-
-* angles (``angle``, ``dipoleAngle``, ``dihedral``, ``polarTheta``, ``polarPhi``)
-
-* contacts (``coordNum``, ``selfCoordNum``, ``hBond``)
-
-* collective metrics, rotations, protein structure descriptors, geometric path, arithmetic path, ...
-
-with the exception of:
-
-* 3-dimensional vector (``distanceVec`` and ``distanceDir``)
-
-* 4-dimensional unit quaternion (``orientation``)
-
-* flat vector of :math:`N \!\times\! 3` coordinates (``cartesian``)
-
-* flat vector of :math:`N_1 \!\times\! N_2` distances (``distancePairs``)
-
 
 Controlling Colvars via `fix_modify`
 """"""""""""""""""""""""""""""""""""
