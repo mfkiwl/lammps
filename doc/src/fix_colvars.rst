@@ -195,12 +195,6 @@ with the exception of:
 
 * flat vector of :math:`N_1 \!\times\! N_2` distances (``distancePairs``)
 
-This fix also supports automatically generated thermo column names when using
-:doc:`thermo_modify colname auto <thermo_modify>`. The thermo column names
-are "f\_", followed by the fix ID, followed by a colon, followed by the collective
-variable name as defined by the Colvars configuration, followed by the global
-array row and column indices.
-
 
 Controlling Colvars via `fix_modify`
 """"""""""""""""""""""""""""""""""""
