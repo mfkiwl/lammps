@@ -630,9 +630,9 @@ primitive for ellipsoids.  The mesh is constructed by iteratively
 refining a triangle mesh representing an icosahedron where each triangle
 is replaced by four triangles in each iteration.  For a sufficiently
 smooth representation a refinement level of 4 to 6 is required, which
-will cause a significant slowdown of the rendering of the image.  Also,
-some artifacts can happen due to rounding which can be somewhat
-minimized using FSAA (which causes further slowdown of the rendering).
+can cause a significant slowdown of the rendering of the image due to
+the large number of triangles that need to be drawn.  This will be
+more pronounced when enabling FSAA or SSAO or both.
 
 .. |ellipsoid1| image:: img/ellipsoid-level2.png
    :width: 33%
