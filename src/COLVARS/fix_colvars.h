@@ -60,7 +60,6 @@ class FixColvars : public Fix {
   void post_run() override;
   double compute_scalar() override;
   double compute_array(int, int) override;
-  std::string get_thermo_colname(int) override;
   double memory_usage() override;
 
   void write_restart(FILE *) override;
