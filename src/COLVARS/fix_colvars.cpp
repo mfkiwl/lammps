@@ -800,9 +800,10 @@ double FixColvars::compute_array(int m, int n)
                  id, m+1, n+1, variables.size());
     }
     const auto& variable = variables[m]->value();
+    const auto& name = variables[m]->name;
     if (n >= variable.size()) {
       error->all(FLERR, Error::NOLASTLINE, "f_{}[{}][{}] out-of-bounds: collective variable {} has size {}.",
-                 id, m+1, n+1, variable.name, variable.size());
+                 id, m+1, n+1, name, variable.size());
     }
     value = variable[n];
   }
