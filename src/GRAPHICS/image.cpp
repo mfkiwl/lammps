@@ -577,8 +577,8 @@ void Image::clear()
   int blue  = background[2];
 
   if (background2[0] < 0.0) {
-    for (int iy = 0; iy < height; iy ++) {
-      for (int ix = 0; ix < width; ix ++) {
+    for (int iy = 0; iy < height; ++iy) {
+      for (int ix = 0; ix < width; ++ix) {
         imageBuffer[iy * width * 3 + ix * 3 + 0] = red;
         imageBuffer[iy * width * 3 + ix * 3 + 1] = green;
         imageBuffer[iy * width * 3 + ix * 3 + 2] = blue;
@@ -586,12 +586,12 @@ void Image::clear()
       }
     }
   } else {
-    for (int iy = 0; iy < height; iy ++) {
+    for (int iy = 0; iy < height; ++iy) {
       double fraction = (double) iy / (double) height;
       red   = static_cast<int>(fraction * background2[0] + (1.0 - fraction) * background[0]);
       green = static_cast<int>(fraction * background2[1] + (1.0 - fraction) * background[1]);
       blue  = static_cast<int>(fraction * background2[2] + (1.0 - fraction) * background[2]);
-      for (int ix = 0; ix < width; ix ++) {
+      for (int ix = 0; ix < width; ++ix) {
         imageBuffer[iy * width * 3 + ix * 3 + 0] = red;
         imageBuffer[iy * width * 3 + ix * 3 + 1] = green;
         imageBuffer[iy * width * 3 + ix * 3 + 2] = blue;
@@ -1004,8 +1004,8 @@ void Image::draw_cube(const double *x, const double *surfaceColor, double diamet
   xc += width / 2;
   yc += height / 2;
 
-  for (int iy = yc - pixelHalfWidth; iy <= yc + pixelHalfWidth; iy ++) {
-    for (int ix = xc - pixelHalfWidth; ix <= xc + pixelHalfWidth; ix ++) {
+  for (int iy = yc - pixelHalfWidth; iy <= yc + pixelHalfWidth; ++iy) {
+    for (int ix = xc - pixelHalfWidth; ix <= xc + pixelHalfWidth; ++ix) {
       if (iy < 0 || iy >= height || ix < 0 || ix >= width) continue;
       if (((opacity < 1.0) && (transthresh[ix % TRANK][iy % TRANK] > opacity)) || (opacity <= 0.0))
         continue;
@@ -1020,7 +1020,7 @@ void Image::draw_cube(const double *x, const double *surfaceColor, double diamet
       // only render up to 3 which are facing the camera
       // these checks short circuit a dot product, testing for > 0
 
-      for (int dim = 0; dim < 3; dim ++) {
+      for (int dim = 0; dim < 3; ++dim) {
         if (camDir[dim] > 0) {          // positive faces camera
           t = (radius - surface[dim]) / camDir[dim];
           normal[0] = camRight[dim];
@@ -1160,8 +1160,8 @@ void Image::draw_cylinder(const double *x, const double *y,
 
   double a = camLDir[0] * camLDir[0];
 
-  for (int iy = yc - pixelHalfHeight; iy <= yc + pixelHalfHeight; iy ++) {
-    for (int ix = xc - pixelHalfWidth; ix <= xc + pixelHalfWidth; ix ++) {
+  for (int iy = yc - pixelHalfHeight; iy <= yc + pixelHalfHeight; ++iy) {
+    for (int ix = xc - pixelHalfWidth; ix <= xc + pixelHalfWidth; ++ix) {
       if (iy < 0 || iy >= height || ix < 0 || ix >= width) continue;
       if (((opacity < 1.0) && (transthresh[ix % TRANK][iy % TRANK] > opacity)) || (opacity <= 0.0))
         continue;
@@ -1291,8 +1291,8 @@ void Image::draw_triangle(const double *x, const double *y, const double *z,
   int pixelDown = static_cast<int>(ceil(pixelDownFull));
   int pixelUp = static_cast<int>(ceil(pixelUpFull));
 
-  for (int iy = yc - pixelDown; iy <= yc + pixelUp; iy ++) {
-    for (int ix = xc - pixelLeft; ix <= xc + pixelRight; ix ++) {
+  for (int iy = yc - pixelDown; iy <= yc + pixelUp; ++iy) {
+    for (int ix = xc - pixelLeft; ix <= xc + pixelRight; ++ix) {
       if (iy < 0 || iy >= height || ix < 0 || ix >= width) continue;
       if (((opacity < 1.0) && (transthresh[ix % TRANK][iy % TRANK] > opacity)) || (opacity <= 0.0))
         continue;
@@ -1446,8 +1446,8 @@ void Image::draw_trinorm(const double *x, const double *y, const double *z,
   if (denom == 0.0) return;    // degenerate triangle
   double inv_denom = 1.0 / denom;
 
-  for (int iy = yc - pixelDown; iy <= yc + pixelUp; iy ++) {
-    for (int ix = xc - pixelLeft; ix <= xc + pixelRight; ix ++) {
+  for (int iy = yc - pixelDown; iy <= yc + pixelUp; ++iy) {
+    for (int ix = xc - pixelLeft; ix <= xc + pixelRight; ++ix) {
       if (iy < 0 || iy >= height || ix < 0 || ix >= width) continue;
       if (((opacity < 1.0) && (transthresh[ix % TRANK][iy % TRANK] > opacity)) || (opacity <= 0.0))
         continue;
@@ -1583,7 +1583,7 @@ void Image::compute_SSAO()
   int pixelstart = static_cast<int>(1.0*me/nprocs * npixels);
   int pixelstop = static_cast<int>(1.0*(me+1)/nprocs * npixels);
 
-  // file buffer with random numbers to avoid race conditions
+  // fill buffer with random numbers to avoid race conditions
   auto *uniform = new double[pixelstop - pixelstart];
   for (int i = 0; i < pixelstop - pixelstart; ++i) uniform[i] = random->uniform();
 
@@ -1604,7 +1604,7 @@ void Image::compute_SSAO()
     double mytheta = uniform[index - pixelstart] * SSAOJitter;
     double ao = 0.0;
 
-    for (int s = 0; s < SSAOSamples; s ++) {
+    for (int s = 0; s < SSAOSamples; ++s) {
       double hx = cos(mytheta);
       double hy = sin(mytheta);
       mytheta += delTheta;
