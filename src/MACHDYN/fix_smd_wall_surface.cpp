@@ -23,7 +23,6 @@
 #include "domain.h"
 #include "error.h"
 #include "graphics.h"
-#include "math_extra.h"
 #include "memory.h"
 #include "safe_pointers.h"
 #include "text_file_reader.h"
@@ -354,15 +353,14 @@ int FixSMDWallSurface::image(int *&objs, double **&parms)
   memory->destroy(imgobjs);
   memory->destroy(imgparms);
   memory->create(imgobjs, numobjs, "wall_surface:imgobjs");
-  memory->create(imgparms, numobjs, 19, "wall_surface:imgparms");
+  memory->create(imgparms, numobjs, 10, "wall_surface:imgparms");
 
   // copy local tri object info
   numobjs = 0;
   for (int i = 0; i < nlocal; ++i) {
     if (type[i] == wall_particle_type) {
-      imgobjs[numobjs] = Graphics::TRINORM;
+      imgobjs[numobjs] = Graphics::TRI;
       imgparms[numobjs][0] = wall_particle_type;
-      // vertices
       imgparms[numobjs][1] = verts[i][0];
       imgparms[numobjs][2] = verts[i][1];
       imgparms[numobjs][3] = verts[i][2];
@@ -372,20 +370,6 @@ int FixSMDWallSurface::image(int *&objs, double **&parms)
       imgparms[numobjs][7] = verts[i][6];
       imgparms[numobjs][8] = verts[i][7];
       imgparms[numobjs][9] = verts[i][8];
-      // compute face normal from cross product of two edges
-      double d1[3] = {verts[i][3] - verts[i][0], verts[i][4] - verts[i][1],
-                       verts[i][5] - verts[i][2]};
-      double d2[3] = {verts[i][6] - verts[i][0], verts[i][7] - verts[i][1],
-                       verts[i][8] - verts[i][2]};
-      double normal[3];
-      MathExtra::cross3(d1, d2, normal);
-      MathExtra::norm3(normal);
-      // store same face normal for all 3 vertices
-      for (int k = 0; k < 3; ++k) {
-        imgparms[numobjs][10 + k] = normal[k];
-        imgparms[numobjs][13 + k] = normal[k];
-        imgparms[numobjs][16 + k] = normal[k];
-      }
       ++numobjs;
     }
   }
