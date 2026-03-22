@@ -67,6 +67,7 @@ namespace ImageObjects {
     double tipwidth;
     double diameter;
     std::vector<triangle> triangles;
+    std::vector<triangle> normals;
     int resolution;
   };
 
@@ -85,6 +86,7 @@ namespace ImageObjects {
 
    private:
     std::vector<triangle> triangles;
+    std::vector<triangle> normals;
   };
 
   class EllipsoidObj {

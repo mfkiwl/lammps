@@ -1694,6 +1694,11 @@ void DumpImage::create_image()
             image->draw_cylinder(p3, p1, color, iobj.flag2, 3, opacity);
           }
         }
+      } else if (objvec[i] == Graphics::TRINORM) {    // don't render surface meshes in 2d
+        if (domain->dimension == 3) {
+          image->draw_trinorm(&objarray[i][1], &objarray[i][4], &objarray[i][7], &objarray[i][10],
+                              &objarray[i][13], &objarray[i][16], color, color, color, opacity);
+        }
       } else if (objvec[i] == Graphics::CYLINDER) {
         image->draw_cylinder(&objarray[i][1], &objarray[i][4], color, objarray[i][7] + iobj.flag2,
                              (int) iobj.flag1, opacity);

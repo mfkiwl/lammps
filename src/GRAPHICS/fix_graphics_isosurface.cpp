@@ -55,11 +55,13 @@ constexpr int GRIDEXTRA = 4;
 using vec3 = std::array<double, 3>;
 using triangle = struct {
   std::array<vec3, 3> triangle;
+  std::array<vec3, 3> normals;
   int type;
 };
 using gridcell = struct {
   vec3 pos[8];
   double iso[8];
+  vec3 grad[8];
 };
 
 inline vec3 operator-(const vec3 &a, const vec3 &b)
@@ -67,16 +69,37 @@ inline vec3 operator-(const vec3 &a, const vec3 &b)
   return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
 }
 
-// get vertex position for a grid cell edge by interpolating between
-// the two corners based on their iso values
-void get_vertex(const gridcell &g, int c1, int c2, vec3 &vert)
+// compute the gradient at a grid point using central differences (clamped at boundaries)
+void compute_gradient(double ***isogrid, int cx, int cy, int cz, int nx, int ny, int nz, vec3 &grad)
+{
+  int xm = (cx > 0) ? cx - 1 : 0;
+  int xp = (cx < nx - 1) ? cx + 1 : nx - 1;
+  int ym = (cy > 0) ? cy - 1 : 0;
+  int yp = (cy < ny - 1) ? cy + 1 : ny - 1;
+  int zm = (cz > 0) ? cz - 1 : 0;
+  int zp = (cz < nz - 1) ? cz + 1 : nz - 1;
+  grad[0] = isogrid[xp][cy][cz] - isogrid[xm][cy][cz];
+  grad[1] = isogrid[cx][yp][cz] - isogrid[cx][ym][cz];
+  grad[2] = isogrid[cx][cy][zp] - isogrid[cx][cy][zm];
+}
+
+// get vertex position and interpolated normal for a grid cell edge
+// by interpolating between the two corners based on their iso values
+void get_vertex(const gridcell &g, int c1, int c2, vec3 &vert, vec3 &norm)
 {
   const double diff = g.iso[c2] - g.iso[c1];
   const double fraction = (fabs(diff) > 0.0) ? -g.iso[c1] / diff : 0.0;
 
-  vert[0] = g.pos[c1][0] + fraction * (g.pos[c2][0] - g.pos[c1][0]);
-  vert[1] = g.pos[c1][1] + fraction * (g.pos[c2][1] - g.pos[c1][1]);
-  vert[2] = g.pos[c1][2] + fraction * (g.pos[c2][2] - g.pos[c1][2]);
+  for (int d = 0; d < 3; ++d) {
+    vert[d] = g.pos[c1][d] + fraction * (g.pos[c2][d] - g.pos[c1][d]);
+    norm[d] = g.grad[c1][d] + fraction * (g.grad[c2][d] - g.grad[c1][d]);
+  }
+  double len = sqrt(norm[0] * norm[0] + norm[1] * norm[1] + norm[2] * norm[2]);
+  if (len > 0.0) {
+    norm[0] /= len;
+    norm[1] /= len;
+    norm[2] /= len;
+  }
 }
 
 // spread out atom data across the grid
@@ -811,6 +834,16 @@ void FixGraphicsIsosurface::end_of_step()
         g.pos[6] = {gx+delta, gy+delta, gz+delta};
         // clang-format on
 
+        // compute gradient at each corner for smooth normals
+        compute_gradient(isogrid, ix, iy, iz, nx, ny, nz, g.grad[0]);
+        compute_gradient(isogrid, ix + 1, iy, iz, nx, ny, nz, g.grad[1]);
+        compute_gradient(isogrid, ix + 1, iy + 1, iz, nx, ny, nz, g.grad[2]);
+        compute_gradient(isogrid, ix, iy + 1, iz, nx, ny, nz, g.grad[3]);
+        compute_gradient(isogrid, ix, iy, iz + 1, nx, ny, nz, g.grad[4]);
+        compute_gradient(isogrid, ix + 1, iy, iz + 1, nx, ny, nz, g.grad[5]);
+        compute_gradient(isogrid, ix + 1, iy + 1, iz + 1, nx, ny, nz, g.grad[6]);
+        compute_gradient(isogrid, ix, iy + 1, iz + 1, nx, ny, nz, g.grad[7]);
+
         // determine edge table index
         int idx = 0;
         if (g.iso[0] < 0.0) idx |= 1;
@@ -825,26 +858,29 @@ void FixGraphicsIsosurface::end_of_step()
         // gridcube is not crossed by isosurface
         if (EDGETABLE[idx] == 0) continue;
 
-        // compute the possible 12 triangle vertices
+        // compute the possible 12 triangle vertices and normals
         std::array<vec3, 12> vertices;
-        if (EDGETABLE[idx] & 1) get_vertex(g, 0, 1, vertices[0]);
-        if (EDGETABLE[idx] & 2) get_vertex(g, 1, 2, vertices[1]);
-        if (EDGETABLE[idx] & 4) get_vertex(g, 2, 3, vertices[2]);
-        if (EDGETABLE[idx] & 8) get_vertex(g, 3, 0, vertices[3]);
-        if (EDGETABLE[idx] & 16) get_vertex(g, 4, 5, vertices[4]);
-        if (EDGETABLE[idx] & 32) get_vertex(g, 5, 6, vertices[5]);
-        if (EDGETABLE[idx] & 64) get_vertex(g, 6, 7, vertices[6]);
-        if (EDGETABLE[idx] & 128) get_vertex(g, 7, 4, vertices[7]);
-        if (EDGETABLE[idx] & 256) get_vertex(g, 0, 4, vertices[8]);
-        if (EDGETABLE[idx] & 512) get_vertex(g, 1, 5, vertices[9]);
-        if (EDGETABLE[idx] & 1024) get_vertex(g, 2, 6, vertices[10]);
-        if (EDGETABLE[idx] & 2048) get_vertex(g, 3, 7, vertices[11]);
+        std::array<vec3, 12> vnormals;
+        if (EDGETABLE[idx] & 1) get_vertex(g, 0, 1, vertices[0], vnormals[0]);
+        if (EDGETABLE[idx] & 2) get_vertex(g, 1, 2, vertices[1], vnormals[1]);
+        if (EDGETABLE[idx] & 4) get_vertex(g, 2, 3, vertices[2], vnormals[2]);
+        if (EDGETABLE[idx] & 8) get_vertex(g, 3, 0, vertices[3], vnormals[3]);
+        if (EDGETABLE[idx] & 16) get_vertex(g, 4, 5, vertices[4], vnormals[4]);
+        if (EDGETABLE[idx] & 32) get_vertex(g, 5, 6, vertices[5], vnormals[5]);
+        if (EDGETABLE[idx] & 64) get_vertex(g, 6, 7, vertices[6], vnormals[6]);
+        if (EDGETABLE[idx] & 128) get_vertex(g, 7, 4, vertices[7], vnormals[7]);
+        if (EDGETABLE[idx] & 256) get_vertex(g, 0, 4, vertices[8], vnormals[8]);
+        if (EDGETABLE[idx] & 512) get_vertex(g, 1, 5, vertices[9], vnormals[9]);
+        if (EDGETABLE[idx] & 1024) get_vertex(g, 2, 6, vertices[10], vnormals[10]);
+        if (EDGETABLE[idx] & 2048) get_vertex(g, 3, 7, vertices[11], vnormals[11]);
 
         // compute the triangles for this grid cell and add them to the list
         for (int i = 0; TRITABLE[idx][i] != -1; i += 3)
           triangles.emplace_back(
               triangle{{vertices[TRITABLE[idx][i]], vertices[TRITABLE[idx][i + 1]],
                         vertices[TRITABLE[idx][i + 2]]},
+                       {vnormals[TRITABLE[idx][i]], vnormals[TRITABLE[idx][i + 1]],
+                        vnormals[TRITABLE[idx][i + 2]]},
                        typegrid[ix][iy][iz]});
       }
     }
@@ -857,7 +893,7 @@ void FixGraphicsIsosurface::end_of_step()
   memory->destroy(imgobjs);
   memory->destroy(imgparms);
   memory->create(imgobjs, numobjs, "fix_graphics:imgobjs");
-  memory->create(imgparms, numobjs, 10, "fix_graphics:imgparms");
+  memory->create(imgparms, numobjs, 19, "fix_graphics:imgparms");
 
   int n = 0;
   for (const auto &tri : triangles) {
@@ -867,7 +903,7 @@ void FixGraphicsIsosurface::end_of_step()
       for (int j = 0; j < 3; ++j)
         if ((tri.triangle[i][j] < sublo[j]) || (tri.triangle[i][j] > subhi[j])) addme = false;
     if (addme) {
-      imgobjs[n] = Graphics::TRI;
+      imgobjs[n] = Graphics::TRINORM;
       imgparms[n][0] = tri.type;
       imgparms[n][1] = tri.triangle[0][0];
       imgparms[n][2] = tri.triangle[0][1];
@@ -878,6 +914,15 @@ void FixGraphicsIsosurface::end_of_step()
       imgparms[n][7] = tri.triangle[2][0];
       imgparms[n][8] = tri.triangle[2][1];
       imgparms[n][9] = tri.triangle[2][2];
+      imgparms[n][10] = tri.normals[0][0];
+      imgparms[n][11] = tri.normals[0][1];
+      imgparms[n][12] = tri.normals[0][2];
+      imgparms[n][13] = tri.normals[1][0];
+      imgparms[n][14] = tri.normals[1][1];
+      imgparms[n][15] = tri.normals[1][2];
+      imgparms[n][16] = tri.normals[2][0];
+      imgparms[n][17] = tri.normals[2][1];
+      imgparms[n][18] = tri.normals[2][2];
       ++n;
     }
   }
