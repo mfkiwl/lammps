@@ -162,9 +162,10 @@ ArrowObj::ArrowObj(double _tipl, double _tipw, double radius, int res) :
     p1[2] = (radius + tipwidth) * cos(radinc * i - RADOVERLAP);
     p2[1] = (radius + tipwidth) * sin(radinc * (i + 1));
     p2[2] = (radius + tipwidth) * cos(radinc * (i + 1));
-    // tip cone: radial normals at rim, axial at tip
+    // tip cone: radial normals at rim,
+    //           use mid-point rim normal with a little tilt for a mostly "pointy" tip
     vec3 n1 = vec3norm({0.0, p2[1], p2[2]});
-    vec3 n2 = {1.0, 0.0, 0.0};
+    vec3 n2 = vec3norm({0.25, 0.5 * (p1[1] + p2[1]), 0.5 * (p1[2] + p2[2])});
     vec3 n3 = vec3norm({0.0, p1[1], p1[2]});
     triangles.emplace_back(triangle{p2, tip, p1});
     normals.emplace_back(triangle{n1, n2, n3});
