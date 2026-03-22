@@ -1778,6 +1778,7 @@ void DumpImage::create_image()
         // @sjplimp for consistency this should be:
         // image->draw_cylinder(&objarray[i][1],&objarray[i][4],color,iobj.flag2,iobj.flag1);
         image->draw_cylinder(&objarray[i][1], &objarray[i][4], color, iobj.flag1, 3, opacity);
+
       } else if (objvec[i] == Graphics::TRI) {    // don't render surface meshes in 2d
         if (domain->dimension == 3) {
           p1 = &objarray[i][1];
@@ -1791,6 +1792,7 @@ void DumpImage::create_image()
             image->draw_cylinder(p3, p1, color, iobj.flag2, 3, opacity);
           }
         }
+
       } else if (objvec[i] == Graphics::TRINORM) {    // don't render surface meshes in 2d
         if (domain->dimension == 3) {
           double *color2 = nullptr;

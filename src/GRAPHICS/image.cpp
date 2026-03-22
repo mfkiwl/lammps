@@ -1482,7 +1482,7 @@ void Image::draw_trinorm(const double *x, const double *y, const double *z,
 
       // point outside triangle if any barycentric coordinate is negative
 
-      if (lambda_x < 0.0 || lambda_y < 0.0 || lambda_z < 0.0) continue;
+      if ((lambda_x < 0.0) || (lambda_y < 0.0) || (lambda_z < 0.0)) continue;
 
       // interpolate normal from per-vertex normals
 
@@ -1507,15 +1507,15 @@ void Image::draw_trinorm(const double *x, const double *y, const double *z,
       cNormal[2] = MathExtra::dot3(camDir, inormal);
 
       depth = dist - t;
-      draw_pixel(ix,iy,depth,cNormal,icolor);
+      draw_pixel(ix, iy, depth, cNormal, icolor);
     }
   }
 }
 
 /* ---------------------------------------------------------------------- */
 
-void Image::draw_pixel(int ix, int iy, double depth,
-                       const double *surface, const double *surfaceColor)
+void Image::draw_pixel(int ix, int iy, double depth, const double *surface,
+                       const double *surfaceColor)
 {
   if (!std::isfinite(depth)) return; // reject pixels with invalid depth buffer values
   if (!surfaceColor) return;         // reject pixels with an invalid color
