@@ -16,19 +16,16 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <cmath>
-#include <vector>
 #include <limits>
+#include <vector>
 // TODO: consider making a fixture with several setup functions?
 
-static constexpr double EPSILON = 1e-4;
+static constexpr double EPSILON      = 1e-4;
 static constexpr double SOLV_EPSILON = std::numeric_limits<double>::epsilon() * 100;
 
 TEST(HandwrittenSolver, invertible)
 {
-    double A[16] = {4, 2, 1, 3,
-                    0, 5, 2, 1,
-                    1, 0, 3, 2,
-                    2, 1, 0, 4};
+    double A[16] = {4, 2, 1, 3, 0, 5, 2, 1, 1, 0, 3, 2, 2, 1, 0, 4};
 
     double b[4] = {23.0, 20.0, 18.0, 20.0};
 
@@ -42,7 +39,6 @@ TEST(HandwrittenSolver, invertible)
         ASSERT_NEAR(b[i], expected_solution[i], SOLV_EPSILON) << "Failed at index " << i;
     }
 }
-
 
 TEST(ContactPointAndNormal, sphere)
 {
@@ -140,8 +136,9 @@ TEST(ContactPointAndNormal, supersphere_mono)
         int status = MathExtraSuperellipsoids::determine_contact_point(
             xci, R, shape, block, flag, xcj, R, shape, block, flag, X0, nij, method);
 
-        std::cout << n << " " << status << " " << X0[0] << " " << X0[1] << " " << X0[2] << " "
-                  << X0[3] << std::endl;
+        ASSERT_NEAR(X0[0], X0_analytical[0], EPSILON)
+            << "Method: " << method << " | n: " << n << " | status: " << status << " | X0: ["
+            << X0[0] << ", " << X0[1] << ", " << X0[2] << ", " << X0[3] << "]";
         ASSERT_NEAR(X0[0], X0_analytical[0], EPSILON) << "Method: " << method;
         ASSERT_NEAR(X0[1], X0_analytical[1], EPSILON) << "Method: " << method;
         ASSERT_NEAR(X0[2], X0_analytical[2], EPSILON) << "Method: " << method;
@@ -252,11 +249,12 @@ TEST(ContactPointAndNormal, supersphere_poly_geometric)
 
         // Initial Guess: Offset from 0 to test convergence
         double X0[4] = {overlap, overlap, overlap, 1.0 / 2.0}, nij[3];
-        int status = MathExtraSuperellipsoids::determine_contact_point(
+        int status   = MathExtraSuperellipsoids::determine_contact_point(
             xci, R, shapei, block, flag, xcj, R, shapej, block, flag, X0, nij, method);
 
-        std::cout << "n=" << n << " Status=" << status << " Res: " << X0[0] << " " << X0[1] << " "
-                  << X0[2] << " mu=" << X0[3] << std::endl;
+        ASSERT_NEAR(X0[0], X0_analytical[0], EPSILON)
+            << "Method: " << method << " | n: " << n << " | status: " << status << " | X0: ["
+            << X0[0] << ", " << X0[1] << ", " << X0[2] << ", " << X0[3] << "]";
 
         ASSERT_EQ(status, 0) << "Failed to converge/detect contact for n=" << n;
 

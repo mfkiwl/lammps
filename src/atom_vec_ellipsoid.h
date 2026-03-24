@@ -29,7 +29,7 @@ class AtomVecEllipsoid : virtual public AtomVec {
   enum BlockType {
     ELLIPSOID = 0, // n1 = n2 = 2
     N1_EQUAL_N2 = 1, // n1 = n2 > 2
-    GENERAL = 2, // n2 != n2 > 2
+    GENERAL = 2, // n1 != n2, n1 > 2, n2 > 2
   };
   struct Bonus {
     double shape[3];

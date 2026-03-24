@@ -439,9 +439,9 @@ int determine_contact_point(const double* xci, const double Ri[3][3], const doub
     // TODO: might use a simpler function to simply compute the gradient, to
     // avoid computing quantities already computed in compute_residual_and_jacobian
     if (flagi <= 1)
-      val_dummy = shape_and_gradient_local_n1equaln2_surfacesearch(xilocal, shapei, blocki[0], gradi);
+      val_dummy = shape_and_gradient_local_n1equaln2_surfacesearch(xilocal, shapei, blocki[0], tmp_v);
     else
-      val_dummy = shape_and_gradient_local_superquad_surfacesearch(xilocal, shapei, blocki, gradi);
+      val_dummy = shape_and_gradient_local_superquad_surfacesearch(xilocal, shapei, blocki, tmp_v);
 
     // Rotate gradient back to global frame to get normal
     MathExtra::matvec(Ri, tmp_v, gradi);

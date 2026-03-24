@@ -120,8 +120,7 @@ such interactions.  These are the various :doc:`pair styles <pair_style>` that g
 * :doc:`pair_style gran/hooke <pair_gran>`
 * :doc:`pair_style gran/hooke/history <pair_gran>`
 * :doc:`pair_style gran/hertz/history <pair_gran>`
-* :doc:`pair_style gran/hooke/history/ellipsoid <pair_gran_ellipsoid>`
-* :doc:`pair_style gran/hertz/history/ellipsoid <pair_gran_ellipsoid>`
+* :doc:`pair_style granular/superellipsoid <pair_granular_superellipsoid>`
 * :doc:`pair_style dipole/cut <pair_dipole>`
 * :doc:`pair_style gayberne <pair_gayberne>`
 * :doc:`pair_style resquared <pair_resquared>`
@@ -132,7 +131,7 @@ such interactions.  These are the various :doc:`pair styles <pair_style>` that g
 * :doc:`pair_style body/nparticle <pair_body_nparticle>`
 
 The granular pair styles are used with spherical particles.  The
-*gran/ellipsoid* granular pair styles are used with superellipsoid particles.
+*granular/superellipsoid* granular pair styles are used with superellipsoid particles.
 The dipole pair style is used with the dipole atom style, which could be
 applied to spherical or ellipsoidal particles.  The GayBerne and
 REsquared potentials require ellipsoidal particles, though they will

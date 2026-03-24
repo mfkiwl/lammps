@@ -184,7 +184,7 @@ namespace LAMMPS_NS::MathSpecial {
 
     return yy;
   }
-}    // namespace MathSpecial
+}    // namespace LAMMPS_NS::MathSpecial
 
 
 #endif

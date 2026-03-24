@@ -1426,7 +1426,7 @@ void ComputePropertyAtom::pack_block1(int n)
   for (int i = 0; i < nlocal; i++) {
     if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
       buf[n] = bonus[ellipsoid[i]].block[0];
-    else buf[n] = 1.0;
+    else buf[n] = 2.0;
     n += nvalues;
   }
 }
@@ -1442,7 +1442,7 @@ void ComputePropertyAtom::pack_block2(int n)
   for (int i = 0; i < nlocal; i++) {
     if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
       buf[n] = bonus[ellipsoid[i]].block[1];
-    else buf[n] = 1.0;
+    else buf[n] = 2.0;
     n += nvalues;
   }
 }
@@ -1536,7 +1536,7 @@ void ComputePropertyAtom::pack_quatw(int n)
     for (int i = 0; i < nlocal; i++) {
       if ((mask[i] & groupbit) && body[i] >= 0)
         buf[n] = bonus[body[i]].quat[0];
-      else buf[n] = 0.0;
+      else buf[n] = 1.0;
       n += nvalues;
     }
   } else {
@@ -1547,7 +1547,7 @@ void ComputePropertyAtom::pack_quatw(int n)
     for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit)
         buf[n] = quat[i][0];
-      else buf[n] = 0.0;
+      else buf[n] = 1.0;
       n += nvalues;
     }
   }
@@ -1568,7 +1568,7 @@ void ComputePropertyAtom::pack_quati(int n)
       for (int i = 0; i < nlocal; i++) {
         if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
           buf[n] = bonus[ellipsoid[i]].quat[1];
-        else buf[n] = 1.0;
+        else buf[n] = 0.0;
         n += nvalues;
       }
     } else {
@@ -1576,7 +1576,7 @@ void ComputePropertyAtom::pack_quati(int n)
       for (int i = 0; i < nlocal; i++) {
         if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
           buf[n] = bonus[ellipsoid[i]].quat[1];
-        else buf[n] = 1.0;
+        else buf[n] = 0.0;
         n += nvalues;
       }
     }
@@ -1622,7 +1622,7 @@ void ComputePropertyAtom::pack_quatj(int n)
       for (int i = 0; i < nlocal; i++) {
         if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
           buf[n] = bonus[ellipsoid[i]].quat[2];
-        else buf[n] = 1.0;
+        else buf[n] = 0.0;
         n += nvalues;
       }
     } else {
@@ -1630,7 +1630,7 @@ void ComputePropertyAtom::pack_quatj(int n)
       for (int i = 0; i < nlocal; i++) {
         if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
           buf[n] = bonus[ellipsoid[i]].quat[2];
-        else buf[n] = 1.0;
+        else buf[n] = 0.0;
         n += nvalues;
       }
     }
@@ -1676,7 +1676,7 @@ void ComputePropertyAtom::pack_quatk(int n)
       for (int i = 0; i < nlocal; i++) {
         if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
           buf[n] = bonus[ellipsoid[i]].quat[3];
-        else buf[n] = 1.0;
+        else buf[n] = 0.0;
         n += nvalues;
       }
     } else {
@@ -1684,7 +1684,7 @@ void ComputePropertyAtom::pack_quatk(int n)
       for (int i = 0; i < nlocal; i++) {
         if ((mask[i] & groupbit) && ellipsoid[i] >= 0)
           buf[n] = bonus[ellipsoid[i]].quat[3];
-        else buf[n] = 1.0;
+        else buf[n] = 0.0;
         n += nvalues;
       }
     }

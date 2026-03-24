@@ -469,7 +469,7 @@ inline bool MathExtraSuperellipsoids::check_intersection_axis_and_get_seed(
   MathExtra::transpose_matvec(R2, center_distance, center_distance_box2);
 
   int best_axis = -1;
-  double min_overlap = 0.0;
+  double min_overlap = std::numeric_limits<double>::max();
   const double edge_bias = 1.05;    // Prefer face contacts over edge contacts
 
   // Lambda to test an axis. Returns TRUE if SEPARATED.

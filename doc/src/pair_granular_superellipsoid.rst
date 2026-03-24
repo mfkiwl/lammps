@@ -1,6 +1,6 @@
-.. index:: pair_style granular
+.. index:: pair_style granular/superellipsoid
 
-pair_style granular command
+pair_style granular/superellipsoid command
 ===========================
 
 Syntax
