@@ -3,8 +3,6 @@
 pair_style granular/superellipsoid command
 ===========================
 
-.. versionadded:: TBD
-
 Syntax
 """"""
 
@@ -31,6 +29,8 @@ Examples
 
 Description
 """""""""""
+
+.. versionadded:: TBD
 
 The *granular/superellipsoid* style calculates granular contact forces
 between superellipsoidal particles (see :doc:`atom style ellipsoid
