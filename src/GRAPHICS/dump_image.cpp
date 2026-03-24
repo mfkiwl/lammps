@@ -1410,10 +1410,6 @@ void DumpImage::create_image()
         color = image->color2rgb("white");
       }
       savedColors saved;
-      if (estyle & 1) {
-        // brighten flat surfaces a little bit
-        saved = reset_lighting(image, 0.3, 0.8, 0.45, 0.8);
-      }
       EllipsoidObj e(elevel);
       if (avec_ellipsoid->bonus_super) {
         auto *bonus = avec_ellipsoid->bonus_super;
