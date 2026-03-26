@@ -145,7 +145,7 @@ for a motivation for the ClassII-xe force field.
    To disconnect the dissociated bond and remove higher order
    interactions (angles, dihedrals, and impropers) the following
    LAMMPS commands can be used with the *class2xe* angle style
-   :doc:`fix bond/react <fix_bond_react>` or 
+   :doc:`fix bond/react <fix_bond_react>` or
    :doc:`fix bond/break <fix_bond_break>`. See the
    :doc:`Howto bioFF <Howto_bioFF>` page for more details.
 
