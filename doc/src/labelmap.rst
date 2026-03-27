@@ -81,7 +81,7 @@ label mappings to a file as a sequence of *labelmap* commands, so the
 file can be copied into a new LAMMPS input file or read in using the
 :doc:`include <include>` command.
 
-.. versionchanged:: TBD
+.. versionadded:: TBD
 
 The *check_labels* keyword provides a warning if the type label of a
 bond, angle, dihedral, or improper defined in the simulation is not
