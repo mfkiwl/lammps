@@ -56,12 +56,12 @@ or '[' and ']', parenthesis '(' and ')', dash '-', underscore '_', plus
 '+' and equals '=' signs and more.  They must not contain blanks or any
 other whitespace.  Note that type labels must be put in single or double
 quotation marks if they contain the '#' character or if they contain a
-double (") or single quotation mark (').  If the label contains both
-a single and a double quotation mark, then triple quotation (""") must
-be used.  When enclosing a type label with quotation marks, the
-LAMMPS input parser may require adding leading or trailing blanks
-around the type label so it can identify the enclosing quotation
-marks.  Those blanks will be removed when defining the label.
+double (") or single quotation mark (').  If the label contains both a
+single and a double quotation mark, then triple quotation (""") must be
+used.  When enclosing a type label with quotation marks, the LAMMPS
+input parser may require adding leading or trailing blanks around the
+type label so it can identify the enclosing quotation marks.  Those
+blanks will be removed when defining the label.
 
 A *labelmap* command can only modify the label map for one type-kind
 (atom types, bond types, etc).  Any number of numeric-type/type-label
@@ -113,7 +113,7 @@ This command must come after the simulation box is defined by a
 :doc:`read_data <read_data>`, :doc:`read_restart <read_restart>`, or
 :doc:`create_box <create_box>` command.
 
-Label maps are currently not supported when using the KOKKOS package.
+Label maps are considered experimental when using the KOKKOS package.
 
 Related commands
 """"""""""""""""
