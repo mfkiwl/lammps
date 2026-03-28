@@ -682,7 +682,7 @@ deformation function and the corresponding computation of the surface
 normals.  LAMMPS will auto-detect which function to use.  Some
 visualizations of the ``in.drop_test``, the ``in.bowling``, and the
 ``in.super_table`` examples from the
-``examples/ASPHERE/superellipsoids_gran`` folder are shown below.
+``examples/ASPHERE/superellipsoid_gran`` folder are shown below.
 
 .. |superellipsoid1| image:: img/superellipsoids-drop.png
    :width: 23%
