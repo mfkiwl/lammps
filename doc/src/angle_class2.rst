@@ -109,7 +109,7 @@ since it is the same value from the :math:`E_a` formula.
 
 ----------
 
-.. versionadded:: TBD
+.. versionadded:: 30Mar2026
 
 The *class2xe* angle style uses the potential
 

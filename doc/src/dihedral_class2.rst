@@ -156,7 +156,7 @@ coefficients after the dihedral type.
 
 ----------
 
-.. versionadded:: TBD
+.. versionadded:: 30Mar2026
 
 The *class2xe* dihedral style uses the potential
 
