@@ -144,7 +144,7 @@ setting.
 
 For *damping* style *derivative* (the default), additional forces/torques
 are applied on shear, twisting, and bending modes. These are simply
-proportional to the rate in change in the shear, bend, and twisting angle,
+proportional to the rate of change of the shear, bend, and twisting angle,
 respectively with prefactors of :math:`\gamma_\mathrm{shear}`,
 :math:`\gamma_\mathrm{twist}`, and :math:`\gamma_\mathrm{bend}`. Details
 are described in :ref:`(Alkuino et al.) <Alkuino2026>`.
