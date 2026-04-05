@@ -780,6 +780,7 @@ dcd
 dcub
 Dcut
 de
+de Groot
 dE
 De
 deallocate
@@ -1370,6 +1371,7 @@ GaN
 ganzenmueller
 Ganzenmuller
 Gao
+Gapsys
 Gathert
 Gaus
 gauss
@@ -3605,6 +3607,7 @@ Secor
 sectoring
 sed
 Seddon
+Seeliger
 segmental
 Seibold
 Seifert
