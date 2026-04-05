@@ -15,6 +15,7 @@
 .. index:: pair_style lj/class2/coul/long/soft
 .. index:: pair_style coul/cut/soft
 .. index:: pair_style coul/cut/soft/omp
+.. index:: pair_style coul/cut/soft/gapsys
 .. index:: pair_style coul/long/soft
 .. index:: pair_style coul/long/soft/omp
 .. index:: pair_style tip4p/long/soft
@@ -60,6 +61,9 @@ pair_style coul/cut/soft command
 
 Accelerator Variants: *coul/cut/soft/omp*
 
+pair_style coul/cut/soft/gapsys command
+=======================================
+
 pair_style coul/long/soft command
 =================================
 
@@ -80,7 +84,7 @@ Syntax
 
    pair_style style args
 
-* style = *lj/cut/soft* or *lj/cut/coul/cut/soft* or *lj/cut/coul/long/soft* or *lj/cut/tip4p/long/soft* or *lj/charmm/coul/long/soft* or *lj/class2/soft* or *lj/class2/coul/cut/soft* or *lj/class2/coul/long/soft* or *coul/cut/soft* or *coul/long/soft* or *tip4p/long/soft* or *morse/soft*
+* style = *lj/cut/soft* or *lj/cut/coul/cut/soft* or *lj/cut/coul/long/soft* or *lj/cut/tip4p/long/soft* or *lj/charmm/coul/long/soft* or *lj/class2/soft* or *lj/class2/coul/cut/soft* or *lj/class2/coul/long/soft* or *coul/cut/soft* or *coul/cut/soft/gapsys* or *coul/long/soft* or *tip4p/long/soft* or *morse/soft*
 * args = list of arguments for a particular style
 
 .. parsed-literal::
@@ -120,6 +124,9 @@ Syntax
        cutoff2 = global cutoff for Coulombic (optional) (distance units)
      *coul/cut/soft* args = n alpha_C cutoff
        n, alpha_C = parameters of the soft-core potential
+       cutoff = global cutoff for Coulomb interactions (distance units)
+     *coul/cut/soft/gapsys* args = sigma_q alpha_q cutoff
+       sigma_q, alpha_q = parameters of the soft-core potential
        cutoff = global cutoff for Coulomb interactions (distance units)
      *coul/long/soft* args = n alpha_C cutoff
        n, alpha_C = parameters of the soft-core potential
@@ -178,6 +185,9 @@ Examples
    pair_coeff * * 0.28 3.1 1.0
    pair_coeff 1 1 0.28 3.1 0.0 10.0
    pair_coeff 1 1 0.28 3.1 0.0 10.0 9.5
+
+   pair_style coul/cut/soft/gapsys 1.0 2.0 9.5
+   pair_coeff * * 1.0
 
    pair_style coul/long/soft 1.0 10.0 9.5
    pair_coeff * * 1.0
@@ -369,6 +379,10 @@ used.
 
 ----------
 
+A place to include the functional form of the pair_style gapsys :ref:`(Gapsys) <Gapsys>`
+
+----------
+
 .. include:: accel_styles.rst
 
 ----------
@@ -450,3 +464,7 @@ none
 
 **(Beutler)** Beutler, Mark, van Schaik, Gerber, van Gunsteren, Chem
 Phys Lett, 222, 529 (1994).
+
+.. _Gapsys:
+
+**(Gapsys)** Gapsys, Seeliger, de Groot, J Chem Theor Comput, 8, 2373 (2012).
