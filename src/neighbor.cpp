@@ -1782,7 +1782,7 @@ void Neighbor::print_pairwise_info()
     else nperpetual++;
   }
 
-  int nbinz;
+  double nbinz;
   std::string out = "Neighbor list info ...\n";
   out += fmt::format("  update: every = {} steps, delay = {} steps, check = {}\n",
                      every, delay, dist_check ? "yes" : "no");
