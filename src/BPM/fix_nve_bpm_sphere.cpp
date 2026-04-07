@@ -56,7 +56,7 @@ FixNVEBPMSphere::FixNVEBPMSphere(LAMMPS *_lmp, int narg, char **arg) : FixNVE(_l
       else if (strcmp(arg[iarg+1],"dipole/dlm") == 0) {
         extra = DIPOLE;
         dlm = DLM;
-      } else error->all(FLERR,"Unknown keyword in fix nve/sphere update command: {}",arg[iarg+1]);
+      } else error->all(FLERR, "Unknown keyword in fix nve/bpm/sphere update command: {}", arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg], "disc") == 0) {
       inertia = 0.5;
