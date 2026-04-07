@@ -58,10 +58,10 @@ moment of inertia, as used in the time integration.
 
 If the *update* keyword is used with the *dipole* value, then the
 orientation of the dipole moment of each particle is also updated
-during the time integration, 
-similar to the :doc:`fix nve/sphere <fix_nve_sphere>` command.  
-This option should be used for models where a dipole moment is 
-assigned to finite-size particles, e.g. spheroids via use of the 
+during the time integration,
+similar to the :doc:`fix nve/sphere <fix_nve_sphere>` command.
+This option should be used for models where a dipole moment is
+assigned to finite-size particles, e.g. spheroids via use of the
 :doc:`atom_style hybrid bpm/sphere dipole <atom_style>` command.
 
 The default dipole orientation integrator can be changed to the

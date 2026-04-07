@@ -87,7 +87,7 @@ two particles.
 
 A tangential force, proportional to the tangential shear displacement
 with a stiffness of :math:`k_\mathrm{shear}`, is applied perpendicular
-to the normal direction. This tangential force also induces a torque. 
+to the normal direction. This tangential force also induces a torque.
 In addition, bending and twisting torques, proportional to angular
 bending and twisting displacements with stiffnesses of
 :math:`k_\mathrm{bend}` and :math:`k_\mathrm{twist}`, respectively,
@@ -116,7 +116,7 @@ torques are no longer computed.
 
 .. note::
    The breaking criterion uses undamped forces and torques for *frame* *average*
-   and damped forces and torques for *frame* *particle* to maintain backwards 
+   and damped forces and torques for *frame* *particle* to maintain backwards
    compatibility with previous versions of this bond style.
 
 After computing the base magnitudes of the forces and torques, they

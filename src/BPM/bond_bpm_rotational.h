@@ -57,5 +57,6 @@ class BondBPMRotational : public BondBPM {
 
 }    // namespace LAMMPS_NS
 
+
 #endif
 #endif
