@@ -42,11 +42,6 @@ Syntax
        *damping* value = *derivative* or *dem*
           damping construction
 
-.. note::
-
-   In versions of LAMMPS before (versionadded:: TBD), the bond style
-   was equivalent to using *frame* *particle* and *damping* *dem*.
-
 Examples
 """"""""
 
@@ -68,7 +63,7 @@ Description
 .. versionadded:: 4May2022
 
 The *bpm/rotational* bond style computes forces and torques based on
-deviations from the initial reference state of the two atoms.  The
+deviations from the initial reference state of the two atoms. The
 reference state is stored by each bond when it is first computed in
 the setup of a run. Data is then preserved across run commands and is
 written to :doc:`binary restart files <restart>` such that restarting
@@ -115,6 +110,7 @@ is done by setting the bond type to 0 such that forces and
 torques are no longer computed.
 
 .. note::
+
    The breaking criterion uses undamped forces and torques for *frame* *average*
    and damped forces and torques for *frame* *particle* to maintain backwards
    compatibility with previous versions of this bond style.
@@ -139,6 +135,16 @@ is the radial normal vector, and :math:`\vec{v}` is the velocity difference
 between the two particles. Similarly, additional damping forces/torques
 are applied to other modes. These details depend on the *damping*
 setting.
+
+.. versionadded:: 28Mar2023
+
+If the *break* keyword is set to *no*, LAMMPS assumes bonds should not break
+during a simulation run. This will prevent some unnecessary calculation.
+The recommended bond communication distance no longer depends on bond failure
+coefficients (which are ignored) but instead corresponds to the typical heuristic
+maximum strain used by typical non-bpm bond styles. Similar behavior to *break no*
+can also be attained by setting arbitrarily high values for all four failure
+coefficients. One cannot use *break no* with *smooth yes*.
 
 .. versionadded:: TBD
 
@@ -187,18 +193,6 @@ bonds can break and requires specific :doc:`special_bonds <special_bonds>`
 settings described in the restrictions.  Further details can be found in
 the :doc:`how to <Howto_bpm>` page on BPMs.
 
-.. versionadded:: 28Mar2023
-
-If the *break* keyword is set to *no*, LAMMPS assumes bonds should not break
-during a simulation run. This will prevent some unnecessary calculation.
-The recommended bond communication distance no longer depends on bond failure
-coefficients (which are ignored) but instead corresponds to the typical heuristic
-maximum strain used by typical non-bpm bond styles. Similar behavior to *break no*
-can also be attained by setting arbitrarily high values for all four failure
-coefficients. One cannot use *break no* with *smooth yes*.
-
-.. versionadded:: TBD
-
 The *frame* setting determines the reference used to calculate the relative
 displacement and rotation. The *particle* option uses the frame of one particle as
 described in :ref:`(Wang) <Wang2009>` and :ref:`(Wang and Mora) <Wang2009b>`.
@@ -208,6 +202,12 @@ the two particles as described in :ref:`(Alkuino et al) <Alkuino2026>`.
 The latter option implies forces do not depend on particle IDs and can be
 more stable, particularly in simulations of thin or highly distorted
 structures such as the wire example in /examples/bpm.
+
+.. note::
+
+   The previous implementation (prior to version TBD) can be recovered
+   by setting *frame* to *particle* and *damping* to *dem*, and swapping
+   the third and fourth damping factors.
 
 If the *store/local* keyword is used, an internal fix will track bonds that
 break during the simulation. Whenever a bond breaks, data is processed
