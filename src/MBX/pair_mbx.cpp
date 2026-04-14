@@ -269,11 +269,11 @@ void PairMBX::coeff(int narg, char **arg)
   }
   if (count == 0) error->all(FLERR, "Incorrect args for pair coefficients");
 
-  std::string fix_args = "";
-  for (int i = 2; i < narg; ++i) { fix_args += std::string(arg[i]) + " "; }
-
-  fix_args = fmt::format("_FIX_MBX_INTERNAL all MBX {}", fix_args);
-
+  std::string fix_args = "_FIX_MBX_INTERNAL all MBX";
+  for (int i = 2; i < narg; ++i) {
+    fix_args += " ";
+    fix_args += arg[i];
+  }
   fix_MBX = dynamic_cast<FixMBX *>(modify->add_fix(fix_args));
 }
 
