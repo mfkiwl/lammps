@@ -45,6 +45,7 @@ constexpr double DELTA = 1.0e-5;
 constexpr int RESOLUTION = 20;
 constexpr double RADINC = MY_2PI / RESOLUTION;
 
+// NOLINTBEGIN
 const std::unordered_set<std::string> vmdcolors{
     "blue",    "red",      "gray",   "orange", "yellow",  "tan",    "silver",  "green",  "white",
     "pink",    "cyan",     "purple", "lime",   "mauve",   "ochre",  "iceblue", "black",  "yellow2",
@@ -56,6 +57,7 @@ const std::unordered_set<std::string> vmdmaterials{
     "Glass2",      "Glass3",      "Glossy",       "HardPlastic", "MetallicPastel", "Steel",
     "Translucent", "Edgy",        "EdgyShiny",    "EdgyGlass",   "Goodsell",       "AOShiny",
     "AOChalky",    "AOEdgy",      "BlownGlass",   "GlassBubble", "RTChrome"};
+// NOLINTEND
 
 constexpr char draw_ellipsoid_function[] =
     "\n# VMD script code to emulate ellipsoids with trinorm graphics objects\n"
