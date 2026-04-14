@@ -30,7 +30,8 @@ class FixMBX : public Fix {
  public:
   FixMBX(class LAMMPS *, int, char **);
   ~FixMBX() override;
-  int setmask();
+
+  int setmask() override;
   void post_constructor() override;
   void init() override;
   void setup(int) override;
