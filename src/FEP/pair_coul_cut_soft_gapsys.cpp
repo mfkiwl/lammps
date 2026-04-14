@@ -361,7 +361,6 @@ double PairCoulCutSoftGapsys::single(int i, int j, int itype, int jtype,
                            double rsq, double factor_coul, double /*factor_lj*/,
                            double &fforce)
 {
-  double forcecoul, phicoul;
   double cut_inner;
 
   if (rsq > cutsq[itype][jtype]) {
@@ -371,23 +370,24 @@ double PairCoulCutSoftGapsys::single(int i, int j, int itype, int jtype,
 
   cut_inner = (1.0 + sigmaq * fabs(atom->q[i] * atom->q[j])) * alphaq * pow(lambda[itype][jtype], 1.0 / 6.0);
 
+  fforce = factor_coul * force->qqrd2e * atom->q[i] * atom->q[j];
+  double phicoul = factor_coul * force->qqrd2e * atom->q[i] * atom->q[j];
+
   if (rsq > cut_inner * cut_inner) {
 
     double r2inv = 1.0 / rsq;
     double rinv = sqrt(r2inv);
-    forcecoul = force->qqrd2e * atom->q[i] * atom->q[j] * rinv * r2inv;
-    phicoul = force->qqrd2e * atom->q[i] * atom->q[j] * rinv;
+    fforce *= rinv * r2inv;
+    phicoul *= rinv;
 
   } else {
 
-    forcecoul = - 2.0 * atom->q[i] * atom->q[j] / pow(cut_inner, 3);
-    phicoul = force->qqrd2e * atom->q[i] * atom->q[j] *
-          (rsq / pow(cut_inner, 3) - 3 * sqrt(rsq) / pow(cut_inner, 2) + 3 / cut_inner);
+    fforce *= - 2.0 / pow(cut_inner, 3) + 3.0 / (pow(cut_inner, 2) * sqrt(rsq));
+    phicoul *= rsq / pow(cut_inner, 3) - 3 * sqrt(rsq) / pow(cut_inner, 2) + 3 / cut_inner;
 
   }
 
-  fforce = factor_coul * forcecoul;
-  return factor_coul * phicoul;
+  return phicoul;
 }
 
 /* ---------------------------------------------------------------------- */
