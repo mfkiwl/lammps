@@ -29,7 +29,7 @@ class DumpDCD : public Dump {
   DumpDCD(LAMMPS *, int, char **);
   ~DumpDCD() override;
 
- private:
+ protected:
   int natoms, ntotal;
   int headerflag, nevery_save, nframes;
 
