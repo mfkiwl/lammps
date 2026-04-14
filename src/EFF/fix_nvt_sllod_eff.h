@@ -29,7 +29,7 @@ class FixNVTSllodEff : public FixNHEff {
   FixNVTSllodEff(class LAMMPS *, int, char **);
   void init() override;
 
- private:
+ protected:
   int nondeformbias;
   int psllod_flag;    // 0 for SLLOD, 1 for p-SLLOD
   int peculiar_flag;  // 0 for lab frame, 1 for peculiar
