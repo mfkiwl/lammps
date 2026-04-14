@@ -207,8 +207,8 @@ class PPPMDisp : public KSpace {
 
   void set_grid_global();
   void set_grid_global_6();
-  void set_grid_local(int, int, int, int, double &, double &, double &, double &,
-                      int &, int &, int &, int &, int &, int &, int &, int &);
+  void set_grid_local(int, int, int, int, double &, double &, double &, double &, int &, int &,
+                      int &, int &, int &, int &, int &, int &);
   void set_init_g6();
   void set_n_pppm_6();
 
@@ -328,6 +328,7 @@ class PPPMDisp : public KSpace {
   void compute_rho_coeff(FFT_SCALAR **, FFT_SCALAR **, int);
   virtual void slabcorr(int);
 
+ public:
   // grid communication
 
   void pack_forward_grid(int, void *, int, int *) override;
