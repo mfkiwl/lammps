@@ -55,13 +55,15 @@ constexpr char cite_ilp[] =
     " year =    2018,\n"
     "}\n\n";
 
+// NOLINTBEGIN
 // to indicate which potential style was used in outputs
 std::map<int, const std::string> variant_map = {
     {PairILPGrapheneHBN::ILP_GrhBN, "ilp/graphene/hbn"},
     {PairILPGrapheneHBN::ILP_TMD, "ilp/tmd"},
     {PairILPGrapheneHBN::AIP_WATER_2DM, "aip/water/2dm"},
     {PairILPGrapheneHBN::SAIP_METAL, "saip/metal"},
-    {PairILPGrapheneHBN::SAIP_METAL_TMD, "saip/metal/tmd"}};    // NOLINT
+    {PairILPGrapheneHBN::SAIP_METAL_TMD, "saip/metal/tmd"}};
+// NOLINTEND
 }    // namespace
 /* ---------------------------------------------------------------------- */
 
