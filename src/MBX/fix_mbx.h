@@ -22,8 +22,6 @@ FixStyle(MBX, FixMBX)
 
 #include "fix.h"
 
-
-
 namespace LAMMPS_NS {
 
 class FixMBX : public Fix {
@@ -31,33 +29,29 @@ class FixMBX : public Fix {
 
  public:
   FixMBX(class LAMMPS *, int, char **);
-  ~FixMBX();
+  ~FixMBX() override;
   int setmask();
-  virtual void post_constructor();
-  virtual void init();
-  virtual void init_storage();
-  void setup(int);
-  void min_setup(int);
-  virtual void setup_post_neighbor();
-  virtual void post_neighbor();
-  void min_post_neighbor();
-  void setup_pre_force(int);
-  virtual void pre_force(int);
+  void post_constructor() override;
+  void init() override;
+  void setup(int) override;
+  void min_setup(int) override;
+  void min_pre_force(int) override;
+  void setup_post_neighbor() override;
+  void post_neighbor() override;
+  void min_post_neighbor() override;
+  void setup_pre_force(int) override;
+  void pre_force(int) override;
 
-  void min_setup_pre_force(int);
-  void min_pre_force(int);
+  void setup_pre_exchange() override;
+  void pre_exchange() override;
 
-  void setup_pre_exchange();
-  void pre_exchange();
-
-  void post_force(int);
-  void min_post_force(int);
+  void post_force(int) override;
+  void min_post_force(int) override;
 
  protected:
   struct MBXImpl *mbx_impl;
   class PairMBX *pair_mbx;    // pointer to MBX pair_style
 
-  static std::string cite_pair_mbx;
   int me, nprocs;
   bigint ngroup;
 
@@ -72,17 +66,17 @@ class FixMBX : public Fix {
 
   int print_verbose;
 
-  int num_mol_types;    // # of unique molecule types
-  int num_molecules;    // total # of molecules
+  int num_mol_types;                     // # of unique molecule types
+  int num_molecules;                     // total # of molecules
   int *num_atoms_per_mol;                // array of # of atoms per molecule for each type
   int *lower_atom_type_index_in_mol;     // array with the lowest atom type index in the monomer
   int *higher_atom_type_index_in_mol;    // array with the highest atom type index in the monomer
   int **order_in_mol;                    // array with the atom order for each monomer
-  char **mol_names;    // array of molecule names
+  char **mol_names;                      // array of molecule names
 
   int *mol_type;      // per-atom array of molecule type
   int *mol_anchor;    // per-atom array 1/0 if anchor atom of a molecule
-  int *mol_local;    // per-molecule array 1/0 if molecule has at least one local particle
+  int *mol_local;     // per-molecule array 1/0 if molecule has at least one local particle
 
   int mbx_num_atoms, mbx_num_ext;
   int mbx_num_atoms_local, mbx_num_ext_local;
@@ -151,6 +145,9 @@ class FixMBX : public Fix {
 
   double **mbx_dip;
 
+  void init_storage();
+  void min_setup_pre_force(int);
+
   void mbx_init();
   void mbx_init_local();
 
@@ -168,12 +165,12 @@ class FixMBX : public Fix {
   void add_monomer_atom_types(char *, std::vector<std::string> &);
   std::pair<int, int> parse_dp1_range(const std::string &);
 
-  virtual int pack_forward_comm(int, int *, double *, int, int *);
-  virtual void unpack_forward_comm(int, int, double *);
-  virtual void grow_arrays(int);
-  virtual void copy_arrays(int, int, int);
-  virtual int pack_exchange(int, double *);
-  virtual int unpack_exchange(int, double *);
+  int pack_forward_comm(int, int *, double *, int, int *) override;
+  void unpack_forward_comm(int, int, double *) override;
+  void grow_arrays(int) override;
+  void copy_arrays(int, int, int) override;
+  int pack_exchange(int, double *) override;
+  int unpack_exchange(int, double *) override;
 };
 
 }    // namespace LAMMPS_NS
