@@ -910,7 +910,7 @@ void EwaldDisp::compute_force()
         t[1] += -mui[2]*h->x*im2 + mui[0]*h->z*im2;
         t[2] += -mui[0]*h->y*im2 + mui[1]*h->x*im2;
         if (func[0]) {                                      // charge-dipole
-          double qi = *(q)*c[0];
+          double qi = (*q)*c[0];
           im = - (*ke)*(zc.re*cek_coul->re -
               cek_coul->im*zc.im)*(mui[0]*h->x+mui[1]*h->y+mui[2]*h->z);
           im += (*ke)*(zc.re*cek->re - cek->im*zc.im)*qi;
@@ -1094,7 +1094,7 @@ void EwaldDisp::compute_energy_peratom()
         double muk = (mui[0]*h->x+mui[1]*h->y+mui[2]*h->z);
         mysum[9] += (*ke)*(cek->re*zc.re - cek->im*zc.im)*muk;
         if (func[0]) {                                      // charge-dipole
-          double qj = *(q)*c[0];
+          double qj = (*q)*c[0];
           mysum[9] += (*ke)*(cek_coul->im*zc.re + cek_coul->re*zc.im)*muk;
           mysum[9] -= (*ke)*(cek->re*zc.im + cek->im*zc.re)*qj;
         }
@@ -1372,7 +1372,7 @@ void EwaldDisp::compute_virial_peratom()
          mysum[9][5] += *(kv++)*r;
          if (func[0]) {                                      // charge-dipole
            kv -= 6;
-           double qj = *(q)*c[0];
+           double qj = (*q)*c[0];
            r = (cek_coul->im*zc.re + cek_coul->re*zc.im)*muk;
            r += -(cek->re*zc.im + cek->im*zc.re)*qj;
            mysum[9][0] += *(kv++)*r; mysum[9][1] += *(kv++)*r; mysum[9][2] += *(kv++)*r;
