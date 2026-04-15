@@ -278,7 +278,7 @@ void PairMBX::coeff(int narg, char **arg)
    init for one type pair i,j and corresponding j,i
 ------------------------------------------------------------------------- */
 
-double PairMBX::init_one(int i, int j)
+double PairMBX::init_one(int /*i*/, int /*j*/)
 {
   return cut_global;
 }
