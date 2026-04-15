@@ -245,9 +245,9 @@ class PPPMDisp : public KSpace {
 
   void compute_sf_precoeff(int, int, int, int, int, int, int, int, int, int, double *, double *,
                            double *, double *, double *, double *);
-  void compute_gf();
+  virtual void compute_gf();
   void compute_sf_coeff();
-  void compute_gf_6();
+  virtual void compute_gf_6();
   void compute_sf_coeff_6();
 
   virtual void particle_map(double, double, double, double, int **, int, int, int, int, int, int,

@@ -165,10 +165,11 @@ class FixMBX : public Fix {
   void add_monomer_atom_types(char *, std::vector<std::string> &);
   std::pair<int, int> parse_dp1_range(const std::string &);
 
-  int pack_forward_comm(int, int *, double *, int, int *) override;
-  void unpack_forward_comm(int, int, double *) override;
+ public:
   void grow_arrays(int) override;
   void copy_arrays(int, int, int) override;
+  int pack_forward_comm(int, int *, double *, int, int *) override;
+  void unpack_forward_comm(int, int, double *) override;
   int pack_exchange(int, double *) override;
   int unpack_exchange(int, double *) override;
 };

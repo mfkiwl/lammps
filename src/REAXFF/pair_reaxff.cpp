@@ -548,7 +548,7 @@ void PairReaxFF::write_reax_atoms()
   int *num_hbonds = fix_reaxff->num_hbonds;
 
   if (api->system->N > api->system->total_cap)
-    error->all(FLERR,"Too many ghost atoms");
+    error->all(FLERR,"Too many ghost atoms in ReaxFF pair style");
 
   for (int i = 0; i < api->system->N; ++i) {
     api->system->my_atoms[i].orig_id = atom->tag[i];

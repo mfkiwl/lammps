@@ -67,7 +67,7 @@ class Ewald : public KSpace {
   // triclinic
 
   int triclinic;
-  void eik_dot_r_triclinic();
+  virtual void eik_dot_r_triclinic();
   void coeffs_triclinic();
 
   // group-group interactions
