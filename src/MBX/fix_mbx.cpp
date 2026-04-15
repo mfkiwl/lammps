@@ -63,7 +63,7 @@ using namespace FixConst;
 namespace {
 
 constexpr double MBX_CUTOFF_TOL = 1e-9;
-
+// NOLINTBEGIN
 std::string cite_pair_mbx =
     std::string(
         "pair mbx command:\n\n"
@@ -83,6 +83,7 @@ std::string cite_pair_mbx =
     bblock::System::get_mbx_version() +
     "}\n"
     "}\n\n";
+// NOLINTEND
 }    // namespace
 
 /* ---------------------------------------------------------------------- */
@@ -316,8 +317,8 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   nprocs = comm->nprocs;
   mbx_impl = new MBXImpl;    //PImpl idiom to hide MBX implementation details
 
-  // // validate input arguments
-  bool validation_result = validateMBXFixParameters(narg - 3, &arg[3]);
+  // validate input arguments
+  (void) validateMBXFixParameters(narg - 3, &arg[3]);
 
   if (narg < 6) error->all(FLERR, "[MBX] Illegal fix mbx command");
 
@@ -397,8 +398,8 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   use_json = 0;
   std::string json_file;
-  print_verbose = 0;
-  print_dipoles = 1;    // dipoles are now always printed by default
+  print_verbose = false;
+  print_dipoles = true;    // dipoles are now always printed by default
   aspc_step_reset = 1000;
 
   while (iarg < narg) {
@@ -432,7 +433,7 @@ FixMBX::FixMBX(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   mol_anchor = nullptr;
   mol_local = nullptr;
 
-  grow_arrays(atom->nmax);
+  FixMBX::grow_arrays(atom->nmax);
 
   // MRR Call function to fill up arrays
   mbx_fill_system_information_from_atom();
@@ -626,14 +627,12 @@ void FixMBX::mbx_fill_system_information_from_atom()
 
   tagint *tag = atom->tag;
 
-  int mtype = -1;
   for (int i = 0; i < nall; ++i) {
     // Assign mol_type
     for (int j = 0; j < num_mol_types; ++j)
       if (atom->type[i] >= lower_atom_type_index_in_mol[j] and
           atom->type[i] <= higher_atom_type_index_in_mol[j]) {
         mol_type[i] = j;
-        mtype = j;
         break;
         // If j is max and no type has been found, types in mbx fix do not match types in data file
       } else if (j == num_mol_types - 1) {
@@ -643,13 +642,11 @@ void FixMBX::mbx_fill_system_information_from_atom()
   }
 
   // Reset anchors
-  int *last_anchor = mol_anchor + nall;
   memset(mol_anchor, 0, sizeof(int) * nall);
 
   for (int i = 0; i < nall; ++i) {
     // Assign anchor TODO careful, not necessarily true
     // Create another peratom property -> index within molecules
-    tagint itag = tag[i];
     int mtype = mol_type[i];
     bool is_ext = false;
     int na = get_num_atoms_per_monomer(mol_names[mtype], is_ext);
@@ -705,9 +702,6 @@ void FixMBX::setup_post_neighbor()
 void FixMBX::post_neighbor()
 {
   // setup after neighbor build
-
-  const int nlocal = atom->nlocal;
-  const int nghost = atom->nghost;
 
   mbx_fill_system_information_from_atom();
 
@@ -793,15 +787,11 @@ void FixMBX::min_setup_pre_force(int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void FixMBX::init_storage() {}
-
-/* ---------------------------------------------------------------------- */
-
-void FixMBX::pre_force(int vflag)
+void FixMBX::pre_force(int /*vflag*/)
 {
   // update coordinates in MBX objects
 
-  if (has_gcmc) { post_neighbor(); }
+  if (has_gcmc) post_neighbor();
   mbx_update_xyz();
   mbx_update_xyz_local();
 }
@@ -882,7 +872,7 @@ void FixMBX::pre_exchange()
 
 /* ---------------------------------------------------------------------- */
 
-void FixMBX::post_force(int vflag)
+void FixMBX::post_force(int /*vflag*/)
 {
   if (!print_dipoles) return;
 
@@ -934,7 +924,7 @@ void FixMBX::mbx_get_dipoles_local()
         // comm->exchange() will sync ghost histories w/ local particles in new decomposition
 
         bool is_ext = false;
-        int na = get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
+        (void) get_include_monomer(mol_names[mtype], anchor, include_monomer, is_ext);
 
         // add info
 
@@ -1040,9 +1030,9 @@ int FixMBX::pack_exchange(int i, double *buf)
 int FixMBX::unpack_exchange(int nlocal, double *buf)
 {
   int n = 0;
-  mol_type[nlocal] = buf[n++];
-  mol_anchor[nlocal] = buf[n++];
-  mol_local[nlocal] = buf[n++];
+  mol_type[nlocal] = (int)buf[n++];
+  mol_anchor[nlocal] = (int)buf[n++];
+  mol_local[nlocal] = (int)buf[n++];
 
   if (mbx_aspc_enabled)
     for (int j = 0; j < aspc_per_atom_size; ++j) aspc_dip_hist[nlocal][j] = buf[n++];
@@ -1737,15 +1727,8 @@ void FixMBX::mbx_init_dipole_history_local()
   const int nlocal = atom->nlocal;
   const int nall = nlocal + atom->nghost;
   tagint *tag = atom->tag;
-  double **x = atom->x;
 
   if (mbx_num_atoms_local == 0) { return; }
-
-  const double xlo = domain->boxlo[0];
-  const double ylo = domain->boxlo[1];
-  const double zlo = domain->boxlo[2];
-
-  double ximage[3];
 
   mbx_impl->ptr_mbx_local->SetNumDipoleHistory(aspc_num_hist);
 

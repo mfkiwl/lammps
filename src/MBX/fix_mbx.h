@@ -146,7 +146,6 @@ class FixMBX : public Fix {
 
   double **mbx_dip;
 
-  void init_storage();
   void min_setup_pre_force(int);
 
   void mbx_init();
