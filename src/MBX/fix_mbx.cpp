@@ -188,7 +188,7 @@ bool FixMBX::validateMBXFixParameters(int narg, char **arg)
       error->all(FLERR, "[MBX] Invalid monomer name {}", current_monomer_name);
     }
 
-    if (expected_monomer_atom_ids.size() != n_atoms)
+    if ((int)expected_monomer_atom_ids.size() != n_atoms)
       error->all(FLERR, "[MBX] Wrong number of atoms: expected {}, got {}",
                  expected_monomer_atom_ids.size(), n_atoms);
 
@@ -557,7 +557,7 @@ FixMBX::~FixMBX()
     std::vector<size_t> tmpi = mbx_impl->ptr_mbx_local->GetInfoElectrostaticsCounts();
     std::vector<double> tmpd = mbx_impl->ptr_mbx_local->GetInfoElectrostaticsTimings();
 
-    for (int i = 0; i < tmpi.size(); ++i) {
+    for (size_t i = 0; i < tmpi.size(); ++i) {
       mbxt_count[FixMBX::MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpi[i];
       mbxt_time[FixMBX::MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpd[i];
     }
@@ -567,7 +567,7 @@ FixMBX::~FixMBX()
     std::vector<size_t> tmpi_d = mbx_impl->ptr_mbx_local->GetInfoDispersionCounts();
     std::vector<double> tmpd_d = mbx_impl->ptr_mbx_local->GetInfoDispersionTimings();
 
-    for (int i = 0; i < tmpi_d.size(); ++i) {
+    for (size_t i = 0; i < tmpi_d.size(); ++i) {
       mbxt_count[FixMBX::MBXT_LABELS::DISP_PME_SETUP + i] += tmpi_d[i];
       mbxt_time[FixMBX::MBXT_LABELS::DISP_PME_SETUP + i] += tmpd_d[i];
     }
@@ -715,7 +715,7 @@ void FixMBX::post_neighbor()
     std::vector<size_t> tmpi = mbx_impl->ptr_mbx_local->GetInfoElectrostaticsCounts();
     std::vector<double> tmpd = mbx_impl->ptr_mbx_local->GetInfoElectrostaticsTimings();
 
-    for (int i = 0; i < tmpi.size(); ++i) {
+    for (size_t i = 0; i < tmpi.size(); ++i) {
       mbxt_count[MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpi[i];
       mbxt_time[MBXT_LABELS::ELE_PERMDIP_REAL + i] += tmpd[i];
     }
@@ -725,7 +725,7 @@ void FixMBX::post_neighbor()
     std::vector<size_t> tmpi_d = mbx_impl->ptr_mbx_local->GetInfoDispersionCounts();
     std::vector<double> tmpd_d = mbx_impl->ptr_mbx_local->GetInfoDispersionTimings();
 
-    for (int i = 0; i < tmpi_d.size(); ++i) {
+    for (size_t i = 0; i < tmpi_d.size(); ++i) {
       mbxt_count[MBXT_LABELS::DISP_PME_SETUP + i] += tmpi_d[i];
       mbxt_time[MBXT_LABELS::DISP_PME_SETUP + i] += tmpd_d[i];
     }
@@ -759,7 +759,7 @@ void FixMBX::min_post_neighbor()
 
 /* ---------------------------------------------------------------------- */
 
-void FixMBX::setup(int vflag)
+void FixMBX::setup(int /*vflag*/)
 {
   mbx_get_dipoles_local();
 }
@@ -818,7 +818,7 @@ void FixMBX::pre_exchange()
 
   // save copy of dipole history
 
-  aspc_num_hist = mbx_impl->ptr_mbx_local->GetNumDipoleHistory();
+  aspc_num_hist = (int)mbx_impl->ptr_mbx_local->GetNumDipoleHistory();
 
   //  printf("# of histories= %i\n",aspc_num_hist);
 
@@ -1557,10 +1557,10 @@ void FixMBX::mbx_update_xyz()
 
   }    // for(i<nall)
 
-  if (xyz.size() != indx * 3) error->one(FLERR, "Inconsistent # of atoms");
+  if ((int)xyz.size() != indx * 3) error->one(FLERR, "Inconsistent # of atoms");
   mbx_impl->ptr_mbx->SetRealXyz(xyz);
 
-  if (xyz_ext.size() != indx_ext * 3) error->one(FLERR, "Inconsistent # of external charges");
+  if ((int)xyz_ext.size() != indx_ext * 3) error->one(FLERR, "Inconsistent # of external charges");
   if (mbx_num_ext > 0) { mbx_impl->ptr_mbx->SetExternalChargesAndPositions(chg_ext, xyz_ext); }
 
   mbxt_stop(MBXT_LABELS::UPDATE_XYZ);
@@ -1698,10 +1698,10 @@ void FixMBX::mbx_update_xyz_local()
 
   }    // for(i<nall)
 
-  if (xyz.size() != indx * 3) error->one(FLERR, "Inconsistent # of atoms");
+  if ((int)xyz.size() != indx * 3) error->one(FLERR, "Inconsistent # of atoms");
   mbx_impl->ptr_mbx_local->SetRealXyz(xyz);
 
-  if (xyz_ext.size() != indx_ext * 3) error->one(FLERR, "Inconsistent # of external charges");
+  if ((int)xyz_ext.size() != indx_ext * 3) error->one(FLERR, "Inconsistent # of external charges");
   if (mbx_num_ext_local > 0) {
     mbx_impl->ptr_mbx_local->SetExternalChargesAndPositions(chg_ext, xyz_ext);
   }

@@ -105,9 +105,9 @@ void PairMBX::compute(int eflag, int vflag)
   bblock::System *ptr_mbx_local =
       fix_MBX->mbx_impl->ptr_mbx_local;    // compute PME terms in parallel w/ sub-domains
 
-  double mbx_e2b_local, mbx_e2b_ghost;
-  double mbx_e3b_local, mbx_e3b_ghost;
-  double mbx_e4b_local, mbx_e4b_ghost;
+  double mbx_e2b_ghost;
+  double mbx_e3b_ghost;
+  double mbx_e4b_ghost;
   double mbx_disp_real, mbx_disp_pme;
 
   // compute energy
@@ -117,11 +117,8 @@ void PairMBX::compute(int eflag, int vflag)
   mbx_e3b = 0.0;
   mbx_e4b = 0.0;
 
-  mbx_e2b_local = 0.0;
   mbx_e2b_ghost = 0.0;
-  mbx_e3b_local = 0.0;
   mbx_e3b_ghost = 0.0;
-  mbx_e4b_local = 0.0;
   mbx_e4b_ghost = 0.0;
 
   mbx_disp_real = 0.0;
