@@ -1433,23 +1433,16 @@ void FixMBX::mbx_init_local()
   mbx_impl->ptr_mbx_local->SetPeriodicity(!domain->nonperiodic);
 
   std::vector<int> egrid = mbx_impl->ptr_mbx_local->GetFFTDimensionElectrostatics(1);
-  std::vector<int> dgrid = mbx_impl->ptr_mbx_local->GetFFTDimensionDispersion(
-      1);    // will return mesh even for gas-phase
+  // will return mesh even for gas-phase
+  std::vector<int> dgrid = mbx_impl->ptr_mbx_local->GetFFTDimensionDispersion(1);
 
   if (print_verbose && first_step && comm->me == 0) {
     std::string mbx_settings_ = mbx_impl->ptr_mbx_local->GetCurrentSystemConfig();
-    if (screen) {
-      fprintf(screen, "\n[MBX] 'Local' Settings\n%s\n", mbx_settings_.c_str());
-      fprintf(screen, "[MBX] LOCAL electrostatics FFT grid= %i %i %i\n", egrid[0], egrid[1],
-              egrid[2]);
-      fprintf(screen, "[MBX] LOCAL dispersion FFT grid= %i %i %i\n", dgrid[0], dgrid[1], dgrid[2]);
-    }
-    if (logfile) {
-      fprintf(logfile, "\n[MBX] 'Local' Settings\n%s\n", mbx_settings_.c_str());
-      fprintf(logfile, "[MBX] LOCAL electrostatics FFT grid= %i %i %i\n", egrid[0], egrid[1],
-              egrid[2]);
-      fprintf(logfile, "[MBX] LOCAL dispersion FFT grid= %i %i %i\n", dgrid[0], dgrid[1], dgrid[2]);
-    }
+    utils::logmesg(lmp, "\n[MBX] 'Local' Settings\n{}\n", mbx_settings_);
+    utils::logmesg(lmp, "[MBX] LOCAL electrostatics FFT grid= {} {} {}\n", egrid[0], egrid[1],
+                   egrid[2]);
+    utils::logmesg(lmp, "[MBX] LOCAL dispersion FFT grid= {} {} {}\n", dgrid[0], dgrid[1],
+                   dgrid[2]);
   }
 
   // check if using cg or aspc integrator for MBX dipoles
@@ -1798,6 +1791,7 @@ void FixMBX::mbxt_stop(int T)
   mbxt_count[T]++;
 }
 
+// only called from MPI rank 0
 void FixMBX::mbxt_print_time(const char *name, int T, double *d)
 {
   double tavg = d[T];
@@ -1806,13 +1800,8 @@ void FixMBX::mbxt_print_time(const char *name, int T, double *d)
 
   double p = tmax / d[MBXT_LABELS::NUM_TIMERS * 3] * 100.0;
 
-  if (screen)
-    fprintf(screen, "[MBX] %-20s:  %12.5g  %12.5g  %12.5g  %8i %8.2f%%\n", name, tmin, tavg, tmax,
-            mbxt_count[T], p);
-
-  if (logfile)
-    fprintf(logfile, "[MBX] %-20s:  %12.5g  %12.5g  %12.5g  %8i %8.2f%%\n", name, tmin, tavg, tmax,
-            mbxt_count[T], p);
+  utils::logmesg(lmp, "[MBX] {:<20}:  {:<12.5g}  {:<12.5g}  {:<12.5g}  {:8d} {:8.2f}%\n", name, tmin,
+                 tavg, tmax, mbxt_count[T], p);
 }
 
 void FixMBX::mbxt_write_summary()
@@ -1834,30 +1823,14 @@ void FixMBX::mbxt_write_summary()
 
   for (int i = 0; i < MBXT_LABELS::NUM_TIMERS; ++i) tavg[i] /= (double) nprocs;
 
-  if (screen) {
-    fprintf(screen, "\n[MBX] Total MBX fix/pair time= %f seconds\n",
-            t[MBXT_LABELS::NUM_TIMERS * 3]);
-    fprintf(screen, "[MBX] Timing Summary\n");
-    fprintf(screen,
-            "[MBX] kernel                      tmin          tavg          tmax         count   "
-            "%%total\n");
-    fprintf(
-        screen,
-        "[MBX] "
-        "-----------------------------------------------------------------------------------\n");
-  }
-  if (logfile) {
-    fprintf(logfile, "\n[MBX] Total MBX fix/pair time= %f seconds\n",
-            t[MBXT_LABELS::NUM_TIMERS * 3]);
-    fprintf(logfile, "[MBX] Timing Summary\n");
-    fprintf(logfile,
-            "[MBX] kernel                      tmin          tavg          tmax         count   "
-            "%%total\n");
-    fprintf(
-        logfile,
-        "[MBX] "
-        "-----------------------------------------------------------------------------------\n");
-  }
+  utils::logmesg(
+      lmp,
+      "\n[MBX] Total MBX fix/pair time= {} seconds\n"
+      "[MBX] Timing Summary\n"
+      "[MBX] kernel                      tmin          tavg          tmax         count   %%total\n"
+      "[MBX] "
+      "-----------------------------------------------------------------------------------\n",
+      t[MBXT_LABELS::NUM_TIMERS * 3]);
 
   mbxt_print_time("INIT", MBXT_LABELS::INIT, t);
   mbxt_print_time("UPDATE_XYZ", MBXT_LABELS::UPDATE_XYZ, t);
@@ -1875,26 +1848,12 @@ void FixMBX::mbxt_write_summary()
   mbxt_print_time("UPDATE_XYZ_LOCAL", MBXT_LABELS::UPDATE_XYZ_LOCAL, t);
   mbxt_print_time("ACCUMULATE_F_LOCAL", MBXT_LABELS::ACCUMULATE_F_LOCAL, t);
 
-  if (screen) {
-    fprintf(screen, "\n\n[MBX] Electrostatics Summary\n");
-    fprintf(screen,
-            "[MBX] kernel                      tmin          tavg          tmax         count   "
-            "%%total\n");
-    fprintf(
-        screen,
-        "[MBX] "
-        "-----------------------------------------------------------------------------------\n");
-  }
-  if (logfile) {
-    fprintf(logfile, "\n\n[MBX] Electrostatics Summary\n");
-    fprintf(logfile,
-            "[MBX] kernel                      tmin          tavg          tmax         count   "
-            "%%total\n");
-    fprintf(
-        logfile,
-        "[MBX] "
-        "-----------------------------------------------------------------------------------\n");
-  }
+  utils::logmesg(
+      lmp,
+      "\n\n[MBX] Electrostatics Summary\n"
+      "[MBX] kernel                      tmin          tavg          tmax         count   %%total\n"
+      "[MBX] "
+      "-----------------------------------------------------------------------------------\n");
 
   mbxt_print_time("ELE_PERMDIP_REAL", MBXT_LABELS::ELE_PERMDIP_REAL, t);
   mbxt_print_time("ELE_PERMDIP_PME", MBXT_LABELS::ELE_PERMDIP_PME, t);
