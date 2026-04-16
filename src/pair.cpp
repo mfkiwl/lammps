@@ -46,7 +46,7 @@ using MathSpecial::powint;
 
 namespace {
 enum { NONE, RLINEAR, RSQ, BMP };
-// NOLIINTNEXTLINE
+// NOLINTNEXTLINE
 const std::vector<std::string> mixing_rule_names{"geometric", "arithmetic", "sixthpower"};
 }    // namespace
 
