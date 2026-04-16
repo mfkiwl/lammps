@@ -18,14 +18,15 @@
 #include "compute_chunk_atom.h"
 #include "domain.h"
 #include "error.h"
+#include "force.h"
 #include "graphics.h"
 #include "image_objects.h"
 #include "memory.h"
 #include "modify.h"
+#include "pair.h"
 #include "update.h"
 
 #include <cstring>
-#include <vector>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -53,6 +54,7 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
   // defaults
   numobjs = 0;
   radius = 0.0;
+  has_global_radius = false;
   smooth = true;
 
   // parse optional args
@@ -62,8 +64,8 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
     if (strcmp(arg[iarg], "radius") == 0) {
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk radius", error);
       radius = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
-      if (radius < 0.0)
-        error->all(FLERR, iarg + 1, "Fix graphics/chunk radius value must be >= 0");
+      if (radius < 0.0) error->all(FLERR, iarg + 1, "Fix graphics/chunk radius value must be >= 0");
+      has_global_radius = true;
       iarg += 2;
     } else if (strcmp(arg[iarg], "shading") == 0) {
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk shading", error);
@@ -138,10 +140,19 @@ void FixGraphicsChunk::end_of_step()
   const double *const *const x = atom->x;
   const int *const ichunk = cchunk->ichunk;
 
-  // determine per-atom radius: use per-atom property if available, else use fixed radius
+  // determine per-atom radius: use per-atom property if available, otherwise get sigma from potential
+  // else use fixed radius from input
+
+  int dim = 0;
+  double **sigma = nullptr;
+  if (force->pair) {
+    sigma = (double **) force->pair->extract("sigma", dim);
+    if (dim != 2) sigma = nullptr;
+  }
 
   double atom_radius = radius;
   bool has_peratom_radius = (atom->radius != nullptr);
+  bool has_pertype_radius = (sigma != nullptr);
 
   // gather points per chunk along with their atom types
   // chunks are 1-based, ichunk[i] == 0 means atom is not in any chunk
@@ -157,96 +168,140 @@ void FixGraphicsChunk::end_of_step()
     if (!(mask[i] & groupbit)) continue;
     int ic = ichunk[i];
     if (ic < 1 || ic > nchunk) continue;
-    double r = has_peratom_radius ? atom->radius[i] : atom_radius;
-    chunk_atoms[ic - 1].push_back({{x[i][0], x[i][1], x[i][2]}, type[i], r});
+    // use global atom radius if set, or else try per-atom or per-atomype value
+    if (!has_global_radius) {
+      if (has_peratom_radius)
+        atom_radius = atom->radius[i];
+      else if (has_pertype_radius)
+        atom_radius = sigma[type[i]][type[i]];
+    }
+
+    chunk_atoms[ic - 1].push_back({{x[i][0], x[i][1], x[i][2]}, type[i], atom_radius});
   }
 
   // build convex hulls for each chunk and collect all TRINORM objects
 
-  struct TriData {
+  struct ObjData {
     int objtype;
     double type0, type1, type2;
     vec3 v0, v1, v2;
     vec3 n0, n1, n2;
+    double radius;
   };
-  std::vector<TriData> all_tris;
+  std::vector<ObjData> all_objs;
 
   ImageObjects::ConvexHullObj hull;
 
   for (int c = 0; c < nchunk; ++c) {
-    const auto &atoms = chunk_atoms[c];
-    if (atoms.empty()) continue;
+    const auto &ichunkatoms = chunk_atoms[c];
+    if (ichunkatoms.empty()) continue;
 
-    // collect positions and determine effective radius
-    std::vector<vec3> pts;
-    pts.reserve(atoms.size());
-    double max_radius = 0.0;
-    for (const auto &ai : atoms) {
-      pts.push_back(ai.pos);
-      if (ai.aradius > max_radius) max_radius = ai.aradius;
-    }
+    if (ichunkatoms.size() == 1) {
+      ObjData od;
+      od.objtype = Graphics::SPHERE;
+      od.v0 = ichunkatoms[0].pos;
+      od.radius = ichunkatoms[0].aradius;
+      all_objs.push_back(od);
+      fprintf(stderr, "single atom\n");
+    } else if (ichunkatoms.size() == 2) {
+      ObjData od;
+      od.objtype = Graphics::CYLINDER;
+      od.v0 = ichunkatoms[0].pos;
+      od.v1 = ichunkatoms[1].pos;
+      od.radius = ichunkatoms[0].aradius;
+      all_objs.push_back(od);
+      fprintf(stderr, "stick\n");
+    } else {
+      // collect positions and determine effective radius
+      std::vector<vec3> pts;
+      pts.reserve(ichunkatoms.size());
+      double max_radius = 0.0;
+      for (const auto &ai : ichunkatoms) {
+        pts.push_back(ai.pos);
+        if (ai.aradius > max_radius) max_radius = ai.aradius;
+      }
 
-    // build convex hull with radius inflation
-    hull.build(pts, max_radius, smooth);
+      // build convex hull with radius inflation
+      hull.build(pts, max_radius, smooth);
 
-    const auto &tris = hull.get_triangles();
-    const auto &norms = hull.get_normals();
-    const auto &cidx = hull.get_color_indices();
+      const auto &tris = hull.get_triangles();
+      const auto &norms = hull.get_normals();
+      const auto &cidx = hull.get_color_indices();
 
-    // map color indices to atom types
-    for (size_t t = 0; t < tris.size(); ++t) {
-      TriData td;
-      td.objtype = Graphics::TRINORM;
+      // map color indices to atom types
+      for (size_t t = 0; t < tris.size(); ++t) {
+        ObjData od;
+        od.objtype = Graphics::TRINORM;
 
-      // get atom type for each vertex color based on closest atom index
-      int ci0 = (cidx[t][0] >= 0 && cidx[t][0] < (int) atoms.size()) ? cidx[t][0] : 0;
-      int ci1 = (cidx[t][1] >= 0 && cidx[t][1] < (int) atoms.size()) ? cidx[t][1] : 0;
-      int ci2 = (cidx[t][2] >= 0 && cidx[t][2] < (int) atoms.size()) ? cidx[t][2] : 0;
+        // get atom type for each vertex color based on closest atom index
+        int ci0 = (cidx[t][0] >= 0 && cidx[t][0] < (int) ichunkatoms.size()) ? cidx[t][0] : 0;
+        int ci1 = (cidx[t][1] >= 0 && cidx[t][1] < (int) ichunkatoms.size()) ? cidx[t][1] : 0;
+        int ci2 = (cidx[t][2] >= 0 && cidx[t][2] < (int) ichunkatoms.size()) ? cidx[t][2] : 0;
 
-      td.type0 = atoms[ci0].atype;
-      td.type1 = atoms[ci1].atype;
-      td.type2 = atoms[ci2].atype;
-      td.v0 = tris[t][0];
-      td.v1 = tris[t][1];
-      td.v2 = tris[t][2];
-      td.n0 = norms[t][0];
-      td.n1 = norms[t][1];
-      td.n2 = norms[t][2];
-      all_tris.push_back(td);
+        od.type0 = ichunkatoms[ci0].atype;
+        od.type1 = ichunkatoms[ci1].atype;
+        od.type2 = ichunkatoms[ci2].atype;
+        od.v0 = tris[t][0];
+        od.v1 = tris[t][1];
+        od.v2 = tris[t][2];
+        od.n0 = norms[t][0];
+        od.n1 = norms[t][1];
+        od.n2 = norms[t][2];
+        all_objs.push_back(od);
+      }
     }
   }
 
   // allocate and fill imgobjs and imgparms arrays
 
-  numobjs = static_cast<int>(all_tris.size());
+  numobjs = static_cast<int>(all_objs.size());
   if (numobjs > 0) {
     memory->create(imgobjs, numobjs, "fix_graphics_chunk:imgobjs");
     memory->create(imgparms, numobjs, 21, "fix_graphics_chunk:imgparms");
 
     for (int n = 0; n < numobjs; ++n) {
-      const auto &td = all_tris[n];
-      imgobjs[n] = td.objtype;
-      imgparms[n][0] = td.type0;
-      imgparms[n][1] = td.type1;
-      imgparms[n][2] = td.type2;
-      imgparms[n][3] = td.v0[0];
-      imgparms[n][4] = td.v0[1];
-      imgparms[n][5] = td.v0[2];
-      imgparms[n][6] = td.v1[0];
-      imgparms[n][7] = td.v1[1];
-      imgparms[n][8] = td.v1[2];
-      imgparms[n][9] = td.v2[0];
-      imgparms[n][10] = td.v2[1];
-      imgparms[n][11] = td.v2[2];
-      imgparms[n][12] = td.n0[0];
-      imgparms[n][13] = td.n0[1];
-      imgparms[n][14] = td.n0[2];
-      imgparms[n][15] = td.n1[0];
-      imgparms[n][16] = td.n1[1];
-      imgparms[n][17] = td.n1[2];
-      imgparms[n][18] = td.n2[0];
-      imgparms[n][19] = td.n2[1];
-      imgparms[n][20] = td.n2[2];
+      const auto &od = all_objs[n];
+      if (od.objtype == Graphics::SPHERE) {
+        imgobjs[n] = od.objtype;
+        imgparms[n][0] = od.type0;
+        imgparms[n][1] = od.v0[0];
+        imgparms[n][2] = od.v0[1];
+        imgparms[n][3] = od.v0[2];
+        imgparms[n][4] = od.radius * 2.0;
+      } else if (od.objtype == Graphics::CYLINDER) {
+        imgobjs[n] = od.objtype;
+        imgparms[n][0] = od.type0;
+        imgparms[n][1] = od.v0[0];
+        imgparms[n][2] = od.v0[1];
+        imgparms[n][3] = od.v0[2];
+        imgparms[n][4] = od.v1[0];
+        imgparms[n][5] = od.v1[1];
+        imgparms[n][6] = od.v1[2];
+        imgparms[n][7] = od.radius * 2.0;
+      } else {
+        imgobjs[n] = od.objtype;
+        imgparms[n][0] = od.type0;
+        imgparms[n][1] = od.type1;
+        imgparms[n][2] = od.type2;
+        imgparms[n][3] = od.v0[0];
+        imgparms[n][4] = od.v0[1];
+        imgparms[n][5] = od.v0[2];
+        imgparms[n][6] = od.v1[0];
+        imgparms[n][7] = od.v1[1];
+        imgparms[n][8] = od.v1[2];
+        imgparms[n][9] = od.v2[0];
+        imgparms[n][10] = od.v2[1];
+        imgparms[n][11] = od.v2[2];
+        imgparms[n][12] = od.n0[0];
+        imgparms[n][13] = od.n0[1];
+        imgparms[n][14] = od.n0[2];
+        imgparms[n][15] = od.n1[0];
+        imgparms[n][16] = od.n1[1];
+        imgparms[n][17] = od.n1[2];
+        imgparms[n][18] = od.n2[0];
+        imgparms[n][19] = od.n2[1];
+        imgparms[n][20] = od.n2[2];
+      }
     }
   }
 
