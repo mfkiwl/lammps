@@ -630,7 +630,7 @@ void FixMBX::mbx_fill_system_information_from_atom()
   for (int i = 0; i < nall; ++i) {
     // Assign mol_type
     for (int j = 0; j < num_mol_types; ++j)
-      if (atom->type[i] >= lower_atom_type_index_in_mol[j] and
+      if (atom->type[i] >= lower_atom_type_index_in_mol[j] &&
           atom->type[i] <= higher_atom_type_index_in_mol[j]) {
         mol_type[i] = j;
         break;
