@@ -261,7 +261,7 @@ void FixGraphicsChunk::end_of_step()
       vec3 edge1{od.v2[0] - od.v0[0], od.v2[1] - od.v0[1], od.v2[2] - od.v0[2]};
       vec3 edge2{od.v2[0] - od.v1[0], od.v2[1] - od.v1[1], od.v2[2] - od.v1[2]};
       vec3 shift;
-      MathExtra::cross3(edge2.data(), edge1.data(), shift.data());
+      MathExtra::cross3(edge1.data(), edge2.data(), shift.data());
       MathExtra::norm3(shift.data());
       od.radius *= 0.5;
       od.v0[0] -= od.radius * shift[0];
@@ -284,6 +284,7 @@ void FixGraphicsChunk::end_of_step()
       od.v2[0] += od.radius * shift[0];
       od.v2[1] += od.radius * shift[1];
       od.v2[2] += od.radius * shift[2];
+      std::swap(od.v0, od.v2);
       all_objs.push_back(od);
     } else {
       // use convex hull triangulation
