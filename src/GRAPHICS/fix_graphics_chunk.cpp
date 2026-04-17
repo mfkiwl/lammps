@@ -224,6 +224,16 @@ void FixGraphicsChunk::end_of_step()
                    iatoms[1].pos[2] - offset[2]};
       od.radius = 0.5 * std::min(iatoms[0].pos[3], iatoms[1].pos[3]);
       all_objs.push_back(od);
+
+      od.objtype = Graphics::SPHERE;
+      od.type0 = iatoms[0].atype;
+      od.radius = 0.5 * iatoms[0].pos[3];
+      all_objs.push_back(od);
+
+      od.type0 = iatoms[1].atype;
+      od.radius = 0.5 * iatoms[1].pos[3];
+      od.v0 = od.v1;
+      all_objs.push_back(od);
     } else if (iatoms.size() == 3) {
       // special case: a three atom cluster -> draw three cylinders and two triangles
       ObjData od;
