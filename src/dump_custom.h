@@ -134,7 +134,7 @@ class DumpCustom : public Dump {
   FnPtrWrite write_choice;    // ptr to write data functions
   void write_binary(int, double *);
   void write_string(int, double *);
-  void write_lines(int, double *);
+  virtual void write_lines(int, double *);
 
   // customize by adding a method prototype
 
