@@ -177,7 +177,7 @@ void FixGraphicsChunk::end_of_step()
       if (has_peratom_radius)
         atom_radius = atom->radius[i];
       else if (has_pertype_radius)
-        atom_radius = 0.5 * sigma[type[i]][type[i]];
+        atom_radius = sigma[type[i]][type[i]];
     }
     domain->unmap(x[i], image[i], unwrapped.data());
     chunk_atoms[ic - 1].push_back({unwrapped, type[i], atom_radius});
@@ -211,28 +211,28 @@ void FixGraphicsChunk::end_of_step()
       od.objtype = Graphics::SPHERE;
       od.type0 = iatoms[0].atype;
       od.v0 = wrapped;
-      od.radius = iatoms[0].aradius;
+      od.radius = 0.5 * iatoms[0].aradius;
       all_objs.push_back(od);
     } else if (iatoms.size() == 2) {
       // special case: a two atom cluster -> draw a cylinder
       ObjData od;
-      od.objtype = Graphics::CYLINDER;
+      od.objtype = Graphics::STICK;
       od.type0 = std::min(iatoms[0].atype, iatoms[1].atype);
       od.v0 = wrapped;
       od.v1 = vec3{iatoms[1].pos[0] - offset[0], iatoms[1].pos[1] - offset[1],
                    iatoms[1].pos[2] - offset[2]};
-      od.radius = std::max(iatoms[0].aradius, iatoms[1].aradius);
+      od.radius = 0.5 * std::max(iatoms[0].aradius, iatoms[1].aradius);
       all_objs.push_back(od);
     } else if (iatoms.size() == 3) {
       // special case: a three atom cluster -> draw three cylinders and two triangles
       ObjData od;
-      od.objtype = Graphics::CYLINDER;
+      od.objtype = Graphics::STICK;
       od.type0 = std::min({iatoms[0].atype, iatoms[1].atype, iatoms[2].atype});
       // atom 1 to atom 2
       od.v0 = wrapped;
       od.v1 = vec3{iatoms[1].pos[0] - offset[0], iatoms[1].pos[1] - offset[1],
                    iatoms[1].pos[2] - offset[2]};
-      od.radius = std::max({iatoms[0].aradius, iatoms[1].aradius, iatoms[2].aradius});
+      od.radius = 0.5 * std::max({iatoms[0].aradius, iatoms[1].aradius, iatoms[2].aradius});
       all_objs.push_back(od);
       // atom 1 to atom 3
       od.v1 = vec3{iatoms[2].pos[0] - offset[0], iatoms[2].pos[1] - offset[1],
@@ -332,7 +332,7 @@ void FixGraphicsChunk::end_of_step()
         imgparms[n][2] = od.v0[1];
         imgparms[n][3] = od.v0[2];
         imgparms[n][4] = od.radius;
-      } else if (od.objtype == Graphics::CYLINDER) {
+      } else if (od.objtype == Graphics::STICK) {
         imgobjs[n] = od.objtype;
         imgparms[n][0] = od.type0;
         imgparms[n][1] = od.v0[0];
