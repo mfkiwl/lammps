@@ -998,7 +998,7 @@ TEST(MathExtraRotation, rotation_generator_x)
     double I[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     double ans[3][3];
     MathExtra::rotation_generator_x(I, ans);
-    // Generator Lx = [[0,0,0],[0,0,-1],[0,1,0]]
+    // Generator Lx = [[0,0,0],[0,0,1],[0,-1,0]]
     EXPECT_DOUBLE_EQ(ans[0][0], 0.0);
     EXPECT_DOUBLE_EQ(ans[0][1], 0.0);
     EXPECT_DOUBLE_EQ(ans[0][2], 0.0);
@@ -1015,7 +1015,7 @@ TEST(MathExtraRotation, rotation_generator_y)
     double I[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     double ans[3][3];
     MathExtra::rotation_generator_y(I, ans);
-    // Generator Ly = [[0,0,1],[0,0,0],[-1,0,0]]
+    // Generator Ly = [[0,0,-1],[0,0,0],[1,0,0]]
     EXPECT_DOUBLE_EQ(ans[0][0], 0.0);
     EXPECT_DOUBLE_EQ(ans[0][1], 0.0);
     EXPECT_DOUBLE_EQ(ans[0][2], -1.0);
@@ -1032,7 +1032,7 @@ TEST(MathExtraRotation, rotation_generator_z)
     double I[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     double ans[3][3];
     MathExtra::rotation_generator_z(I, ans);
-    // Generator Lz = [[0,-1,0],[1,0,0],[0,0,0]]
+    // Generator Lz = [[0,1,0],[-1,0,0],[0,0,0]]
     EXPECT_DOUBLE_EQ(ans[0][0], 0.0);
     EXPECT_DOUBLE_EQ(ans[0][1], 1.0);
     EXPECT_DOUBLE_EQ(ans[0][2], 0.0);
