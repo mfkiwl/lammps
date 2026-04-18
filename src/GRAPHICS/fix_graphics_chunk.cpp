@@ -292,10 +292,11 @@ void FixGraphicsChunk::end_of_step()
       std::vector<vec4> pts;
       pts.reserve(iatoms.size());
       for (const auto &ai : iatoms) {
-        pts.push_back(vec4{ai.pos[0] - offset[0], ai.pos[1] - offset[1], ai.pos[2] - offset[2], ai.pos[3]});
+        pts.push_back(
+            vec4{ai.pos[0] - offset[0], ai.pos[1] - offset[1], ai.pos[2] - offset[2], ai.pos[3]});
       }
 
-      // build convex hull with radius inflation
+      // build convex hull with per-atom radius inflation
       hull.build(pts, smooth);
 
       const auto &tris = hull.get_triangles();
