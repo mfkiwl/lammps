@@ -201,7 +201,7 @@ void FixGraphicsChunk::end_of_step()
       if (has_peratom_radius)
         atom_radius = atom->radius[i];
       else if (has_pertype_radius)
-        atom_radius = sigma[type[i]][type[i]];
+        atom_radius = 0.5 * sigma[type[i]][type[i]];
     }
     domain->unmap(x[i], image[i], unwrapped.data());
     chunk_atoms[ic - 1].push_back({unwrapped, atom_radius, double(type[i])});
