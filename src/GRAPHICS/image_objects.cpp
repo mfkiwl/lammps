@@ -1123,20 +1123,19 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth)
 
 // draw the convex hull using per-vertex normals and colors
 
-void ConvexHullObj::draw(Image *img, const std::vector<vec3> &colors, double opacity)
+void ConvexHullObj::draw(Image *img, int flag, const double *color, double diameter, double opacity)
 {
   for (size_t i = 0; i < hull_triangles.size(); ++i) {
     const auto &tri = hull_triangles[i];
     const auto &nrm = hull_normals[i];
-    const auto &cidx = hull_color_idx[i];
 
-    // pick colors for each vertex (clamped to available colors)
-    int c0 = (cidx[0] >= 0 && cidx[0] < (int) colors.size()) ? cidx[0] : 0;
-    int c1 = (cidx[1] >= 0 && cidx[1] < (int) colors.size()) ? cidx[1] : 0;
-    int c2 = (cidx[2] >= 0 && cidx[2] < (int) colors.size()) ? cidx[2] : 0;
-
-    img->draw_trinorm(tri[0].data(), tri[1].data(), tri[2].data(), nrm[0].data(), nrm[1].data(),
-                      nrm[2].data(), colors[c0].data(), colors[c1].data(), colors[c2].data(),
-                      opacity);
+    if (flag == 1) {
+      img->draw_trinorm(tri[0].data(), tri[1].data(), tri[2].data(), nrm[0].data(), nrm[1].data(),
+                        nrm[2].data(), color, color, color, opacity);
+    } else {
+      img->draw_cylinder(tri[0].data(), tri[1].data(), color, diameter, 3, opacity);
+      img->draw_cylinder(tri[1].data(), tri[2].data(), color, diameter, 3, opacity);
+      img->draw_cylinder(tri[2].data(), tri[0].data(), color, diameter, 3, opacity);
+    }
   }
 }

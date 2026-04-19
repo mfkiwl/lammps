@@ -128,8 +128,9 @@ namespace ImageObjects {
     // smooth=false: flat normals (face normal used for all three vertices)
     void build(const std::vector<vec3> &points, bool smooth = true);
 
-    // draw the convex hull using Image draw calls with per-vertex normals and colors
-    void draw(Image *img, const std::vector<vec3> &colors, double opacity = 1.0);
+    // draw the convex hull using Image draw calls with constant color
+    // draw smooth triangle mesh with flag 1, wireframe with  flag 2
+    void draw(Image *img, int flag, const double *color, double diameter, double opacity = 1.0);
 
     // get list of triangles and normals for external use
     const std::vector<triangle> &get_triangles() const { return hull_triangles; }
