@@ -74,6 +74,7 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
   numobjs = 0;
   radius = 0.0;
   alpha = 0.0;
+  maxreplace = 100;
   has_global_radius = false;
   smooth = true;
 
@@ -91,6 +92,12 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk alpha", error);
       alpha = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
       if (alpha < 0.0) error->all(FLERR, iarg + 1, "Fix graphics/chunk alpha value must be >= 0");
+      iarg += 2;
+    } else if (strcmp(arg[iarg], "maxreplace") == 0) {
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk maxreplace", error);
+      maxreplace = utils::inumeric(FLERR, arg[iarg + 1], false, lmp);
+      if (maxreplace < 0)
+        error->all(FLERR, iarg + 1, "Fix graphics/chunk maxreplace value must be >= 0");
       iarg += 2;
     } else if (strcmp(arg[iarg], "shading") == 0) {
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk shading", error);
@@ -238,11 +245,11 @@ void FixGraphicsChunk::end_of_step()
     vec3 offset{center[0] - wrapped[0], center[1] - wrapped[1], center[2] - wrapped[2]};
 
     // create list of shifted points
-    int num_points;
+    int num_points = 1;
     std::vector<vec3> pts;
-    // if number of atoms in cluster is below 100 we replace the atom positions
-    // with vectices from an icosahedron scaled to radius.
-    if (natoms < 100) {
+    // if number of atoms in cluster is maxreplace or smaller we replace the atom
+    // positions with vectices from an icosahedron scaled to radius.
+    if (natoms <= maxreplace) {
       num_points = NUM_POINTS;
       pts.reserve(num_points * natoms);
       for (const auto &ai : iatoms) {
@@ -253,8 +260,7 @@ void FixGraphicsChunk::end_of_step()
         }
       }
     } else {
-      num_points = 1;
-      pts.reserve(num_points * natoms);
+      pts.reserve(natoms);
       for (const auto &ai : iatoms) {
         // shift position away from center by radius
         vec3 extra{ai.pos[0] - center[0], ai.pos[1] - center[1], ai.pos[2] - center[2]};

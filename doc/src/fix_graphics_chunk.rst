@@ -15,12 +15,13 @@ Syntax
 * Nevery = update graphics information every this many time steps
 * chunkID = ID of :doc:`compute chunk/atom <compute_chunk_atom>` command
 * zero or more keyword/args pairs may be appended
-* keyword = *radius* or *shading* or *alpha*
+* keyword = *radius* or *shading* or *alpha* or *maxreplace*
 
   .. parsed-literal::
 
      *radius* value = override per-atom or per-type radius if > 0.0 (distance units, default 0.0)
      *alpha* value  = override multiplier for alpha shape extraction (distance units)
+     *maxreplace* value = set the largest cluster size up to which atoms are replaced by icosahedra
      *shading* value = *smooth* or *flat*
         *smooth* = compute per-vertex normals for smooth shading (default)
         *flat* = use face normals for flat shading
@@ -42,7 +43,8 @@ Description
 
 This fix generates graphics objects from chunks of atoms defined by the
 :doc:`compute chunk/atom <compute_chunk_atom>` command.  Each chunk is
-represented by a point cloud created by replacing each atom position
+represented by a point cloud created from the atom positions.  For clusters
+with by replacing each atom position
 with the corners of an octahedron scaled to the radius of the atom.  A
 triangulated surface is created from that point cloud using a 3-D
 `Delaunay triangulation
@@ -151,4 +153,4 @@ Related commands
 Defaults
 """"""""
 
-radius = 0.0, alpha = 0.0, shading = smooth
+radius = 0.0, alpha = 0.0, shading = smooth, maxreplace = 100

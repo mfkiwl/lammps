@@ -41,6 +41,7 @@ class FixGraphicsChunk : public Fix {
   double alpha;              // triangulation algorithm parameter determining curvature
   bool has_global_radius;    // override auto-determined radius with global value
   bool smooth;               // smooth vs flat shading
+  int maxreplace;            // largest cluster size where atoms are replaced by icosahedra
   char *id_chunk;            // compute chunk/atom ID
   ComputeChunkAtom *cchunk;
 
