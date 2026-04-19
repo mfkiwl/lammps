@@ -849,7 +849,7 @@ constexpr double MIN_VISIBLE_RADIUS = 0.1;    // minimum visible radius for poin
 // Returns true on success, false for degenerate (zero-volume) tetrahedra.
 
 bool compute_circumsphere(const vec3 &p0, const vec3 &p1, const vec3 &p2, const vec3 &p3,
-                           vec3 &center, double &radius_sq)
+                          vec3 &center, double &radius_sq)
 {
   vec3 a = p1 - p0;
   vec3 b = p2 - p0;
@@ -1063,8 +1063,8 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth, dou
 
   struct Tet {
     int v[4];
-    vec3 cc;           // circumcenter
-    double cr_sq;      // circumradius squared
+    vec3 cc;         // circumcenter
+    double cr_sq;    // circumradius squared
     bool valid;
   };
 
@@ -1114,7 +1114,7 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth, dou
     // A boundary face appears in exactly one bad tetrahedron.
 
     struct CavityFace {
-      int v[3];        // face vertices (unsorted order from tet)
+      int v[3];    // face vertices (unsorted order from tet)
       int count;
     };
     std::map<std::array<int, 3>, CavityFace> face_map;
@@ -1159,7 +1159,7 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth, dou
       if (vec3dot(ab, vec3cross(ac, ad)) < 0.0) std::swap(nt.v[0], nt.v[1]);
 
       if (!compute_circumsphere(pts[nt.v[0]], pts[nt.v[1]], pts[nt.v[2]], pts[nt.v[3]], nt.cc,
-                                 nt.cr_sq)) {
+                                nt.cr_sq)) {
         // Degenerate tet: assign very large circumradius so it won't pass alpha test
         nt.cr_sq = 1.0e30;
         nt.cc = 0.25 * (pts[nt.v[0]] + pts[nt.v[1]] + pts[nt.v[2]] + pts[nt.v[3]]);
@@ -1214,7 +1214,7 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth, dou
   // tetrahedron whose circumradius^2 <= alpha^2 (an "alpha-interior" tet).
 
   struct AlphaFace {
-    int v[3];        // oriented outward (away from opposite vertex)
+    int v[3];    // oriented outward (away from opposite vertex)
     int count;
   };
   std::map<std::array<int, 3>, AlphaFace> alpha_faces;
