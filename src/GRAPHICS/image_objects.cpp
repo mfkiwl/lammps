@@ -1044,17 +1044,17 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth, dou
   // The super-tetrahedron is a regular tetrahedron much larger than the bounding box.
 
   double R = 10.0 * maxext;
-  constexpr double SQRT2_3 = 0.9428090415820634;     // 2*sqrt(2)/3
-  constexpr double SQRT6_3 = 0.8164965809277261;     // sqrt(6)/3
-  constexpr double SQRT2_DIV3 = 0.4714045207910317;  // sqrt(2)/3
+  constexpr double TWO_SQRT2_OVER_3 = 0.9428090415820634;    // 2*sqrt(2)/3
+  constexpr double SQRT6_OVER_3 = 0.8164965809277261;        // sqrt(6)/3
+  constexpr double SQRT2_OVER_3 = 0.4714045207910317;        // sqrt(2)/3
   constexpr double ONE_THIRD = 1.0 / 3.0;
 
   std::vector<vec3> pts = points;    // copy, will append super-tet vertices
   pts.push_back({centroid[0], centroid[1], centroid[2] + R});
-  pts.push_back({centroid[0], centroid[1] + R * SQRT2_3, centroid[2] - R * ONE_THIRD});
-  pts.push_back({centroid[0] - R * SQRT6_3, centroid[1] - R * SQRT2_DIV3,
+  pts.push_back({centroid[0], centroid[1] + R * TWO_SQRT2_OVER_3, centroid[2] - R * ONE_THIRD});
+  pts.push_back({centroid[0] - R * SQRT6_OVER_3, centroid[1] - R * SQRT2_OVER_3,
                  centroid[2] - R * ONE_THIRD});
-  pts.push_back({centroid[0] + R * SQRT6_3, centroid[1] - R * SQRT2_DIV3,
+  pts.push_back({centroid[0] + R * SQRT6_OVER_3, centroid[1] - R * SQRT2_OVER_3,
                  centroid[2] - R * ONE_THIRD});
 
   const int sv0 = npts, sv1 = npts + 1, sv2 = npts + 2, sv3 = npts + 3;
@@ -1202,10 +1202,12 @@ void ConvexHullObj::build_hull(const std::vector<vec3> &points, bool smooth, dou
     }
     double avg_nn = sum_nn / npts;
 
-    // alpha = 2.5 * average NN distance is conservative enough to produce
+    // The alpha multiplier controls how tightly the surface wraps around
+    // the point cloud.  A value of 2.5 is conservative enough to produce
     // closed surfaces while still revealing concavities larger than 2-3x
     // the typical point spacing.
-    alpha_sq = 6.25 * avg_nn * avg_nn;    // (2.5 * avg_nn)^2
+    constexpr double ALPHA_MULTIPLIER = 2.5;
+    alpha_sq = ALPHA_MULTIPLIER * ALPHA_MULTIPLIER * avg_nn * avg_nn;
   }
 
   // A face of the alpha shape boundary is one that belongs to exactly one
