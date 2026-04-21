@@ -45,7 +45,9 @@ for details and specific additional methods.
 +--------------------------------+----------------------------------------------------------------------+
 | memory_usage                   | tally memory allocated by the style                                  |
 +--------------------------------+----------------------------------------------------------------------+
-| extract                        | provide access to internal data  (bond or angle styles only)         |
+| extract                        | provide access to internal data                                      |
++--------------------------------+----------------------------------------------------------------------+
+| born_matrix                    | compute Born matrix elements for elasticity                          |
 +--------------------------------+----------------------------------------------------------------------+
 | reinit                         | reset all type-based parameters, called by fix adapt (bonds only)    |
 +--------------------------------+----------------------------------------------------------------------+
@@ -75,3 +77,12 @@ setting.
 +---------------------------------+------------------------------------------------------------------------------+---------+
 | comm_reverse_off                | size of buffer for reverse communication with newton off (bond styles only)  | 0       |
 +---------------------------------+------------------------------------------------------------------------------+---------+
+| born_matrix_enable              | 1 if born_matrix() is implemented                                            | 0       |
++---------------------------------+------------------------------------------------------------------------------+---------+
+| centroidstressflag              | CENTROID_AVAIL if centroid stress is different and implemented                | varies  |
++---------------------------------+------------------------------------------------------------------------------+---------+
+
+The default value of ``centroidstressflag`` is ``CENTROID_SAME`` for bond
+styles and ``CENTROID_AVAIL`` for angle, dihedral, and improper styles.  It
+should be set to ``CENTROID_NOTAVAIL`` when the centroid stress differs from
+the two-body virial but has not yet been implemented.
