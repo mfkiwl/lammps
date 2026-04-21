@@ -1,5 +1,6 @@
 .. index:: pair_style lj/mdf
 .. index:: pair_style buck/mdf
+.. index:: pair_style buck/mdf/omp
 .. index:: pair_style lennard/mdf
 
 pair_style lj/mdf command
@@ -7,6 +8,8 @@ pair_style lj/mdf command
 
 pair_style buck/mdf command
 ===========================
+
+Accelerator Variant: *buck/mdf*
 
 pair_style lennard/mdf command
 ==============================
@@ -138,6 +141,10 @@ given or both left out:
 * *B* (energy-distance\^6 units)
 * :math:`r_m` (distance units)
 * :math:`r_{cut}` (distance units)
+
+----------
+
+.. include:: accel_styles.rst
 
 ----------
 

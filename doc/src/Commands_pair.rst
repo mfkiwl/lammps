@@ -27,11 +27,11 @@ OPT.
    * :doc:`airebo (io) <pair_airebo>`
    * :doc:`airebo/morse (io) <pair_airebo>`
    * :doc:`amoeba (g) <pair_amoeba>`
-   * :doc:`atm <pair_atm>`
+   * :doc:`atm (o) <pair_atm>`
    * :doc:`beck (go) <pair_beck>`
-   * :doc:`body/nparticle <pair_body_nparticle>`
-   * :doc:`body/rounded/polygon <pair_body_rounded_polygon>`
-   * :doc:`body/rounded/polyhedron <pair_body_rounded_polyhedron>`
+   * :doc:`body/nparticle (o) <pair_body_nparticle>`
+   * :doc:`body/rounded/polygon (o) <pair_body_rounded_polygon>`
+   * :doc:`body/rounded/polyhedron (o) <pair_body_rounded_polyhedron>`
    * :doc:`bop <pair_bop>`
    * :doc:`born (go) <pair_born>`
    * :doc:`born/coul/dsf <pair_born>`
@@ -41,7 +41,7 @@ OPT.
    * :doc:`born/coul/msm (o) <pair_born>`
    * :doc:`born/coul/wolf (go) <pair_born>`
    * :doc:`born/coul/wolf/cs (g) <pair_cs>`
-   * :doc:`born/gauss <pair_born_gauss>`
+   * :doc:`born/gauss (o) <pair_born_gauss>`
    * :doc:`bpm/spring <pair_bpm_spring>`
    * :doc:`brownian (ko) <pair_brownian>`
    * :doc:`brownian/poly (o) <pair_brownian>`
@@ -51,7 +51,7 @@ OPT.
    * :doc:`buck/coul/long/cs <pair_cs>`
    * :doc:`buck/coul/msm (o) <pair_buck>`
    * :doc:`buck/long/coul/long (o) <pair_buck_long>`
-   * :doc:`buck/mdf <pair_mdf>`
+   * :doc:`buck/mdf (o) <pair_mdf>`
    * :doc:`buck6d/coul/gauss/dsf <pair_buck6d_coul_gauss>`
    * :doc:`buck6d/coul/gauss/long <pair_buck6d_coul_gauss>`
    * :doc:`colloid (go) <pair_colloid>`
