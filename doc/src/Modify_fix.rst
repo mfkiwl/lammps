@@ -18,119 +18,153 @@ new fix styles <Developer_write_fix>` in LAMMPS.
 Here is a brief description of methods you can define in your new
 derived class.  See ``src/fix.h`` for additional details.
 
-+---------------------------+--------------------------------------------------------------------------------------------+
-| post_constructor          | perform tasks that cannot be run in the constructor (optional)                             |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| setmask                   | determines when the fix is called during the timestep (required)                           |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| init                      | initialization before a run (optional)                                                     |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| init_list                 | store pointer to neighbor list; called by neighbor list code (optional)                    |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| setup_pre_exchange        | called before atom exchange in setup (optional)                                            |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| setup_pre_force           | called before force computation in setup (optional)                                        |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| setup                     | called immediately before the first timestep and after forces are computed (optional)      |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_setup_pre_force       | like setup_pre_force, but for minimizations instead of MD runs (optional)                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_setup                 | like setup, but for minimizations instead of MD runs (optional)                            |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| initial_integrate         | called at very beginning of each timestep (optional)                                       |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pre_exchange              | called before atom exchange on re-neighboring steps (optional)                             |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pre_neighbor              | called before neighbor list build (optional)                                               |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pre_force                 | called before pair & molecular forces are computed (optional)                              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| post_force                | called after pair & molecular forces are computed and communicated (optional)              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| final_integrate           | called at end of each timestep (optional)                                                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| end_of_step               | called at very end of timestep (optional)                                                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| write_restart             | dumps fix info to restart file (optional)                                                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| restart                   | uses info from restart file to re-initialize the fix (optional)                            |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| grow_arrays               | allocate memory for atom-based arrays used by fix (optional)                               |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| copy_arrays               | copy atom info when an atom migrates to a new processor (optional)                         |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pack_exchange             | store atom's data in a buffer (optional)                                                   |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| unpack_exchange           | retrieve atom's data from a buffer (optional)                                              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pack_restart              | store atom's data for writing to restart file (optional)                                   |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| unpack_restart            | retrieve atom's data from a restart file buffer (optional)                                 |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| size_restart              | size of atom's data (optional)                                                             |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| maxsize_restart           | max size of atom's data (optional)                                                         |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| setup_pre_force_respa     | same as setup_pre_force, but for rRESPA (optional)                                         |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| initial_integrate_respa   | same as initial_integrate, but for rRESPA (optional)                                       |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| post_integrate_respa      | called after the first half integration step is done in rRESPA (optional)                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pre_force_respa           | same as pre_force, but for rRESPA (optional)                                               |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| post_force_respa          | same as post_force, but for rRESPA (optional)                                              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| final_integrate_respa     | same as final_integrate, but for rRESPA (optional)                                         |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_pre_force             | called after pair & molecular forces are computed in minimizer (optional)                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_post_force            | called after pair & molecular forces are computed and communicated in minimizer (optional) |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_store                 | store extra data for linesearch based minimization on a LIFO stack (optional)              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_pushstore             | push the minimization LIFO stack one element down (optional)                               |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_popstore              | pop the minimization LIFO stack one element up (optional)                                  |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_clearstore            | clear minimization LIFO stack (optional)                                                   |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_step                  | reset or move forward on line search minimization (optional)                               |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| min_dof                   | report number of degrees of freedom *added* by this fix in minimization (optional)         |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| max_alpha                 | report maximum allowed step size during linesearch minimization (optional)                 |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pack_comm                 | pack a buffer to communicate a per-atom quantity (optional)                                |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| unpack_comm               | unpack a buffer to communicate a per-atom quantity (optional)                              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| pack_reverse_comm         | pack a buffer to reverse communicate a per-atom quantity (optional)                        |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| unpack_reverse_comm       | unpack a buffer to reverse communicate a per-atom quantity (optional)                      |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| dof                       | report number of degrees of freedom *removed* by this fix during MD (optional)             |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| compute_scalar            | return a global scalar property that the fix computes (optional)                           |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| compute_vector            | return a component of a vector property that the fix computes (optional)                   |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| compute_array             | return a component of an array property that the fix computes (optional)                   |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| deform                    | called when the box size is changed (optional)                                             |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| reset_target              | called when a change of the target temperature is requested during a run (optional)        |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| reset_dt                  | is called when a change of the time step is requested during a run (optional)              |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| modify_param              | called when a fix_modify request is executed (optional)                                    |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| memory_usage              | report memory used by fix (optional)                                                       |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| thermo                    | compute quantities for thermodynamic output (optional)                                     |
-+---------------------------+--------------------------------------------------------------------------------------------+
-| image                     | pass lists of graphics objects to :doc:`dump image fix <dump_image>` (optional)            |
-+---------------------------+--------------------------------------------------------------------------------------------+
++-------------------------------+--------------------------------------------------------------------------------------------+
+| Required                      | "pure" method that *must* be overridden in a derived class                                 |
++===============================+============================================================================================+
+| setmask                       | determines when the fix is called during the timestep (required)                           |
++-------------------------------+--------------------------------------------------------------------------------------------+
+
++-------------------------------+--------------------------------------------------------------------------------------------+
+| Optional                      | methods that have a default or empty implementation                                        |
++===============================+============================================================================================+
+| post_constructor              | perform tasks that cannot be run in the constructor (optional)                             |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| init                          | initialization before a run (optional)                                                     |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| init_list                     | store pointer to neighbor list; called by neighbor list code (optional)                    |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup_pre_exchange            | called before atom exchange in setup (optional)                                            |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup_pre_neighbor            | called before neighbor list build in setup (optional)                                      |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup_post_neighbor           | called after neighbor list build in setup (optional)                                       |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup_pre_force               | called before force computation in setup (optional)                                        |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup_pre_reverse             | called before reverse communication in setup (optional)                                    |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup                         | called immediately before the first timestep and after forces are computed (optional)      |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_setup                     | like setup, but for minimizations instead of MD runs (optional)                            |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| initial_integrate             | called at very beginning of each timestep (optional)                                       |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| post_integrate                | called after the first half-step position/velocity update (optional)                       |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pre_exchange                  | called before atom exchange on re-neighboring steps (optional)                             |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pre_neighbor                  | called before neighbor list build (optional)                                               |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| post_neighbor                 | called after neighbor list build (optional)                                                |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pre_force                     | called before pair & molecular forces are computed (optional)                              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pre_reverse                   | called before reverse communication of forces (optional)                                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| post_force                    | called after pair & molecular forces are computed and communicated (optional)              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| final_integrate               | called at end of each timestep (optional)                                                  |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| end_of_step                   | called at very end of timestep (optional)                                                  |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| post_run                      | called at the end of each run command (optional)                                           |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| write_restart                 | dumps fix info to restart file (optional)                                                  |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| restart                       | uses info from restart file to re-initialize the fix (optional)                            |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| grow_arrays                   | allocate memory for atom-based arrays used by fix (optional)                               |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| copy_arrays                   | copy atom info when an atom migrates to a new processor (optional)                         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| set_arrays                    | set per-atom values when a new atom is created (optional)                                  |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pack_exchange                 | store atom's data in a buffer (optional)                                                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| unpack_exchange               | retrieve atom's data from a buffer (optional)                                              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pack_restart                  | store atom's data for writing to restart file (optional)                                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| unpack_restart                | retrieve atom's data from a restart file buffer (optional)                                 |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| size_restart                  | size of atom's data (optional)                                                             |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| maxsize_restart               | max size of atom's data (optional)                                                         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| setup_pre_force_respa         | same as setup_pre_force, but for rRESPA (optional)                                         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| initial_integrate_respa       | same as initial_integrate, but for rRESPA (optional)                                       |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| post_integrate_respa          | called after the first half integration step is done in rRESPA (optional)                  |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pre_force_respa               | same as pre_force, but for rRESPA (optional)                                               |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| post_force_respa              | same as post_force, but for rRESPA (optional)                                              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| final_integrate_respa         | same as final_integrate, but for rRESPA (optional)                                         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_pre_exchange              | called before atom exchange during minimization (optional)                                 |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_pre_neighbor              | called before neighbor list build during minimization (optional)                           |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_post_neighbor             | called after neighbor list build during minimization (optional)                            |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_pre_force                 | called before pair & molecular forces are computed in minimizer (optional)                 |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_pre_reverse               | called before reverse communication during minimization (optional)                         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_post_force                | called after pair & molecular forces are computed and communicated in minimizer (optional) |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_energy                    | return an extra energy contribution during minimization (optional)                         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_store                     | store extra data for linesearch based minimization on a LIFO stack (optional)              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_pushstore                 | push the minimization LIFO stack one element down (optional)                               |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_popstore                  | pop the minimization LIFO stack one element up (optional)                                  |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_clearstore                | clear minimization LIFO stack (optional)                                                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_reset_ref                 | reset the reference state for the line search (optional)                                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_step                      | reset or move forward on line search minimization (optional)                               |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| min_dof                       | report number of degrees of freedom *added* by this fix in minimization (optional)         |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| max_alpha                     | report maximum allowed step size during linesearch minimization (optional)                 |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pack_forward_comm             | pack a buffer to communicate a per-atom quantity (optional)                                |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| unpack_forward_comm           | unpack a buffer to communicate a per-atom quantity (optional)                              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pack_reverse_comm_size        | return the dynamic size of the reverse communication buffer (optional)                     |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| pack_reverse_comm             | pack a buffer to reverse communicate a per-atom quantity (optional)                        |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| unpack_reverse_comm           | unpack a buffer to reverse communicate a per-atom quantity (optional)                      |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| dof                           | report number of degrees of freedom *removed* by this fix during MD (optional)             |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| compute_scalar                | return a global scalar property that the fix computes (optional)                           |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| compute_vector                | return a component of a vector property that the fix computes (optional)                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| compute_array                 | return a component of an array property that the fix computes (optional)                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| get_thermo_colname            | return custom thermo column label for a vector or array component (optional)               |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| deform                        | called when the box size is changed (optional)                                             |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| reset_target                  | called when a change of the target temperature is requested during a run (optional)        |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| reset_dt                      | called when a change of the time step is requested during a run (optional)                 |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| modify_param                  | called when a fix_modify request is executed (optional)                                    |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| memory_usage                  | report memory used by fix (optional)                                                       |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| image                         | pass lists of graphics objects to :doc:`dump image fix <dump_image>` (optional)            |
++-------------------------------+--------------------------------------------------------------------------------------------+
 
 Typically, only a small fraction of these methods are defined for a
 particular fix.  Setmask is mandatory, as it determines when the fix
@@ -154,7 +188,9 @@ methods.  Similarly, the pack_restart and unpack_restart methods can be
 implemented to store information about the fix in restart files.  If you
 wish an integrator or force constraint fix to work with rRESPA (see the
 :doc:`run_style <run_style>` command), the initial_integrate,
-post_force_integrate, and final_integrate_respa methods can be
-implemented.  The thermo method enables a fix to contribute values to
-thermodynamic output, as printed quantities and/or to be summed to the
-potential energy of the system.
+post_force_respa, and final_integrate_respa methods can be
+implemented.  The compute_scalar and compute_vector methods enable a fix
+to contribute values to thermodynamic output, as printed quantities and/or
+to be summed to the potential energy of the system.  The corresponding flags
+(``scalar_flag``, ``vector_flag``, etc.) must be set in the constructor
+to tell LAMMPS which of these methods are implemented.
