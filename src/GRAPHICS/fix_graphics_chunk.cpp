@@ -21,10 +21,12 @@
 #include "force.h"
 #include "graphics.h"
 #include "image_objects.h"
+#include "lattice.h"
 #include "math_extra.h"
 #include "memory.h"
 #include "modify.h"
 #include "pair.h"
+#include "region.h"
 #include "update.h"
 
 #include <algorithm>
@@ -53,7 +55,8 @@ constexpr int NUM_POINTS = 12;
 /* ---------------------------------------------------------------------- */
 
 FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
-    Fix(lmp, narg, arg), id_chunk(nullptr), cchunk(nullptr), imgobjs(nullptr), imgparms(nullptr)
+    Fix(lmp, narg, arg), id_chunk(nullptr), cchunk(nullptr), id_region(nullptr), region(nullptr),
+    imgobjs(nullptr), imgparms(nullptr)
 {
   if (narg < 5) utils::missing_cmd_args(FLERR, "fix graphics/chunk", error);
 
@@ -78,6 +81,7 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
   radius = 0.5 * domain->lattice->xlattice;
   has_global_radius = false;
   smooth = true;
+  clip = false;
 
   // parse optional args
 
@@ -93,6 +97,18 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk alpha", error);
       alpha = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
       if (alpha < 0.0) error->all(FLERR, iarg + 1, "Fix graphics/chunk alpha value must be >= 0");
+      iarg += 2;
+    } else if (strcmp(arg[iarg], "region") == 0) {
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk region", error);
+      delete[] id_region;
+      id_region = utils::strdup(arg[iarg + 1]);
+      region = domain->get_region_by_id(id_region);
+      if (!region)
+        error->all(FLERR, iarg + 1, "Region {} for fix graphics/chunk does not exist", id_region);
+      iarg += 2;
+    } else if (strcmp(arg[iarg], "clip") == 0) {
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk clip", error);
+      clip = utils::logical(FLERR, arg[iarg + 1], false, lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg], "maxreplace") == 0) {
       if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "fix graphics/chunk maxreplace", error);
@@ -124,6 +140,7 @@ FixGraphicsChunk::FixGraphicsChunk(LAMMPS *lmp, int narg, char **arg) :
 FixGraphicsChunk::~FixGraphicsChunk()
 {
   delete[] id_chunk;
+  delete[] id_region;
   memory->destroy(imgobjs);
   memory->destroy(imgparms);
 }
@@ -145,6 +162,13 @@ void FixGraphicsChunk::init()
                "Chunk/atom compute {} does not exist or is incorrect style for fix {}", id_chunk,
                style);
 
+  if (id_region) {
+    region = domain->get_region_by_id(id_region);
+    if (!region)
+      error->all(FLERR, Error::NOLASTLINE, "Region {} for fix graphics/chunk does not exist",
+                 id_region);
+  }
+
   end_of_step();
 }
 
@@ -163,6 +187,10 @@ void FixGraphicsChunk::end_of_step()
   // invoke chunk/atom compute and get chunk assignments
 
   modify->clearstep_compute();
+
+  // update region if necessary
+
+  if (region) region->prematch();
 
   int nchunk = cchunk->setup_chunks();
   cchunk->compute_ichunk();
@@ -201,7 +229,13 @@ void FixGraphicsChunk::end_of_step()
   vec3 unwrapped;
 
   for (int i = 0; i < nlocal; ++i) {
+    // skip atoms not in fix group
     if (!(mask[i] & groupbit)) continue;
+
+    // skip atoms not in region, if enabled
+    if (region && !region->match(x[i][0], x[i][1], x[i][2])) continue;
+
+    // skip atoms without assigned chunk
     int ic = ichunk[i];
     if (ic < 1 || ic > nchunk) continue;
 
@@ -259,9 +293,9 @@ void FixGraphicsChunk::end_of_step()
       pts.reserve(num_points * natoms);
       for (const auto &ai : iatoms) {
         for (const auto &ico : icosahedron) {
-          pts.push_back({ai.rad * ico[0] + ai.pos[0] - offset[0],
-                         ai.rad * ico[1] + ai.pos[1] - offset[1],
-                         ai.rad * ico[2] + ai.pos[2] - offset[2]});
+          vec3 pos{ai.rad * ico[0] + ai.pos[0] - offset[0], ai.rad * ico[1] + ai.pos[1] - offset[1],
+                   ai.rad * ico[2] + ai.pos[2] - offset[2]};
+          if (!clip || domain->inside(pos.data())) pts.push_back(pos);
         }
       }
     } else {
@@ -270,9 +304,10 @@ void FixGraphicsChunk::end_of_step()
         // shift position away from center by radius
         vec3 extra{ai.pos[0] - center[0], ai.pos[1] - center[1], ai.pos[2] - center[2]};
         MathExtra::norm3(extra.data());
-        pts.push_back({ai.rad * extra[0] + ai.pos[0] - offset[0],
-                       ai.rad * extra[1] + ai.pos[1] - offset[1],
-                       ai.rad * extra[2] + ai.pos[2] - offset[2]});
+        vec3 pos{ai.rad * extra[0] + ai.pos[0] - offset[0],
+                 ai.rad * extra[1] + ai.pos[1] - offset[1],
+                 ai.rad * extra[2] + ai.pos[2] - offset[2]};
+        if (!clip || domain->inside(pos.data())) pts.push_back(pos);
       }
     }
 

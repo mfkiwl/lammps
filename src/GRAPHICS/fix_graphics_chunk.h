@@ -24,6 +24,7 @@ FixStyle(graphics/chunk,FixGraphicsChunk);
 
 namespace LAMMPS_NS {
 class ComputeChunkAtom;
+class Region;
 
 class FixGraphicsChunk : public Fix {
  public:
@@ -37,13 +38,16 @@ class FixGraphicsChunk : public Fix {
   int image(int *&, double **&) override;
 
  private:
-  double radius;             // global atom radius for hull inflation
-  double alpha;              // triangulation algorithm parameter determining curvature
-  bool has_global_radius;    // override auto-determined radius with global value
-  bool smooth;               // smooth vs flat shading
-  int maxreplace;            // largest cluster size where atoms are replaced by icosahedra
-  char *id_chunk;            // compute chunk/atom ID
-  ComputeChunkAtom *cchunk;
+  double radius;               // global atom radius for hull inflation
+  double alpha;                // triangulation algorithm parameter determining curvature
+  bool has_global_radius;      // override auto-determined radius with global value
+  bool smooth;                 // smooth vs flat shading
+  bool clip;                   // clip point cloud to box
+  int maxreplace;              // largest cluster size where atoms are replaced by icosahedra
+  char *id_chunk;              // compute chunk/atom ID
+  ComputeChunkAtom *cchunk;    // pointer to chunk compute
+  char *id_region;             // region ID
+  Region *region;              // pointer to region
 
   int numobjs;
   int *imgobjs;

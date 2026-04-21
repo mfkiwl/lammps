@@ -15,16 +15,19 @@ Syntax
 * Nevery = update graphics information every this many time steps
 * chunkID = ID of :doc:`compute chunk/atom <compute_chunk_atom>` command
 * zero or more keyword/args pairs may be appended
-* keyword = *radius* or *shading* or *alpha* or *maxreplace*
+* keyword = *alpha* or *clip* or *maxreplace* or *shading* or *radius* or *region*
 
   .. parsed-literal::
 
-     *radius* value = override per-atom or per-type radius if > 0.0 (distance units, default 0.0)
-     *alpha* value  = override multiplier for alpha shape extraction (distance units)
+     *alpha* value = override multiplier for alpha shape extraction (distance units)
+     *clip* value = truncate point cloud to box boundaries if *yes* otherwise use all points
      *maxreplace* value = set the largest cluster size up to which atoms are replaced by icosahedra
      *shading* value = *smooth* or *flat*
         *smooth* = compute per-vertex normals for smooth shading (default)
         *flat* = use face normals for flat shading
+     *radius* value = override per-atom or per-type radius if > 0.0 (distance units, default 0.0)
+     *region* value = region-ID
+       region-ID = ID of region that atoms must be in to be visualized
 
 Examples
 """"""""
@@ -33,7 +36,7 @@ Examples
 
    compute cc1 all chunk/atom molecule
    fix hull all graphics/chunk 100 cc1
-   fix hull all graphics/chunk 100 cc1 radius 1.0 shading smooth
+   fix hull all graphics/chunk 100 cc1 radius 1.0 shading smooth region upper
    fix hull all graphics/chunk 100 cc1 shading flat alpha 10.0 maxreplace 50
 
 Description
@@ -85,6 +88,9 @@ This color can be set with the *fcolor* keyword of the :doc:`dump modify
 of the surface are colored using the atom type of the closest atom and
 the color between vertices is interpolated.
 
+If the optional *region* keyword is used, only atoms in the specified
+geometric :doc:`region <region>` are used for constructing the hull.
+
 The optional *radius* keyword allows to override the radius value used
 to determine the size of the represented graphics by scaling the
 octahedron positions that represents each atom for computing the
@@ -97,6 +103,14 @@ the average distance of closest neighbors.  For larger values, the
 generated shape will become mostly a conventional convex hull. A value
 of 0.0 (the default) triggers an estimation of a suitable value.
 
+The optional *clip* keyword allows to adjust the behavior for clusters
+that straddle periodic boundaries.  With the default value of *no* all
+points are used in the triangulation after unwrapping and translating
+them back into the simulation cell.  When *clip* is set to *yes* all
+points outside the box boundaries will be removed resulting in surfaces
+that extend along the simulation box walls even though the cluster would
+extend beyond it.
+
 The optional *maxreplace* keyword allows to set up to which cluster size
 the atoms positions are replaced by those of an icosahedron to produce
 smoother surfaces.  For larger clusters, this step has few advantages
@@ -108,6 +122,76 @@ computes averaged per-vertex normals so that adjacent triangles appear
 curved and blend smoothly (except for sharp edges).  The *flat* uses
 the face normal for all three corners of each triangle, giving the
 surface a faceted appearance.
+
+----------
+
+Usage example
+"""""""""""""
+
+.. image:: img/hull-rhodo.png
+   :width: 20%
+   :align: right
+
+The commands below demonstrate a more complex usage of the
+*graphics/chunk* fix by using :doc:`fix property/atom
+<fix_property_atom>` to assign a custom property to atoms which is used
+to define the chunks.  These are commands that are added to the
+``in.rhodo`` input in the ``bench`` folder.  The full input is available
+in the ``examples/GRAPHICS`` folder.
+
+.. code-block:: LAMMPS
+
+   # get a slice of the box in x-direction
+   region slice block $(xlo) $(xlo+0.6*lx) INF INF INF INF
+
+   # assign custom integer values to atoms, so we can
+   # group them into chunks by collections of atom types
+   fix   0 all property/atom i_chunk ghost yes
+   set type *     i_chunk 0  # default -> not part of a chunk
+   set type 1*35  i_chunk 1  # protein
+   set type 54*68 i_chunk 1  # chromophore
+   set type 4     i_chunk 2  # solvent (water plus Na Cl)
+   set type 33    i_chunk 2  # - "" -
+   set type 52*53 i_chunk 2  # - "" -
+   set type 36*51 i_chunk 3  # lipids
+
+   # define groups for individual subsets
+   group protein  type 1:3 5:32 34 35 54:68
+   group water    type 4 33 52 53
+   group lipid    type 36:51
+   group other    subtract all protein
+
+   # access the custom property and define chunks with it
+   compute ichunk all property/atom i_chunk
+   compute hull   all chunk/atom c_ichunk
+
+   # use three different fixes so we can use different settings
+   fix hull1 protein graphics/chunk 100 hull alpha 10.0
+   # use a box slice to restrict the triangulation to part of the box
+   # use clip option to cleanly truncate at the periodic box boundary
+   fix hull2 water   graphics/chunk 100 hull region slice alpha 6.0 clip yes
+   fix hull3 lipid   graphics/chunk 100 hull region slice alpha 6.0 clip yes
+
+   # compute rotation angle for slow rotation around z axis
+   # this needs 20000 steps for a full 360 degrees.
+   variable rot equal ((step/1000*18+180)%360)-180
+
+   # the fix vvvvvv  group selects atoms to be show, but does not affect fix graphics
+   dump viz protein image 100 myimage-*.png element type size 600 600 zoom 1.5 &
+         shiny 0.2 fsaa yes bond atom 0.20 view 80 v_rot box yes 0.025 &
+         fix hull1 const 2 0.4 fix hull2 const 1 0 fix hull3 const 1 0
+   #         ^^^ wireframe ^^^         ^^^ smooth triangle surfaces ^^^
+
+   # set elements for atom colors and define diameters for space filling spheres
+   dump_modify viz pad 9 boxcolor indianred backcolor black backcolor2 white &
+     element H H H H H H H H H C C C C C C C C C C C C C N N N N N N N O O O O S S H H H H H C C C C C C N O O O P Cl Na H H H N C C C C C C C C C C C &
+   adiam 1*9 1.92 adiam 10*22 2.72 adiam 23*29 2.48 adiam 30*33 2.432 adiam 34*35 2.88 &
+   adiam 36*40 1.92 adiam 41*46 2.72 adiam 47 2.48 adiam 48*50 2.432 adiam 51 2.88 &
+   adiam 52 3.632 adiam 53 2.176 adiam 54*56 1.92 adiam 57 2.48 adiam 58*68 2.72 &
+    fcolor hull1 goldenrod fcolor hull2 lightblue fcolor hull3 forestgreen
+   #  ^^^^ assign colors for triangulated graphics ^^^^^
+
+   run             20000
 
 ----------
 
@@ -163,4 +247,4 @@ Related commands
 Defaults
 """"""""
 
-radius = 0.0, alpha = 0.0, shading = smooth, maxreplace = 100
+radius = 0.0, alpha = 0.0, shading = smooth, maxreplace = 100, clip = no
