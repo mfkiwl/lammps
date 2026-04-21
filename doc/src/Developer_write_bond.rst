@@ -5,22 +5,43 @@ Bond, angle, dihedral, and improper styles are used to compute bonded
 interactions between groups of two, three, or four atoms whose topology
 is described in a data file or set by other commands.  They are derived
 from the ``Bond``, ``Angle``, ``Dihedral``, and ``Improper`` base
-classes, respectively.  As shown on the corresponding pages
-:doc:`Bond, angle, dihedral, improper styles <Modify_bond>`, the classes
-that compute these molecular interactions share a common design.
+classes, respectively.  As shown on the corresponding pages :doc:`Bond,
+angle, dihedral, improper styles <Modify_bond>`, the classes that
+compute these molecular interactions share a common design.
 
-In general, new bond styles should be added to the :ref:`EXTRA-MOLECULE
-package <PKG-EXTRA-MOLECULE>` unless they are an accelerated style and
-then they should be added to the corresponding accelerator package
-(:ref:`GPU <PKG-GPU>`, :ref:`INTEL <PKG-INTEL>`, :ref:`KOKKOS
-<PKG-KOKKOS>`, :ref:`OPENMP <PKG-OPENMP>`).  Similarly, new angle,
-dihedral, and improper styles should be added to the
+In general, new styles for bonded interactions should be added to the
 :ref:`EXTRA-MOLECULE package <PKG-EXTRA-MOLECULE>`.  If you feel that
-your contribution should be added to a different package, please consult
-with the :doc:`LAMMPS developers <Intro_authors>` first.  The
-contributed code needs to support the :doc:`traditional GNU make build
-process <Build_make>` **and** the :doc:`CMake build process
-<Build_cmake>`.
+your contribution should be added to a different package (e.g. the
+:ref:`MOLECULE package <PKG-MOLECULE>`), please consult with the
+:doc:`LAMMPS developers <Intro_authors>` first.
+
+Before implementing an accelerated style the corresponding plain CPU
+version should be implemented and properly tested.  The accelerated
+version should then be derived from the plain CPU version so that only
+the code relevant for acceleration is re-implemented.  Those should then
+be added to the corresponding accelerator package (:ref:`KOKKOS
+<PKG-KOKKOS>`, :ref:`OPENMP <PKG-OPENMP>`, :ref:`INTEL <PKG-INTEL>`).
+
+The contributed code needs to support the :doc:`traditional GNU make
+build process <Build_make>` **and** the :doc:`CMake build process
+<Build_cmake>`.  This is usually automatic unless the new style uses
+some external library, which is uncommon for bonded interactions.
+
+It is highly recommended also to include one or more example input decks
+and :doc:`force-style unit tests <Developer_unittest>`.  The tests will
+be particularly useful to test consistency between the ``compute()`` and
+``single()`` methods, plain and accelerated versions, and to test
+correct restarting and writing and reading of data files.
+
+.. admonition:: AI generated content
+   :class: note
+
+   Please note that this manual page has been created by an AI using
+   similar pages and the LAMMPS source code as reference.  It has not
+   yet been fully reviewed for correctness.  If you notice any mistakes
+   or inconsistencies, please report them on the `GitHub Issue page
+   <https://github.com/lammps/lammps/issues>`_ as a bug in the
+   documentation.
 
 ----
 
@@ -48,8 +69,8 @@ The header file ``bond_harmonic.h`` starts with the standard LAMMPS
 copyright and license block (see, for example, the discussion in
 :doc:`Writing a new pair style <Developer_write_pair>` for details).
 
-After the copyright block, every bond style must be registered in
-LAMMPS by including the following lines before the include guards:
+After the copyright block, every bond style must be registered in LAMMPS
+by including the following lines before the include guards:
 
 .. code-block:: c++
 
@@ -59,21 +80,22 @@ LAMMPS by including the following lines before the include guards:
    // clang-format on
    #else
 
-This block between ``#ifdef BOND_CLASS`` and ``#else`` will be
-included by the ``Force`` class in ``force.cpp`` to build a map of
-factory functions for bond styles.  The map connects the name of the
-bond style, ``harmonic``, with the name of the class,
-``BondHarmonic``.  During compilation, LAMMPS constructs a file
-``style_bond.h`` that contains ``#include`` statements for all
-installed bond styles.  Before including ``style_bond.h`` into
-``force.cpp``, the ``BOND_CLASS`` define is set and the
-``BondStyle(name,class)`` macro defined.  The ``// clang-format``
-comments prevent ``clang-format`` from reformatting the macro argument
-in a way that would break it.  Analogously, an angle style would use
-``#ifdef ANGLE_CLASS`` and ``AngleStyle(name,class)``, a dihedral
-style would use ``#ifdef DIHEDRAL_CLASS`` and
-``DihedralStyle(name,class)``, and an improper style would use
-``#ifdef IMPROPER_CLASS`` and ``ImproperStyle(name,class)``.
+This block between ``#ifdef BOND_CLASS`` and ``#else`` will be included
+by the ``Force`` class in ``force.cpp`` to build a map of factory
+functions for bond styles.  The map connects the name of the bond style,
+"harmonic", with the name of the class, ``BondHarmonic``.  During
+compilation, LAMMPS generates a file ``style_bond.h`` that contains
+``#include`` statements for all installed bond styles.  Before including
+``style_bond.h`` into ``force.cpp``, the ``BOND_CLASS`` define is set
+and the ``BondStyle(name,class)`` macro defined.  The ``//
+clang-format`` comments prevent ``clang-format`` from reformatting the
+macro argument in a way that would break it.
+
+Analogously, an angle style would use ``#ifdef ANGLE_CLASS`` and
+``AngleStyle(name,class)``, a dihedral style would use ``#ifdef
+DIHEDRAL_CLASS`` and ``DihedralStyle(name,class)``, and an improper
+style would use ``#ifdef IMPROPER_CLASS`` and
+``ImproperStyle(name,class)``.
 
 The class definition itself follows after the include guard:
 
@@ -119,6 +141,16 @@ coefficient arrays ``k`` and ``r0`` are declared as protected member
 variables.  The ``allocate()`` method is declared as ``virtual`` so
 that derived classes can override it if needed.
 
+.. note::
+
+   Ideally, there should be no additional ``#include`` statements
+   outside of ``#include "bond.h"``.  Where possible, forward
+   declarations should be used and the proper include statements only
+   added to the implementation file (discussed below).  Exceptions are
+   headers for C++ container classes.  Please see
+   :doc:`Modify_requirements` and :doc:`Modify_style` for more
+   information and this and related issues.
+
 Implementation file
 """""""""""""""""""
 
@@ -135,10 +167,13 @@ and sets the ``born_matrix_enable`` flag to enable the optional
 
 .. code-block:: c++
 
-   BondHarmonic::BondHarmonic(LAMMPS *_lmp) : Bond(_lmp)
+   BondHarmonic::BondHarmonic(LAMMPS *_lmp) : Bond(_lmp), k(nullptr), r0(nullptr)
    {
      born_matrix_enable = 1;
    }
+
+It is recommended to always initialize all pointers to NULL in the
+initializer list so that they can be safely deleted in the destructor.
 
 The destructor frees the per-type coefficient arrays, but only if
 ``allocated`` is true and ``copymode`` is false.  The ``copymode``
@@ -161,8 +196,8 @@ The allocate() method
 
 The ``allocate()`` helper allocates all per-type arrays.  Types are
 one-indexed, so arrays of size ``nbondtypes + 1`` are created. The
-``setflag`` array, which tracks whether coefficients have been set
-for each type, is also allocated here and initialised to zero:
+``setflag`` array, which tracks whether coefficients have been set for
+each type, is also allocated here and initialized to zero:
 
 .. code-block:: c++
 
@@ -288,7 +323,7 @@ iteration step.
      }
    }
 
-Before the loop, ``ev_init(eflag, vflag)`` initialises the energy and
+Before the loop, ``ev_init(eflag, vflag)`` initializes the energy and
 virial accumulators and sets several flags (including ``evflag``) that
 control which quantities are computed.  The force scalar ``fbond``
 is defined such that the force on atom ``i1`` is
@@ -307,9 +342,8 @@ The equilibrium_distance() method (required for bond styles)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 The ``equilibrium_distance()`` method returns the equilibrium bond
-length for the given type.  This is used by the
-:doc:`fix shake <fix_shake>` and :doc:`fix rattle <fix_rattle>`
-commands:
+length for the given type.  This is used, for instance, by the :doc:`fix
+shake <fix_shake>` and :doc:`fix rattle <fix_shake>` commands:
 
 .. code-block:: c++
 
@@ -337,8 +371,11 @@ potential energy for a single pair of atoms.  It is called by
      return rk * dr;
    }
 
-The return value is the potential energy.  ``fforce`` is set to
-``-dE/dr / r`` (i.e. the force divided by the interatomic distance).
+The return value is the potential energy.  ``fforce`` is set to ``-dE/dr
+/ r`` (i.e. the force divided by the interatomic distance) so that it
+can be easily converted into the x-, y-, and z-direction force
+components by multiplying with :math:`\Delta x`, :math:`\Delta y`, and
+:math:`\Delta z`, respectively.
 
 Restart and data file methods (required)
 ''''''''''''''''''''''''''''''''''''''''
@@ -386,9 +423,11 @@ Case 2: Implementing an angle style
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Angle styles are similar to bond styles but involve three atoms.  The
-implementation follows the same pattern as for bond styles.  As an
-example we use :doc:`angle_style harmonic <angle_harmonic>` which
-implements the potential:
+implementation follows the same pattern as for bond styles, so for
+details not mentioned here, you can refer to the corresponding section
+documenting the implementation of bond styles.  As an example we use
+:doc:`angle_style harmonic <angle_harmonic>` which implements the
+potential:
 
 .. math::
 
@@ -529,7 +568,9 @@ In the constructor, the ``writedata`` flag is set:
 
 .. code-block:: c++
 
-   DihedralHarmonic::DihedralHarmonic(LAMMPS *_lmp) : Dihedral(_lmp)
+   DihedralHarmonic::DihedralHarmonic(LAMMPS *_lmp) :
+       Dihedral(_lmp), k(nullptr), cos_shift(nullptr), sin_shift(nullptr), sign(nullptr),
+       multiplicity(nullptr)
    {
      writedata = 1;
    }
@@ -604,7 +645,7 @@ Constructor setup:
 
 .. code-block:: c++
 
-   ImproperHarmonic::ImproperHarmonic(LAMMPS *_lmp) : Improper(_lmp)
+   ImproperHarmonic::ImproperHarmonic(LAMMPS *_lmp) : Improper(_lmp), k(nullptr), chi(nullptr)
    {
      writedata = 1;
      // the first atom in the quadruplet is the atom of symmetry
