@@ -132,14 +132,14 @@ The class definition itself follows after the include guard:
    #endif
    #endif
 
-The class is derived from ``Bond`` and overrides all three pure virtual
-methods (``compute()``, ``coeff()``, ``equilibrium_distance()``,
-``write_restart()``, ``read_restart()``, and ``single()``) as well as
-several optional ones.  All overriding methods use the ``override``
-keyword to allow the compiler to detect mismatches.  The per-type
-coefficient arrays ``k`` and ``r0`` are declared as protected member
-variables.  The ``allocate()`` method is declared as ``virtual`` so
-that derived classes can override it if needed.
+The class is derived from ``Bond`` and overrides all *pure* virtual
+methods as require by the C++ standard (``compute()``, ``coeff()``,
+``equilibrium_distance()``, ``write_restart()``, ``read_restart()``, and
+``single()``) and several optional ones.  All overriding methods use the
+``override`` keyword to allow the compiler to detect mismatches.  The
+per-type coefficient arrays ``k`` and ``r0`` are declared as protected
+member variables.  The ``allocate()`` method is declared as ``virtual``
+so that derived classes can override it if needed.
 
 .. note::
 
@@ -172,8 +172,9 @@ and sets the ``born_matrix_enable`` flag to enable the optional
      born_matrix_enable = 1;
    }
 
-It is recommended to always initialize all pointers to NULL in the
-initializer list so that they can be safely deleted in the destructor.
+It is recommended to always initialize all pointers to ``nullptr`` in
+the initializer list so that they can be safely deleted in the
+destructor.
 
 The destructor frees the per-type coefficient arrays, but only if
 ``allocated`` is true and ``copymode`` is false.  The ``copymode``

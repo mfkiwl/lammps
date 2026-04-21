@@ -167,30 +167,34 @@ derived class.  See ``src/fix.h`` for additional details.
 +-------------------------------+----------------------------------------------------------------------------------+
 
 Typically, only a small fraction of these methods are defined for a
-particular fix.  Setmask is mandatory, as it determines when the fix
-will be invoked during :doc:`the evolution of a timestep
+particular fix.  The ``setmask()`` method is mandatory, as it determines
+*when* the fix will be invoked during :doc:`the evolution of a timestep
 <Developer_flow>`.  Fixes that perform time integration (\ *nve*, *nvt*,
-*npt*\ ) implement initial_integrate() and final_integrate() to perform
-velocity Verlet updates.  Fixes that constrain forces implement
-post_force().
+*npt*\ ) implement ``initial_integrate()`` and ``final_integrate()`` to
+perform velocity Verlet time stepping updates.  Fixes that apply forces
+implement ``post_force()``, i.e. after the forces on atoms have been
+computed and collected to the local atoms.
 
-Fixes that perform diagnostics typically implement end_of_step().  For
-an end_of_step fix, one of your fix arguments must be the variable
-"nevery" which is used to determine when to call the fix and you must
-set this variable in the constructor of your fix.  By convention, this
-is the first argument the fix defines (after the ID, group-ID, style).
+Fixes that perform diagnostics typically implement ``end_of_step()``.
+For such a fix, one of your fix arguments must set the variable "nevery"
+which is used to determine when to call the fix and you **must** set
+this variable in the constructor of your fix.  By convention, this is
+the first argument the fix defines (after the fix-ID, group-ID, and fix
+style).
 
 If the fix needs to store information for each atom that persists from
 timestep to timestep, it can manage that memory and migrate the info
 with the atoms as they move from processors to processor by implementing
-the grow_arrays, copy_arrays, pack_exchange, and unpack_exchange
-methods.  Similarly, the pack_restart and unpack_restart methods can be
-implemented to store information about the fix in restart files.  If you
-wish an integrator or force constraint fix to work with rRESPA (see the
-:doc:`run_style <run_style>` command), the initial_integrate,
-post_force_respa, and final_integrate_respa methods can be
-implemented.  The compute_scalar and compute_vector methods enable a fix
-to contribute values to thermodynamic output, as printed quantities and/or
-to be summed to the potential energy of the system.  The corresponding flags
-(``scalar_flag``, ``vector_flag``, etc.) must be set in the constructor
-to tell LAMMPS which of these methods are implemented.
+the ``grow_arrays()``, ``copy_arrays()``, ``pack_exchange()``, and
+``unpack_exchange()`` methods.  Similarly, the ``pack_restart()`` and
+``unpack_restart()`` methods can be implemented to store information
+about the fix in binary restart files.  If you wish an integrator or
+force constraint fix to work with rRESPA (see the :doc:`run_style
+<run_style>` command), the ``initial_integrate_respa()``,
+``post_force_respa()``, and ``final_integrate_respa()`` methods can be
+implemented.  The ``compute_scalar()`` and ``compute_vector()`` methods
+enable a fix to contribute values to thermodynamic output, as printed
+quantities and/or to be summed to the potential energy of the system.
+The corresponding flags (``scalar_flag``, ``vector_flag``, etc.) must be
+set in the constructor to tell LAMMPS which of these methods are
+implemented.
