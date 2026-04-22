@@ -1,15 +1,14 @@
 .. index:: pair_style gw
 .. index:: pair_style gw/omp
 .. index:: pair_style gw/zbl
-.. index:: pair_style gw/zbl/omp
 
 pair_style gw command
 =====================
 
+Accelerator Variant: *gw/omp*
+
 pair_style gw/zbl command
 =========================
-
-Accelerator Variants: *gw/omp*, *gw/zbl/omp*
 
 Syntax
 """"""
@@ -81,6 +80,11 @@ have a ".gz.zbl" suffix. The structure of the potential files
 is similar to other many-body potentials supported by LAMMPS.
 You have to refer to the comments in the files and the literature
 to learn more details.
+
+
+----------
+
+.. include:: accel_styles.rst
 
 ----------
 

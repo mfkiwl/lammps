@@ -114,7 +114,7 @@ OPT.
    * :doc:`granular <pair_granular>`
    * :doc:`granular/superellipsoid <pair_granular_superellipsoid>`
    * :doc:`gw (o) <pair_gw>`
-   * :doc:`gw/zbl (o) <pair_gw>`
+   * :doc:`gw/zbl <pair_gw>`
    * :doc:`harmonic/cut (o) <pair_harmonic_cut>`
    * :doc:`hbond/dreiding/lj (o) <pair_hbond_dreiding>`
    * :doc:`hbond/dreiding/lj/angleoffset (o) <pair_hbond_dreiding>`
