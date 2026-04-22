@@ -1,7 +1,9 @@
 .. index:: pair_style lj/mdf
+.. index:: pair_style lj/mdf/omp
 .. index:: pair_style buck/mdf
 .. index:: pair_style buck/mdf/omp
 .. index:: pair_style lennard/mdf
+.. index:: pair_style lennard/mdf/omp
 
 pair_style lj/mdf command
 =========================
@@ -13,6 +15,8 @@ Accelerator Variant: *buck/mdf*
 
 pair_style lennard/mdf command
 ==============================
+
+Accelerator Variants: *lj/mdf/omp*, *lennard/mdf/omp*
 
 Syntax
 """"""
