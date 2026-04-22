@@ -201,6 +201,10 @@ and potential.  In general, blank lines anywhere are ignored.
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Mixing, shift, table, tail correction, restart, rRESPA info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 This pair style does not support automatic mixing. For atom type pairs
@@ -252,5 +256,3 @@ none
 .. _Rosenberger:
 
 **(Rosenberger)** Rosenberger, Sanyal, Shell and van der Vegt,  Journal of Chemical Physics, 2019, 151 (4), 044111.
-
-.. include:: accel_styles.rst

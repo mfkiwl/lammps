@@ -84,6 +84,10 @@ is used.
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Mixing, shift, table, tail correction, restart, rRESPA info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -121,5 +125,3 @@ Default
 """""""
 
 none
-
-.. include:: accel_styles.rst

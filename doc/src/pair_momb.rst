@@ -55,6 +55,10 @@ read by the :doc:`read_data <read_data>` as described below:
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Restrictions
 """"""""""""
 
@@ -85,5 +89,3 @@ none
 .. _Zhou5:
 
 **(Zhou)** Zhou, Saidi, Fichthorn, J Phys Chem C, 118(6), 3366-3374 (2014).
-
-.. include:: accel_styles.rst

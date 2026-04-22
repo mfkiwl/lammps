@@ -82,6 +82,10 @@ little to be gained by choosing other values of :math:`\nu` and
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 **Mixing, shift, table, tail correction, restart, rRESPA info**\ :
 
 This pair style does not support the :doc:`pair_modify <pair_modify>`
@@ -118,5 +122,3 @@ Related commands
 .. _Wang2020:
 
 **(Wang2020)** X. Wang, S. Ramirez-Hinestrosa, J. Dobnikar, and D. Frenkel, Phys. Chem. Chem. Phys. 22, 10624 (2020).
-
-.. include:: accel_styles.rst

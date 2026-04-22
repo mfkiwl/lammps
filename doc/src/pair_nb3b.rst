@@ -119,6 +119,10 @@ a particular simulation; LAMMPS ignores those entries.
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Restrictions
 """"""""""""
 
@@ -135,5 +139,3 @@ Default
 """""""
 
 none
-
-.. include:: accel_styles.rst

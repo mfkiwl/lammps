@@ -95,6 +95,10 @@ cutoff specified in the pair_style command is used.
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Mixing, shift, table, tail correction, restart, rRESPA info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -179,5 +183,3 @@ none
 .. _Becton:
 
 **(Becton)** Becton, Averett, Wang, Biomech. Model. Mechanobiology, 18, 425-433(2019).
-
-.. include:: accel_styles.rst
