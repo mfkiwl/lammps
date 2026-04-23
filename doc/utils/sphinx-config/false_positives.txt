@@ -2304,6 +2304,7 @@ Maxfoo
 maxima
 maxit
 maxiter
+maxreplace
 maxsize
 maxspecial
 maxSteps
@@ -2407,6 +2408,7 @@ Milano
 Militzer
 Minary
 mincap
+mindist
 Mindlin
 mingw
 minhbonds
