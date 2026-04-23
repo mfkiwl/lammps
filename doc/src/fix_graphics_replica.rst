@@ -74,6 +74,44 @@ and *fflag2* setting of *dump image fix* is used as an adjustment
 to the radius of the rendered sphere.  This can be used to grow or
 shrink the radius that is selected by *dump image* for the atom type.
 
+----------
+
+Usage example
+"""""""""""""
+
+The following lines can be added to the peptide example to run it
+in multi-partition mode so it will have diverging trajectories.
+
+.. code-block:: LAMMPS
+
+   # reinitialize velocities differently on each partition
+   variable part uloop 16
+   velocity all create 275.0 $(12315235*v_part)
+
+   fix  sf1  peptide   graphics/replica 100 display 0.5
+   fix  sf2  peptide   graphics/replica 100 average 1.0
+
+   # must use dump image only on one partition
+   partition yes 1 dump viz peptide image 100 myimage-*.png element type size 600 600 zoom 1.77156 shiny 0.2  &
+                    ssao yes 23184 0.4  fsaa yes bond atom type view 70 20 box no 0.0 axes yes 0.5 0.05 &
+                    fix sf2 const 0 0 &
+                    fix sf1 element 0 0 &
+
+   partition yes 1 dump_modify viz pad 6 backcolor black backcolor2 white &
+                element C C O H N C C C O H H S O H &
+                adiam 1*2 0.85 adiam 3 0.76 adiam 4 0.6 adiam 5 0.775 adiam 6*7 0.85 adiam 8 0.85 &
+                adiam 9 0.76 adiam 10*11 0.6 adiam 12 0.9 adiam 13 0.76 adiam 14 0.6 &
+                ftrans sf2 0.5 fcolor sf2 green
+
+.. |replica1| image:: img/replica-all.png
+   :width: 49%
+.. |replica2| image:: img/replica-average.png
+   :width: 49%
+
+|replica1|  |replica2|
+
+----------
+
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
