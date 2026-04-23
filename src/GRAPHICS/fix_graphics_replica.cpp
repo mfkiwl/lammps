@@ -116,6 +116,7 @@ void FixGraphicsReplica::end_of_step()
   nper = (me == 0) ? nper : 0;
   bigint nall = 0;
   MPI_Allreduce(&nper, &nall, 1, MPI_LMP_BIGINT, MPI_SUM, universe->uworld);
+  MPI_Bcast(&nper, 1, MPI_LMP_BIGINT, 0, world);
 
   // ensure the group has the same number of atoms on each replica
 
