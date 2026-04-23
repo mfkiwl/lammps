@@ -36,16 +36,6 @@ The contributed code needs to support the :doc:`traditional GNU make
 build process <Build_make>` **and** the :doc:`CMake build process
 <Build_cmake>`.
 
-.. admonition:: AI generated content
-   :class: note
-
-   Please note that this manual page has been created by an AI using
-   similar pages and the LAMMPS source code as reference.  It has not
-   been fully reviewed for correctness.  If you notice any mistakes or
-   inconsistencies, please report them on the `GitHub Issue page
-   <https://github.com/lammps/lammps/issues>`_ as a bug in the
-   documentation.
-
 ----
 
 Case 1: A global scalar compute

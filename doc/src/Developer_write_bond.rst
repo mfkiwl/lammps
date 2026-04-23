@@ -33,16 +33,6 @@ be particularly useful to test consistency between the ``compute()`` and
 ``single()`` methods, plain and accelerated versions, and to test
 correct restarting and writing and reading of data files.
 
-.. admonition:: AI generated content
-   :class: note
-
-   Please note that this manual page has been created by an AI using
-   similar pages and the LAMMPS source code as reference.  It has not
-   been fully reviewed for correctness.  If you notice any mistakes or
-   inconsistencies, please report them on the `GitHub Issue page
-   <https://github.com/lammps/lammps/issues>`_ as a bug in the
-   documentation.
-
 ----
 
 Case 1: Implementing a bond style
