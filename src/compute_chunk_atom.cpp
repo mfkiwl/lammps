@@ -646,6 +646,7 @@ int ComputeChunkAtom::compute_image(int *&objs, double **&parms)
       for (int m = 0; m < ndim; m++) nwalls += nlayers[m] + 1;
 
       if (domain->dimension == 2) numobjs = nwalls;
+      else if (which == ArgInfo::BIN3D) numobjs = nwalls * 4;
       else numobjs = nwalls * 2;
 
       memory->destroy(imgobjs);
@@ -705,6 +706,31 @@ int ComputeChunkAtom::compute_image(int *&objs, double **&parms)
             imgparms[n][6] = p2[2];
             imgparms[n][7] = 0.0;
             n++;
+          } else if (which == ArgInfo::BIN3D) {
+            double p[4][3];
+            for (int j = 0; j < 4; j++) p[j][idim] = c;
+            p[0][idim1] = binlo[idim1]; p[0][idim2] = binlo[idim2];
+            p[1][idim1] = binhi[idim1]; p[1][idim2] = binlo[idim2];
+            p[2][idim1] = binhi[idim1]; p[2][idim2] = binhi[idim2];
+            p[3][idim1] = binlo[idim1]; p[3][idim2] = binhi[idim2];
+
+            if (scaleflag == REDUCED) {
+              for (int j = 0; j < 4; j++) domain->lamda2x(p[j], p[j]);
+            }
+
+            for (int j = 0; j < 4; j++) {
+              imgobjs[n] = Graphics::CYLINDER;
+              imgparms[n][0] = 1.0;
+              imgparms[n][1] = p[j][0];
+              imgparms[n][2] = p[j][1];
+              imgparms[n][3] = p[j][2];
+              int next = (j + 1) % 4;
+              imgparms[n][4] = p[next][0];
+              imgparms[n][5] = p[next][1];
+              imgparms[n][6] = p[next][2];
+              imgparms[n][7] = 0.0;
+              n++;
+            }
           } else {
             double p1[3], p2[3], p3[3], p4[3];
             p1[idim] = p2[idim] = p3[idim] = p4[idim] = c;
