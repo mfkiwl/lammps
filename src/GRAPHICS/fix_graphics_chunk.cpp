@@ -96,7 +96,7 @@ struct CellHash {
   }
 };
 
-static double dist2(const vec3 &a, const vec3 &b)
+double dist2(const double *const a, const double *const b)
 {
   double dx = a[0] - b[0];
   double dy = a[1] - b[1];
@@ -104,20 +104,15 @@ static double dist2(const vec3 &a, const vec3 &b)
   return dx * dx + dy * dy + dz * dz;
 }
 
-static CellKey cellOf(const vec3 &p, double cellSize)
+CellKey cellOf(const double *const p, double cellSize)
 {
   return {static_cast<bigint>(std::floor(p[0] / cellSize)),
           static_cast<bigint>(std::floor(p[1] / cellSize)),
           static_cast<bigint>(std::floor(p[2] / cellSize))};
 }
 
-struct AtomInfo {
-  vec3 pos;
-  double rad;
-  double atype;
-};
-
-std::vector<std::vector<AtomInfo>> splitByDistance(const std::vector<AtomInfo> &pts, double dist)
+std::vector<std::vector<int>> splitByDistance(const std::vector<int> &pts,
+                                              const double *const *const x, double dist)
 {
   const int n = static_cast<int>(pts.size());
   if (n == 0) return {};
@@ -131,7 +126,7 @@ std::vector<std::vector<AtomInfo>> splitByDistance(const std::vector<AtomInfo> &
   const double cellSize = dist;
 
   for (int i = 0; i < n; ++i) {
-    CellKey c = cellOf(pts[i].pos, cellSize);
+    CellKey c = cellOf(x[pts[i]], cellSize);
 
     for (int dx = -1; dx <= 1; ++dx) {
       for (int dy = -1; dy <= 1; ++dy) {
@@ -141,7 +136,7 @@ std::vector<std::vector<AtomInfo>> splitByDistance(const std::vector<AtomInfo> &
           if (it == grid.end()) continue;
 
           for (int j : it->second) {
-            if (dist2(pts[i].pos, pts[j].pos) < d2) dsu.unite(i, j);
+            if (dist2(x[pts[i]], x[pts[j]]) < d2) dsu.unite(i, j);
           }
         }
       }
@@ -150,12 +145,12 @@ std::vector<std::vector<AtomInfo>> splitByDistance(const std::vector<AtomInfo> &
     grid[c].push_back(i);
   }
 
-  std::unordered_map<int, std::vector<AtomInfo>> groups;
+  std::unordered_map<int, std::vector<int>> groups;
   groups.reserve(n);
 
   for (int i = 0; i < n; ++i) groups[dsu.find(i)].push_back(pts[i]);
 
-  std::vector<std::vector<AtomInfo>> result;
+  std::vector<std::vector<int>> result;
   result.reserve(groups.size());
   for (auto &kv : groups) { result.push_back(std::move(kv.second)); }
   return result;
@@ -370,7 +365,7 @@ void FixGraphicsChunk::end_of_step()
   // gather points per chunk along with their atom types
   // chunks are 1-based, ichunk[i] == 0 means atom is not in any chunk
 
-  std::vector<std::vector<AtomInfo>> chunk_atoms(nchunk);
+  std::vector<std::vector<int>> chunk_atoms(nchunk);
   for (int i = 0; i < nall; ++i) {
     // skip atoms not in fix group
     if (!(mask[i] & groupbit)) continue;
@@ -382,17 +377,17 @@ void FixGraphicsChunk::end_of_step()
     int ic = chunkid[i];
     if (ic < 1 || ic > nchunk) continue;
 
-    chunk_atoms[ic - 1].push_back({{x[i][0], x[i][1], x[i][2]}, atomrad[i], double(type[i])});
+    chunk_atoms[ic - 1].push_back(i);
   }
 
   // use automatic minimum cluster splitting distance, if not set explicitly
   if (mindist <= 0.0) mindist = 4.0 * maxradius;
 
-  std::vector<std::vector<AtomInfo>> new_chunks;
+  std::vector<std::vector<int>> new_chunks;
 
   // split chunks that are too far apart.
   for (const auto &chunk : chunk_atoms) {
-    auto split = splitByDistance(chunk, mindist);
+    auto split = splitByDistance(chunk, x, mindist);
     for (const auto &c : split) new_chunks.emplace_back(c);
   }
   chunk_atoms.clear();
@@ -410,10 +405,8 @@ void FixGraphicsChunk::end_of_step()
 
   std::vector<ObjData> all_objs;
   ImageObjects::ConvexHullObj hull;
-  nchunk = new_chunks.size();
 
-  for (int c = 0; c < nchunk; ++c) {
-    const auto &iatoms = new_chunks[c];
+  for (const auto &iatoms : new_chunks) {
     const auto natoms = iatoms.size();
     if (iatoms.empty()) continue;
 
@@ -423,12 +416,12 @@ void FixGraphicsChunk::end_of_step()
 
     // if number of atoms in cluster is maxreplace or smaller we replace the atom
     // positions with vectices from an icosahedron scaled to radius.
-    if (natoms <= maxreplace) {
+    if ((int)natoms <= maxreplace) {
       num_points = NUM_POINTS;
       pts.reserve(num_points * natoms);
-      for (const auto &ai : iatoms) {
+      for (const auto i : iatoms) {
         for (const auto &ico : icosahedron) {
-          vec3 pos{ai.rad * ico + ai.pos};
+          vec3 pos{atomrad[i] * ico + vec3{x[i][0], x[i][1], x[i][2]}};
           if (!clip || domain->inside(pos.data())) pts.push_back(pos);
         }
       }
@@ -437,24 +430,20 @@ void FixGraphicsChunk::end_of_step()
       // shift atom positions away from center by radius
 
       vec3 center{0.0, 0.0, 0.0};
-      for (const auto &ai : iatoms) {
-        center[0] += ai.pos[0];
-        center[1] += ai.pos[1];
-        center[2] += ai.pos[2];
+      for (const auto i : iatoms) {
+        center[0] += x[i][0];
+        center[1] += x[i][1];
+        center[2] += x[i][2];
       }
       center[0] /= double(natoms);
       center[1] /= double(natoms);
       center[2] /= double(natoms);
 
-      int count_all = 0;
-      int count_add = 0;
       pts.reserve(natoms);
-      for (const auto &ai : iatoms) {
-        vec3 extra{ai.pos[0] - center[0], ai.pos[1] - center[1], ai.pos[2] - center[2]};
+      for (const auto i : iatoms) {
+        vec3 extra{x[i][0] - center[0], x[i][1] - center[1], x[i][2] - center[2]};
         MathExtra::norm3(extra.data());
-        vec3 pos{ai.rad * extra + ai.pos};
-        ++count_all;
-        ++count_add;
+        vec3 pos{atomrad[i] * extra + vec3{x[i][0], x[i][1], x[i][2]}};
         if (!clip || domain->inside(pos.data())) pts.push_back(pos);
       }
     }
@@ -483,8 +472,9 @@ void FixGraphicsChunk::end_of_step()
             addme = false;
 
       if (addme)
-        all_objs.push_back({iatoms[ci0].atype, iatoms[ci1].atype, iatoms[ci2].atype, tris[t][0],
-                            tris[t][1], tris[t][2], norms[t][0], norms[t][1], norms[t][2]});
+        all_objs.push_back({double(type[iatoms[ci0]]), double(type[iatoms[ci1]]),
+                            double(type[iatoms[ci2]]), tris[t][0], tris[t][1], tris[t][2],
+                            norms[t][0], norms[t][1], norms[t][2]});
     }
   }
   new_chunks.clear();
@@ -534,8 +524,8 @@ int FixGraphicsChunk::pack_forward_comm(int n, int *list, double *buf, int /*pbc
   int m = 0;
   for (int i = 0; i < n; ++i) {
     int j = list[i];
-    buf[m++] = chunkid[i];
-    buf[m++] = atomrad[i];
+    buf[m++] = chunkid[j];
+    buf[m++] = atomrad[j];
   }
 
   return m;

@@ -2605,7 +2605,7 @@ int DumpImage::modify_param(int narg, char **arg)
 
     int m = 0;
     for (int i = nlo; i <= nhi; i++) {
-      colortype[i] = image->color2rgb(colors[m%ncolors].c_str());
+      colortype[i] = image->color2rgb(colors[m%ncolors]);
       if (colortype[i] == nullptr)
         error->all(FLERR,argoff+2,"Invalid color in dump_modify acolor command {}", arg[2]);
       m++;
@@ -2675,7 +2675,7 @@ int DumpImage::modify_param(int narg, char **arg)
 
     int m = 0;
     for (int i = nlo; i <= nhi; i++) {
-      bcolortype[i] = image->color2rgb(colors[m%ncolors].c_str());
+      bcolortype[i] = image->color2rgb(colors[m%ncolors]);
       if (bcolortype[i] == nullptr)
         error->all(FLERR, argoff + 2, "Invalid color in dump_modify bcolor command");
       m++;
