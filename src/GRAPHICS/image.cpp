@@ -372,13 +372,6 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
   background[0] = background[1] = background[2] = 0.0;
   background2[0] = background2[1] = background2[2] = -1.0;
 
-  // define nmap colormaps, all with default settings
-
-  nmap = nmap_caller;
-  maps = new ColorMap*[nmap];
-  for (int i = 0; i < nmap; i++)
-    maps[i] = new ColorMap(lmp,this);
-
   // static parameters
 
   FOV = MY_PI/6.0;              // 30 degrees
@@ -659,6 +652,13 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
     {"Bh", {{0.6431372549, 0.6666666667, 0.6784313725}, 1.0}},
     {"Hs", {{0.6431372549, 0.6666666667, 0.6784313725}, 1.0}},
     {"Mt", {{0.6431372549, 0.6666666667, 0.6784313725}, 1.0}}};
+
+  // define requested color maps with default values. must come after defining color names
+
+  nmap = nmap_caller;
+  maps = new ColorMap*[nmap];
+  for (int i = 0; i < nmap; i++)
+    maps[i] = new ColorMap(lmp,this);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -2168,9 +2168,9 @@ int Image::map_minmax(int index, double mindynamic, double maxdynamic)
    get min/max bounds of dynamic color map index and return 1 if dynamic
 ------------------------------------------------------------------------- */
 
-int Image::map_info(int index, double &min, double &max)
+int Image::map_info(int index, double &min, double &max, bool &sequential)
 {
-  return maps[index]->info(min, max);
+  return maps[index]->info(min, max, sequential);
 }
 
 /* ----------------------------------------------------------------------
@@ -2315,7 +2315,7 @@ int ColorMap::reset(int narg, char **arg)
 
   nentry = utils::inumeric(FLERR,arg[4],false,lmp);
   if (nentry < 1) return 5;
-  delete [] mentry;
+  delete[] mentry;
   mentry = new MapEntry[nentry];
   mentry[0].svalue = 0.0;
 
@@ -2432,10 +2432,11 @@ int ColorMap::minmax(double mindynamic, double maxdynamic)
 
 // clang-format on
 
-int ColorMap::info(double &min, double &max)
+int ColorMap::info(double &min, double &max, bool &sequential)
 {
   min = locurrent;
   max = hicurrent;
+  sequential = mstyle == SEQUENTIAL;
   return dynamic;
 }
 
