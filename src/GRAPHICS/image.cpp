@@ -368,7 +368,6 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
 
   // colors
 
-  boxcolor = color2rgb("yellow");
   background[0] = background[1] = background[2] = 0.0;
   background2[0] = background2[1] = background2[2] = -1.0;
 
@@ -450,7 +449,7 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
     {"gold", {255 / 255.0, 215 / 255.0, 0 / 255.0}},
     {"goldenrod", {218 / 255.0, 165 / 255.0, 32 / 255.0}},
     {"gray", {128 / 255.0, 128 / 255.0, 128 / 255.0}},
-    {"green", {0 / 255.0, 128 / 255.0, 0 / 255.0}},
+    {"green", {0 / 255.0, 255.0 / 255.0, 0 / 255.0}},
     {"greenyellow", {173 / 255.0, 255 / 255.0, 47 / 255.0}},
     {"honeydew", {240 / 255.0, 255 / 255.0, 240 / 255.0}},
     {"hotpink", {255 / 255.0, 105 / 255.0, 180 / 255.0}},
@@ -498,8 +497,8 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
     {"oldlace", {253 / 255.0, 245 / 255.0, 230 / 255.0}},
     {"olive", {128 / 255.0, 128 / 255.0, 0 / 255.0}},
     {"olivedrab", {107 / 255.0, 142 / 255.0, 35 / 255.0}},
-    {"orange", {255 / 255.0, 165 / 255.0, 0 / 255.0}},
-    {"orangered", {255 / 255.0, 69 / 255.0, 0 / 255.0}},
+    {"orange", {255 / 255.0, 128 / 255.0, 0 / 255.0}},
+    {"orangered", {255 / 255.0, 64 / 255.0, 0 / 255.0}},
     {"orchid", {218 / 255.0, 112 / 255.0, 214 / 255.0}},
     {"palegoldenrod", {238 / 255.0, 232 / 255.0, 170 / 255.0}},
     {"palegreen", {152 / 255.0, 251 / 255.0, 152 / 255.0}},
@@ -652,6 +651,8 @@ Image::Image(LAMMPS *lmp, int nmap_caller) :
     {"Bh", {{0.6431372549, 0.6666666667, 0.6784313725}, 1.0}},
     {"Hs", {{0.6431372549, 0.6666666667, 0.6784313725}, 1.0}},
     {"Mt", {{0.6431372549, 0.6666666667, 0.6784313725}, 1.0}}};
+
+  boxcolor = color2rgb("yellow");
 
   // define requested color maps with default values. must come after defining color names
 
