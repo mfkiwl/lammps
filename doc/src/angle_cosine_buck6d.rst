@@ -4,7 +4,7 @@
 angle_style cosine/buck6d command
 =================================
 
-Accelerator Variant: *cosine/buck6d/omp*
+Accelerator Variants: *cosine/buck6d/omp*
 
 Syntax
 """"""

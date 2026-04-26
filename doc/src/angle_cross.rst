@@ -4,7 +4,7 @@
 angle_style cross command
 =========================
 
-Accelerator Variant: *cross/omp*
+Accelerator Variants: *cross/omp*
 
 Syntax
 """"""

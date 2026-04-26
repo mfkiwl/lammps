@@ -4,7 +4,7 @@
 improper_style distharm command
 ===============================
 
-Accelerator Variant: *distharm/omp*
+Accelerator Variants: *distharm/omp*
 
 Syntax
 """"""

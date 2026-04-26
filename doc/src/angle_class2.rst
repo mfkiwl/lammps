@@ -19,7 +19,7 @@ Accelerator Variants: *class2xe/omp*
 angle_style class2/p6 command
 =============================
 
-Accelerator Variant: *class2/p6/omp*
+Accelerator Variants: *class2/p6/omp*
 
 Syntax
 """"""

@@ -4,7 +4,7 @@
 angle_style mm3 command
 =======================
 
-Accelerator Variant: *mm3/omp*
+Accelerator Variants: *mm3/omp*
 
 Syntax
 """"""

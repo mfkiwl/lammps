@@ -4,7 +4,7 @@
 improper_style sqdistharm command
 =================================
 
-Accelerator Variant: *sqdistharm/omp*
+Accelerator Variants: *sqdistharm/omp*
 
 Syntax
 """"""

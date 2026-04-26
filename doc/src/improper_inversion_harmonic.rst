@@ -4,7 +4,7 @@
 improper_style inversion/harmonic command
 =========================================
 
-Accelerator Variant: *inversion/harmonic/omp*
+Accelerator Variants: *inversion/harmonic/omp*
 
 Syntax
 """"""
