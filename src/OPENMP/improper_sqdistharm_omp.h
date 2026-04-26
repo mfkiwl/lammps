@@ -11,33 +11,33 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing author: Axel Kohlmeyer (Temple U)
+------------------------------------------------------------------------- */
+
 #ifdef IMPROPER_CLASS
 // clang-format off
-ImproperStyle(sqdistharm,ImproperSQDistHarm);
+ImproperStyle(sqdistharm/omp,ImproperSQDistHarmOMP);
 // clang-format on
 #else
 
-#ifndef LMP_IMPROPER_SQDISTHARM_H
-#define LMP_IMPROPER_SQDISTHARM_H
+#ifndef LMP_IMPROPER_SQDISTHARM_OMP_H
+#define LMP_IMPROPER_SQDISTHARM_OMP_H
 
-#include "improper.h"
+#include "improper_sqdistharm.h"
+#include "thr_omp.h"
 
 namespace LAMMPS_NS {
 
-class ImproperSQDistHarm : public Improper {
+class ImproperSQDistHarmOMP : public ImproperSQDistHarm, public ThrOMP {
+
  public:
-  ImproperSQDistHarm(class LAMMPS *);
-  ~ImproperSQDistHarm() override;
+  ImproperSQDistHarmOMP(class LAMMPS *lmp);
   void compute(int, int) override;
-  void coeff(int, char **) override;
-  void write_restart(FILE *) override;
-  void read_restart(FILE *) override;
-  void *extract(const char *, int &) override;
 
- protected:
-  double *k, *chi;
-
-  void allocate();
+ private:
+  template <int EVFLAG, int EFLAG, int NEWTON_BOND>
+  void eval(int ifrom, int ito, ThrData *const thr);
 };
 
 }    // namespace LAMMPS_NS

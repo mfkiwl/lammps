@@ -11,33 +11,29 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#ifdef IMPROPER_CLASS
+#ifdef ANGLE_CLASS
 // clang-format off
-ImproperStyle(sqdistharm,ImproperSQDistHarm);
+AngleStyle(class2/p6/omp,AngleClass2P6OMP);
 // clang-format on
 #else
 
-#ifndef LMP_IMPROPER_SQDISTHARM_H
-#define LMP_IMPROPER_SQDISTHARM_H
+#ifndef LMP_ANGLE_CLASS2_P6_OMP_H
+#define LMP_ANGLE_CLASS2_P6_OMP_H
 
-#include "improper.h"
+#include "angle_class2_p6.h"
+#include "thr_omp.h"
 
 namespace LAMMPS_NS {
 
-class ImproperSQDistHarm : public Improper {
+class AngleClass2P6OMP : public AngleClass2P6, public ThrOMP {
+
  public:
-  ImproperSQDistHarm(class LAMMPS *);
-  ~ImproperSQDistHarm() override;
+  AngleClass2P6OMP(class LAMMPS *);
   void compute(int, int) override;
-  void coeff(int, char **) override;
-  void write_restart(FILE *) override;
-  void read_restart(FILE *) override;
-  void *extract(const char *, int &) override;
 
- protected:
-  double *k, *chi;
-
-  void allocate();
+ private:
+  template <int EVFLAG, int EFLAG, int NEWTON_BOND>
+  void eval(int ifrom, int ito, ThrData *const thr);
 };
 
 }    // namespace LAMMPS_NS

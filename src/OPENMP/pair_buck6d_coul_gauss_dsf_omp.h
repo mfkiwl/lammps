@@ -11,33 +11,29 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#ifdef IMPROPER_CLASS
+#ifdef PAIR_CLASS
 // clang-format off
-ImproperStyle(sqdistharm,ImproperSQDistHarm);
+PairStyle(buck6d/coul/gauss/dsf/omp,PairBuck6dCoulGaussDSFOMP);
 // clang-format on
 #else
 
-#ifndef LMP_IMPROPER_SQDISTHARM_H
-#define LMP_IMPROPER_SQDISTHARM_H
+#ifndef LMP_PAIR_BUCK6D_COUL_GAUSS_DSF_OMP_H
+#define LMP_PAIR_BUCK6D_COUL_GAUSS_DSF_OMP_H
 
-#include "improper.h"
+#include "pair_buck6d_coul_gauss_dsf.h"
+#include "thr_omp.h"
 
 namespace LAMMPS_NS {
 
-class ImproperSQDistHarm : public Improper {
+class PairBuck6dCoulGaussDSFOMP : public PairBuck6dCoulGaussDSF, public ThrOMP {
+
  public:
-  ImproperSQDistHarm(class LAMMPS *);
-  ~ImproperSQDistHarm() override;
+  PairBuck6dCoulGaussDSFOMP(class LAMMPS *);
   void compute(int, int) override;
-  void coeff(int, char **) override;
-  void write_restart(FILE *) override;
-  void read_restart(FILE *) override;
-  void *extract(const char *, int &) override;
 
- protected:
-  double *k, *chi;
-
-  void allocate();
+ private:
+  template <int EVFLAG, int EFLAG, int NEWTON_PAIR>
+  void eval(int ifrom, int ito, ThrData *const thr);
 };
 
 }    // namespace LAMMPS_NS

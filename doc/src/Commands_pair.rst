@@ -52,8 +52,8 @@ OPT.
    * :doc:`buck/coul/msm (o) <pair_buck>`
    * :doc:`buck/long/coul/long (o) <pair_buck_long>`
    * :doc:`buck/mdf (o) <pair_mdf>`
-   * :doc:`buck6d/coul/gauss/dsf <pair_buck6d_coul_gauss>`
-   * :doc:`buck6d/coul/gauss/long <pair_buck6d_coul_gauss>`
+   * :doc:`buck6d/coul/gauss/dsf (o) <pair_buck6d_coul_gauss>`
+   * :doc:`buck6d/coul/gauss/long (o) <pair_buck6d_coul_gauss>`
    * :doc:`colloid (go) <pair_colloid>`
    * :doc:`comb (o) <pair_comb>`
    * :doc:`comb3 <pair_comb>`

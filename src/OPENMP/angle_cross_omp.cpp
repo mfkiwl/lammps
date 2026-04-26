@@ -1,4 +1,3 @@
-// clang-format off
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -17,12 +16,12 @@
 ------------------------------------------------------------------------- */
 
 #include "omp_compat.h"
-#include "angle_class2_omp.h"
-
+#include "angle_cross_omp.h"
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
 #include "neighbor.h"
+#include "timer.h"
 
 #include <cmath>
 
@@ -33,15 +32,15 @@ static constexpr double SMALL = 0.001;
 
 /* ---------------------------------------------------------------------- */
 
-AngleClass2OMP::AngleClass2OMP(class LAMMPS *lmp)
-  : AngleClass2(lmp), ThrOMP(lmp,THR_ANGLE)
+AngleCrossOMP::AngleCrossOMP(class LAMMPS *lmp)
+  : AngleCross(lmp), ThrOMP(lmp,THR_ANGLE)
 {
   suffix_flag |= Suffix::OMP;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void AngleClass2OMP::compute(int eflag, int vflag)
+void AngleCrossOMP::compute(int eflag, int vflag)
 {
   ev_init(eflag,vflag);
 
@@ -58,7 +57,7 @@ void AngleClass2OMP::compute(int eflag, int vflag)
     loop_setup_thr(ifrom, ito, tid, inum, nthreads);
     ThrData *thr = fix->get_thr(tid);
     thr->timer(Timer::START);
-    ev_setup_thr(eflag, vflag, nall, eatom, vatom, cvatom, thr);
+    ev_setup_thr(eflag, vflag, nall, eatom, vatom, nullptr, thr);
 
     if (inum > 0) {
       if (evflag) {
@@ -79,17 +78,15 @@ void AngleClass2OMP::compute(int eflag, int vflag)
   } // end of omp parallel region
 }
 
-/* ---------------------------------------------------------------------- */
-
 template <int EVFLAG, int EFLAG, int NEWTON_BOND>
-void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
+void AngleCrossOMP::eval(int nfrom, int nto, ThrData * const thr)
 {
   int i1,i2,i3,n,type;
   double delx1,dely1,delz1,delx2,dely2,delz2;
   double eangle,f1[3],f3[3];
-  double dtheta,dtheta2,dtheta3,dtheta4,de_angle;
+  double dtheta;
   double dr1,dr2,tk1,tk2,aa1,aa2,aa11,aa12,aa21,aa22;
-  double rsq1,rsq2,r1,r2,c,s,a,a11,a12,a22,b1,b2;
+  double rsq1,rsq2,r1,r2,c,s,b1,b2;
   double vx11,vx12,vy11,vy12,vz11,vz12,vx21,vx22,vy21,vy22,vz21,vz22;
 
   const auto * _noalias const x = (dbl3_t *) atom->x[0];
@@ -134,54 +131,27 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     if (s < SMALL) s = SMALL;
     s = 1.0/s;
 
-    // force & energy for angle term
-
-    dtheta = acos(c) - theta0[type];
-    dtheta2 = dtheta*dtheta;
-    dtheta3 = dtheta2*dtheta;
-    dtheta4 = dtheta3*dtheta;
-
-    de_angle = 2.0*k2[type]*dtheta + 3.0*k3[type]*dtheta2 +
-      4.0*k4[type]*dtheta3;
-
-    a = -de_angle*s;
-    a11 = a*c / rsq1;
-    a12 = -a / (r1*r2);
-    a22 = a*c / rsq2;
-
-    f1[0] = a11*delx1 + a12*delx2;
-    f1[1] = a11*dely1 + a12*dely2;
-    f1[2] = a11*delz1 + a12*delz2;
-
-    f3[0] = a22*delx2 + a12*delx1;
-    f3[1] = a22*dely2 + a12*dely1;
-    f3[2] = a22*delz2 + a12*delz1;
-
-    if (EFLAG) eangle = k2[type]*dtheta2 + k3[type]*dtheta3 + k4[type]*dtheta4;
-
     // force & energy for bond-bond term
+    dr1 = r1 - r00[type];
+    dr2 = r2 - r01[type];
+    tk1 = kss[type] * dr1;
+    tk2 = kss[type] * dr2;
 
-    dr1 = r1 - bb_r1[type];
-    dr2 = r2 - bb_r2[type];
-    tk1 = bb_k[type] * dr1;
-    tk2 = bb_k[type] * dr2;
+    f1[0] = -delx1*tk2/r1;
+    f1[1] = -dely1*tk2/r1;
+    f1[2] = -delz1*tk2/r1;
 
-    f1[0] -= delx1*tk2/r1;
-    f1[1] -= dely1*tk2/r1;
-    f1[2] -= delz1*tk2/r1;
+    f3[0] = -delx2*tk1/r2;
+    f3[1] = -dely2*tk1/r2;
+    f3[2] = -delz2*tk1/r2;
 
-    f3[0] -= delx2*tk1/r2;
-    f3[1] -= dely2*tk1/r2;
-    f3[2] -= delz2*tk1/r2;
-
-    if (EFLAG) eangle += bb_k[type]*dr1*dr2;
+    if (EFLAG) eangle = kss[type]*dr1*dr2;
 
     // force & energy for bond-angle term
+    dtheta = acos(c) - theta0[type];
 
-    dr1 = r1 - ba_r1[type];
-    dr2 = r2 - ba_r2[type];
-    aa1 = s * dr1 * ba_k1[type];
-    aa2 = s * dr2 * ba_k2[type];
+    aa1 = s * dr1 * kbs0[type];
+    aa2 = s * dr2 * kbs1[type];
 
     aa11 = aa1 * c / rsq1;
     aa12 = -aa1 / (r1 * r2);
@@ -205,8 +175,8 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     vz21 = (aa11 * delz2) + (aa12 * delz1);
     vz22 = (aa21 * delz2) + (aa22 * delz1);
 
-    b1 = ba_k1[type] * dtheta / r1;
-    b2 = ba_k2[type] * dtheta / r2;
+    b1 = kbs0[type] * dtheta / r1;
+    b2 = kbs1[type] * dtheta / r2;
 
     f1[0] -= vx11 + b1*delx1 + vx12;
     f1[1] -= vy11 + b1*dely1 + vy12;
@@ -216,7 +186,7 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     f3[1] -= vy21 + b2*dely2 + vy22;
     f3[2] -= vz21 + b2*delz2 + vz22;
 
-    if (EFLAG) eangle += ba_k1[type]*dr1*dtheta + ba_k2[type]*dr2*dtheta;
+    if (EFLAG) eangle += kbs0[type]*dr1*dtheta + kbs1[type]*dr2*dtheta;
 
     // apply force to each of 3 atoms
 

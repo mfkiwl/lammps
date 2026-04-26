@@ -17,33 +17,35 @@
 ------------------------------------------------------------------------- */
 
 #include "omp_compat.h"
-#include "angle_class2_omp.h"
-
+#include "angle_class2_p6_omp.h"
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
 #include "neighbor.h"
+#include "timer.h"
+#include "math_const.h"
 
 #include <cmath>
 
 #include "suffix.h"
 using namespace LAMMPS_NS;
+using namespace MathConst;
 
 static constexpr double SMALL = 0.001;
 
 /* ---------------------------------------------------------------------- */
 
-AngleClass2OMP::AngleClass2OMP(class LAMMPS *lmp)
-  : AngleClass2(lmp), ThrOMP(lmp,THR_ANGLE)
+AngleClass2P6OMP::AngleClass2P6OMP(LAMMPS *lmp) :
+  AngleClass2P6(lmp), ThrOMP(lmp, THR_ANGLE)
 {
   suffix_flag |= Suffix::OMP;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void AngleClass2OMP::compute(int eflag, int vflag)
+void AngleClass2P6OMP::compute(int eflag, int vflag)
 {
-  ev_init(eflag,vflag);
+  ev_init(eflag, vflag);
 
   const int nall = atom->nlocal + atom->nghost;
   const int nthreads = comm->nthreads;
@@ -82,15 +84,15 @@ void AngleClass2OMP::compute(int eflag, int vflag)
 /* ---------------------------------------------------------------------- */
 
 template <int EVFLAG, int EFLAG, int NEWTON_BOND>
-void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
+void AngleClass2P6OMP::eval(int nfrom, int nto, ThrData * const thr)
 {
-  int i1,i2,i3,n,type;
-  double delx1,dely1,delz1,delx2,dely2,delz2;
-  double eangle,f1[3],f3[3];
-  double dtheta,dtheta2,dtheta3,dtheta4,de_angle;
-  double dr1,dr2,tk1,tk2,aa1,aa2,aa11,aa12,aa21,aa22;
-  double rsq1,rsq2,r1,r2,c,s,a,a11,a12,a22,b1,b2;
-  double vx11,vx12,vy11,vy12,vz11,vz12,vx21,vx22,vy21,vy22,vz21,vz22;
+  int i1, i2, i3, n, type;
+  double delx1, dely1, delz1, delx2, dely2, delz2;
+  double eangle, f1[3], f3[3];
+  double dtheta, dtheta2, dtheta3, dtheta4, dtheta5, dtheta6, de_angle;
+  double dr1, dr2, tk1, tk2, aa1, aa2, aa11, aa12, aa21, aa22;
+  double rsq1, rsq2, r1, r2, c, s, a, a11, a12, a22, b1, b2;
+  double vx11, vx12, vy11, vy12, vz11, vz12, vx21, vx22, vy21, vy22, vz21, vz22;
 
   const auto * _noalias const x = (dbl3_t *) atom->x[0];
   auto * _noalias const f = (dbl3_t *) thr->get_f()[0];
@@ -140,9 +142,12 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     dtheta2 = dtheta*dtheta;
     dtheta3 = dtheta2*dtheta;
     dtheta4 = dtheta3*dtheta;
+    dtheta5 = dtheta4*dtheta;
+    dtheta6 = dtheta5*dtheta;
 
     de_angle = 2.0*k2[type]*dtheta + 3.0*k3[type]*dtheta2 +
-      4.0*k4[type]*dtheta3;
+      4.0*k4[type]*dtheta3 + 5.0*k5[type]*dtheta4 +
+      6.0*k6[type]*dtheta5;
 
     a = -de_angle*s;
     a11 = a*c / rsq1;
@@ -157,7 +162,8 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     f3[1] = a22*dely2 + a12*dely1;
     f3[2] = a22*delz2 + a12*delz1;
 
-    if (EFLAG) eangle = k2[type]*dtheta2 + k3[type]*dtheta3 + k4[type]*dtheta4;
+    if (EFLAG) eangle = k2[type]*dtheta2 + k3[type]*dtheta3 + k4[type]*dtheta4
+                 + k5[type]*dtheta5 + k6[type]*dtheta6;
 
     // force & energy for bond-bond term
 
@@ -238,7 +244,7 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
       f[i3].z += f3[2];
     }
 
-    if (EVFLAG) ev_tally_thr(this,i1,i2,i3,nlocal,NEWTON_BOND,eangle,f1,f3,
-                             delx1,dely1,delz1,delx2,dely2,delz2,thr);
+    if (EVFLAG) ev_tally_thr(this, i1, i2, i3, nlocal, NEWTON_BOND, eangle, f1, f3,
+                             delx1, dely1, delz1, delx2, dely2, delz2, thr);
   }
 }

@@ -17,33 +17,35 @@
 ------------------------------------------------------------------------- */
 
 #include "omp_compat.h"
-#include "angle_class2_omp.h"
-
+#include "angle_cosine_buck6d_omp.h"
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
 #include "neighbor.h"
+#include "timer.h"
+#include "math_const.h"
 
 #include <cmath>
 
 #include "suffix.h"
 using namespace LAMMPS_NS;
+using namespace MathConst;
 
 static constexpr double SMALL = 0.001;
 
 /* ---------------------------------------------------------------------- */
 
-AngleClass2OMP::AngleClass2OMP(class LAMMPS *lmp)
-  : AngleClass2(lmp), ThrOMP(lmp,THR_ANGLE)
+AngleCosineBuck6dOMP::AngleCosineBuck6dOMP(LAMMPS *lmp) :
+  AngleCosineBuck6d(lmp), ThrOMP(lmp, THR_ANGLE)
 {
   suffix_flag |= Suffix::OMP;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void AngleClass2OMP::compute(int eflag, int vflag)
+void AngleCosineBuck6dOMP::compute(int eflag, int vflag)
 {
-  ev_init(eflag,vflag);
+  ev_init(eflag, vflag);
 
   const int nall = atom->nlocal + atom->nghost;
   const int nthreads = comm->nthreads;
@@ -82,20 +84,26 @@ void AngleClass2OMP::compute(int eflag, int vflag)
 /* ---------------------------------------------------------------------- */
 
 template <int EVFLAG, int EFLAG, int NEWTON_BOND>
-void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
+void AngleCosineBuck6dOMP::eval(int nfrom, int nto, ThrData * const thr)
 {
-  int i1,i2,i3,n,type;
-  double delx1,dely1,delz1,delx2,dely2,delz2;
-  double eangle,f1[3],f3[3];
-  double dtheta,dtheta2,dtheta3,dtheta4,de_angle;
-  double dr1,dr2,tk1,tk2,aa1,aa2,aa11,aa12,aa21,aa22;
-  double rsq1,rsq2,r1,r2,c,s,a,a11,a12,a22,b1,b2;
-  double vx11,vx12,vy11,vy12,vz11,vz12,vx21,vx22,vy21,vy22,vz21,vz22;
+  int i1, i2, i3, n, type, itype, jtype;
+  double delx1, dely1, delz1, delx2, dely2, delz2;
+  double eangle, f1[3], f3[3];
+  double rsq1, rsq2, r1, r2, c, s, a, a11, a12, a22;
+  double tk;
+
+  // extra lj variables
+  double delx3, dely3, delz3, rsq3, r3;
+  double rexp, r32inv, r36inv, r314inv, forcebuck6d, fpair;
+  double term1, term2, term3, term4, term5, ebuck6d, evdwl;
+  double rcu, rqu, sme, smf;
 
   const auto * _noalias const x = (dbl3_t *) atom->x[0];
   auto * _noalias const f = (dbl3_t *) thr->get_f()[0];
   const int4_t * _noalias const anglelist = (int4_t *) neighbor->anglelist[0];
   const int nlocal = atom->nlocal;
+  const int newton_pair = force->newton_pair;
+  const int * _noalias const atomtype = atom->type;
   eangle = 0.0;
 
   for (n = nfrom; n < nto; n++) {
@@ -122,11 +130,10 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     rsq2 = delx2*delx2 + dely2*dely2 + delz2*delz2;
     r2 = sqrt(rsq2);
 
-    // angle (cos and sin)
+    // c = cosine of angle
 
     c = delx1*delx2 + dely1*dely2 + delz1*delz2;
     c /= r1*r2;
-
     if (c > 1.0) c = 1.0;
     if (c < -1.0) c = -1.0;
 
@@ -134,17 +141,79 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     if (s < SMALL) s = SMALL;
     s = 1.0/s;
 
-    // force & energy for angle term
+    // force & energy
 
-    dtheta = acos(c) - theta0[type];
-    dtheta2 = dtheta*dtheta;
-    dtheta3 = dtheta2*dtheta;
-    dtheta4 = dtheta3*dtheta;
+    // explicit lj-contribution
 
-    de_angle = 2.0*k2[type]*dtheta + 3.0*k3[type]*dtheta2 +
-      4.0*k4[type]*dtheta3;
+    itype = atomtype[i1];
+    jtype = atomtype[i3];
 
-    a = -de_angle*s;
+    delx3 = x[i1].x - x[i3].x;
+    dely3 = x[i1].y - x[i3].y;
+    delz3 = x[i1].z - x[i3].z;
+    rsq3 = delx3*delx3 + dely3*dely3 + delz3*delz3;
+
+    if (rsq3 < cut_ljsq[itype][jtype]) {
+      r3 = sqrt(rsq3);
+      r32inv = 1.0/rsq3;
+      r36inv = r32inv*r32inv*r32inv;
+      r314inv = r36inv*r36inv*r32inv;
+      rexp = exp(-r3*buck6d2[itype][jtype]);
+      term1 = buck6d3[itype][jtype]*r36inv;
+      term2 = buck6d4[itype][jtype]*r314inv;
+      term3 = term2*term2;
+      term4 = 1.0/(1.0 + term2);
+      term5 = 1.0/(1.0 + 2.0*term2 + term3);
+      forcebuck6d = buck6d1[itype][jtype]*buck6d2[itype][jtype]*r3*rexp;
+      forcebuck6d -= term1*(6.0*term4 - term5*14.0*term2);
+      ebuck6d = buck6d1[itype][jtype]*rexp - term1*term4;
+
+      // smoothing term
+      if (rsq3 > rsmooth_sq[itype][jtype]) {
+        rcu = r3*rsq3;
+        rqu = rsq3*rsq3;
+        sme = c5[itype][jtype]*rqu*r3 + c4[itype][jtype]*rqu + c3[itype][jtype]*rcu +
+              c2[itype][jtype]*rsq3 + c1[itype][jtype]*r3 + c0[itype][jtype];
+        smf = 5.0*c5[itype][jtype]*rqu + 4.0*c4[itype][jtype]*rcu +
+              3.0*c3[itype][jtype]*rsq3 + 2.0*c2[itype][jtype]*r3 + c1[itype][jtype];
+        forcebuck6d = forcebuck6d*sme + ebuck6d*smf;
+        if (EFLAG) ebuck6d *= sme;
+      }
+    } else forcebuck6d = 0.0;
+
+    // add forces of additional LJ interaction
+
+    fpair = forcebuck6d * r32inv;
+    if (newton_pair || i1 < nlocal) {
+      f[i1].x += delx3*fpair;
+      f[i1].y += dely3*fpair;
+      f[i1].z += delz3*fpair;
+    }
+    if (newton_pair || i3 < nlocal) {
+      f[i3].x -= delx3*fpair;
+      f[i3].y -= dely3*fpair;
+      f[i3].z -= delz3*fpair;
+    }
+
+    evdwl = 0.0;
+    if (EFLAG) {
+      if (rsq3 < cut_ljsq[itype][jtype]) {
+        evdwl = ebuck6d - offset[itype][jtype];
+      }
+    }
+
+    //update pair energy and velocities
+
+    if (EVFLAG) ev_tally13_thr(this, i1, i3, nlocal, newton_pair,
+                                evdwl, fpair, delx3, dely3, delz3, thr);
+
+    tk = multiplicity[type]*acos(c)-th0[type];
+
+    if (EFLAG) eangle = k[type]*(1.0+cos(tk));
+    else eangle = 0.0;
+
+    a = k[type]*multiplicity[type]*sin(tk)*s;
+
     a11 = a*c / rsq1;
     a12 = -a / (r1*r2);
     a22 = a*c / rsq2;
@@ -152,71 +221,9 @@ void AngleClass2OMP::eval(int nfrom, int nto, ThrData * const thr)
     f1[0] = a11*delx1 + a12*delx2;
     f1[1] = a11*dely1 + a12*dely2;
     f1[2] = a11*delz1 + a12*delz2;
-
     f3[0] = a22*delx2 + a12*delx1;
     f3[1] = a22*dely2 + a12*dely1;
     f3[2] = a22*delz2 + a12*delz1;
-
-    if (EFLAG) eangle = k2[type]*dtheta2 + k3[type]*dtheta3 + k4[type]*dtheta4;
-
-    // force & energy for bond-bond term
-
-    dr1 = r1 - bb_r1[type];
-    dr2 = r2 - bb_r2[type];
-    tk1 = bb_k[type] * dr1;
-    tk2 = bb_k[type] * dr2;
-
-    f1[0] -= delx1*tk2/r1;
-    f1[1] -= dely1*tk2/r1;
-    f1[2] -= delz1*tk2/r1;
-
-    f3[0] -= delx2*tk1/r2;
-    f3[1] -= dely2*tk1/r2;
-    f3[2] -= delz2*tk1/r2;
-
-    if (EFLAG) eangle += bb_k[type]*dr1*dr2;
-
-    // force & energy for bond-angle term
-
-    dr1 = r1 - ba_r1[type];
-    dr2 = r2 - ba_r2[type];
-    aa1 = s * dr1 * ba_k1[type];
-    aa2 = s * dr2 * ba_k2[type];
-
-    aa11 = aa1 * c / rsq1;
-    aa12 = -aa1 / (r1 * r2);
-    aa21 = aa2 * c / rsq1;
-    aa22 = -aa2 / (r1 * r2);
-
-    vx11 = (aa11 * delx1) + (aa12 * delx2);
-    vx12 = (aa21 * delx1) + (aa22 * delx2);
-    vy11 = (aa11 * dely1) + (aa12 * dely2);
-    vy12 = (aa21 * dely1) + (aa22 * dely2);
-    vz11 = (aa11 * delz1) + (aa12 * delz2);
-    vz12 = (aa21 * delz1) + (aa22 * delz2);
-
-    aa11 = aa1 * c / rsq2;
-    aa21 = aa2 * c / rsq2;
-
-    vx21 = (aa11 * delx2) + (aa12 * delx1);
-    vx22 = (aa21 * delx2) + (aa22 * delx1);
-    vy21 = (aa11 * dely2) + (aa12 * dely1);
-    vy22 = (aa21 * dely2) + (aa22 * dely1);
-    vz21 = (aa11 * delz2) + (aa12 * delz1);
-    vz22 = (aa21 * delz2) + (aa22 * delz1);
-
-    b1 = ba_k1[type] * dtheta / r1;
-    b2 = ba_k2[type] * dtheta / r2;
-
-    f1[0] -= vx11 + b1*delx1 + vx12;
-    f1[1] -= vy11 + b1*dely1 + vy12;
-    f1[2] -= vz11 + b1*delz1 + vz12;
-
-    f3[0] -= vx21 + b2*delx2 + vx22;
-    f3[1] -= vy21 + b2*dely2 + vy22;
-    f3[2] -= vz21 + b2*delz2 + vz22;
-
-    if (EFLAG) eangle += ba_k1[type]*dr1*dtheta + ba_k2[type]*dr2*dtheta;
 
     // apply force to each of 3 atoms
 

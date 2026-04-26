@@ -1,4 +1,3 @@
-// clang-format off
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -17,12 +16,12 @@
 ------------------------------------------------------------------------- */
 
 #include "omp_compat.h"
-#include "angle_cosine_omp.h"
-
+#include "bond_mm3_omp.h"
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
 #include "neighbor.h"
+#include "timer.h"
 
 #include <cmath>
 
@@ -31,21 +30,21 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-AngleCosineOMP::AngleCosineOMP(LAMMPS *lmp)
-  : AngleCosine(lmp), ThrOMP(lmp,THR_ANGLE)
+BondMM3OMP::BondMM3OMP(class LAMMPS *lmp)
+  : BondMM3(lmp), ThrOMP(lmp,THR_BOND)
 {
   suffix_flag |= Suffix::OMP;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void AngleCosineOMP::compute(int eflag, int vflag)
+void BondMM3OMP::compute(int eflag, int vflag)
 {
-  ev_init(eflag, vflag);
+  ev_init(eflag,vflag);
 
   const int nall = atom->nlocal + atom->nghost;
   const int nthreads = comm->nthreads;
-  const int inum = neighbor->nanglelist;
+  const int inum = neighbor->nbondlist;
 
 #if defined(_OPENMP)
 #pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
@@ -56,7 +55,7 @@ void AngleCosineOMP::compute(int eflag, int vflag)
     loop_setup_thr(ifrom, ito, tid, inum, nthreads);
     ThrData *thr = fix->get_thr(tid);
     thr->timer(Timer::START);
-    ev_setup_thr(eflag, vflag, nall, eatom, vatom, cvatom, thr);
+    ev_setup_thr(eflag, vflag, nall, eatom, vatom, nullptr, thr);
 
     if (inum > 0) {
       if (evflag) {
@@ -78,87 +77,58 @@ void AngleCosineOMP::compute(int eflag, int vflag)
 }
 
 template <int EVFLAG, int EFLAG, int NEWTON_BOND>
-void AngleCosineOMP::eval(int nfrom, int nto, ThrData * const thr)
+void BondMM3OMP::eval(int nfrom, int nto, ThrData * const thr)
 {
-  int i1,i2,i3,n,type;
-  double delx1,dely1,delz1,delx2,dely2,delz2;
-  double eangle,f1[3],f3[3];
-  double rsq1,rsq2,r1,r2,c,a,a11,a12,a22;
+  int i1,i2,n,type;
+  double delx,dely,delz,ebond,fbond;
+  double rsq,r,dr,dr2,de_bond,K3,K4;
 
   const auto * _noalias const x = (dbl3_t *) atom->x[0];
   auto * _noalias const f = (dbl3_t *) thr->get_f()[0];
-  const int4_t * _noalias const anglelist = (int4_t *) neighbor->anglelist[0];
+  const int3_t * _noalias const bondlist = (int3_t *) neighbor->bondlist[0];
   const int nlocal = atom->nlocal;
-  eangle = 0.0;
+  ebond = 0.0;
+
+  K3 = -2.55/force->angstrom;
+  K4 = 7.0/12.0*2.55*2.55/force->angstrom/force->angstrom;
 
   for (n = nfrom; n < nto; n++) {
-    i1 = anglelist[n].a;
-    i2 = anglelist[n].b;
-    i3 = anglelist[n].c;
-    type = anglelist[n].t;
+    i1 = bondlist[n].a;
+    i2 = bondlist[n].b;
+    type = bondlist[n].t;
 
-    // 1st bond
+    delx = x[i1].x - x[i2].x;
+    dely = x[i1].y - x[i2].y;
+    delz = x[i1].z - x[i2].z;
 
-    delx1 = x[i1].x - x[i2].x;
-    dely1 = x[i1].y - x[i2].y;
-    delz1 = x[i1].z - x[i2].z;
-
-    rsq1 = delx1*delx1 + dely1*dely1 + delz1*delz1;
-    r1 = sqrt(rsq1);
-
-    // 2nd bond
-
-    delx2 = x[i3].x - x[i2].x;
-    dely2 = x[i3].y - x[i2].y;
-    delz2 = x[i3].z - x[i2].z;
-
-    rsq2 = delx2*delx2 + dely2*dely2 + delz2*delz2;
-    r2 = sqrt(rsq2);
-
-    // c = cosine of angle
-
-    c = delx1*delx2 + dely1*dely2 + delz1*delz2;
-    c /= r1*r2;
-    if (c > 1.0) c = 1.0;
-    if (c < -1.0) c = -1.0;
+    rsq = delx*delx + dely*dely + delz*delz;
+    r = sqrt(rsq);
+    dr = r - r0[type];
+    dr2 = dr*dr;
 
     // force & energy
 
-    if (EFLAG) eangle = k[type]*(1.0+c);
+    de_bond = 2.0*k2[type]*dr*(1.0 + 1.5*K3*dr + 2.0*K4*dr2);
+    if (r > 0.0) fbond = -de_bond/r;
+    else fbond = 0.0;
 
-    a = k[type];
-    a11 = a*c / rsq1;
-    a12 = -a / (r1*r2);
-    a22 = a*c / rsq2;
+    if (EFLAG) ebond = k2[type]*dr2*(1.0+K3*dr+K4*dr2);
 
-    f1[0] = a11*delx1 + a12*delx2;
-    f1[1] = a11*dely1 + a12*dely2;
-    f1[2] = a11*delz1 + a12*delz2;
-    f3[0] = a22*delx2 + a12*delx1;
-    f3[1] = a22*dely2 + a12*dely1;
-    f3[2] = a22*delz2 + a12*delz1;
-
-    // apply force to each of 3 atoms
+    // apply force to each of 2 atoms
 
     if (NEWTON_BOND || i1 < nlocal) {
-      f[i1].x += f1[0];
-      f[i1].y += f1[1];
-      f[i1].z += f1[2];
+      f[i1].x += delx*fbond;
+      f[i1].y += dely*fbond;
+      f[i1].z += delz*fbond;
     }
 
     if (NEWTON_BOND || i2 < nlocal) {
-      f[i2].x -= f1[0] + f3[0];
-      f[i2].y -= f1[1] + f3[1];
-      f[i2].z -= f1[2] + f3[2];
+      f[i2].x -= delx*fbond;
+      f[i2].y -= dely*fbond;
+      f[i2].z -= delz*fbond;
     }
 
-    if (NEWTON_BOND || i3 < nlocal) {
-      f[i3].x += f3[0];
-      f[i3].y += f3[1];
-      f[i3].z += f3[2];
-    }
-
-    if (EVFLAG) ev_tally_thr(this,i1,i2,i3,nlocal,NEWTON_BOND,eangle,f1,f3,
-                             delx1,dely1,delz1,delx2,dely2,delz2,thr);
+    if (EVFLAG) ev_tally_thr(this,i1,i2,nlocal,NEWTON_BOND,
+                             ebond,fbond,delx,dely,delz,thr);
   }
 }
