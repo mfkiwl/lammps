@@ -88,6 +88,8 @@ collective operations and adequate hardware.
 
 ----------
 
+.. versionadded:: TBD
+
 The *collective/self/copy* keyword applies only to PPPM and only when
 *collective* is set to *yes*.  It controls whether data remapped to the
 same MPI rank (the "self" contribution) is handled via a direct
